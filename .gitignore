@@ -1,0 +1,12 @@
+# Ignore Go mod files
+go.mod
+go.sum
+
+# Ignore Go build files
+*.exe
+*.exe~
+*.test
+*_test.go
+_build/
+vendor/
+tmp
