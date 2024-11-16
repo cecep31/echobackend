@@ -27,11 +27,14 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService) //
+	postrepo := repository.NewPostRepository(db)
+	postService := service.NewPostService(postrepo)
+	postHandler := handler.NewPostHandler(postService)
 
 	// Initialize server
 	e := server.InitServer()
 
-	routes := routes.NewRoutes(userHandler)
+	routes := routes.NewRoutes(userHandler, postHandler)
 	routes.Setup(e)
 
 	api := e.Group("/api")

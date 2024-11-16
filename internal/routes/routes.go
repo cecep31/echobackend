@@ -9,14 +9,17 @@ import (
 
 type Routes struct {
 	userHandler *handler.UserHandler
+	postHandler *handler.PostHandler
 	// Add other handlers
 }
 
 func NewRoutes(
 	userHandler *handler.UserHandler,
+	postHandler *handler.PostHandler,
 ) *Routes {
 	return &Routes{
 		userHandler: userHandler,
+		postHandler: postHandler,
 	}
 }
 
@@ -29,6 +32,8 @@ func (r *Routes) Setup(e *echo.Echo) {
 
 func (r *Routes) setupV1Routes(v1 *echo.Group) {
 	r.setupUserRoutes(v1)
+	r.setupPostRoutes(v1)
+
 }
 
 func (r *Routes) setupUserRoutes(v1 *echo.Group) {
@@ -37,5 +42,13 @@ func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 	{
 		users.GET("/:id", r.userHandler.GetByID)
 		users.GET("", r.userHandler.GetUsers)
+	}
+}
+
+func (r *Routes) setupPostRoutes(v1 *echo.Group) {
+	posts := v1.Group("/posts")
+
+	{
+		posts.GET("", r.postHandler.GetPosts)
 	}
 }
