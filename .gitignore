@@ -11,4 +11,6 @@ _build/
 vendor/
 tmp
 
+bin/*
+
 .env
