@@ -34,6 +34,10 @@ func main() {
 	routes := routes.NewRoutes(userHandler)
 	routes.Setup(e)
 
+	api := e.Group("/api")
+
+	api.GET("", hellworld)
+
 	middleware.InitMiddleware(e)
 	e.GET("/", hellworld)
 	e.Logger.Fatal(e.Start(":1323"))

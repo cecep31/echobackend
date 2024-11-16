@@ -24,7 +24,6 @@ func (r *Routes) Setup(e *echo.Echo) {
 	// API Group
 	log.Println("setup v1 routes")
 	v1 := e.Group("/v1")
-	v1.GET("/", (func(c echo.Context) error { return c.String(200, "Hello World!") }))
 	r.setupV1Routes(v1)
 }
 
@@ -37,6 +36,6 @@ func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 
 	{
 		users.GET("/:id", r.userHandler.GetByID)
-		users.GET("/", r.userHandler.GetUsers)
+		users.GET("", r.userHandler.GetUsers)
 	}
 }
