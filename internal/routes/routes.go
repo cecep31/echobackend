@@ -52,5 +52,6 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 
 	{
 		posts.GET("", r.postHandler.GetPosts)
+		posts.GET("/random", r.postHandler.GetPostsRandom)
 	}
 }

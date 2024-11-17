@@ -40,10 +40,6 @@ func main() {
 
 	routes.Setup(e)
 
-	api := e.Group("/api")
-
-	api.GET("", hellworld)
-
 	middleware.InitMiddleware(e)
 	e.GET("/", hellworld)
 	port := cfg.GetAppPort()

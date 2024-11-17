@@ -25,3 +25,14 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, response)
 }
+
+func (h *PostHandler) GetPostsRandom(c echo.Context) error {
+	response, err := h.userService.GetPostsRandom(6)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, response)
+}

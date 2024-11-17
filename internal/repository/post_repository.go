@@ -9,6 +9,7 @@ import (
 
 type PostRepository interface {
 	GetPosts(ctx context.Context) ([]*domain.Post, error)
+	GetPostsRandom(limit int) ([]*domain.Post, error)
 }
 
 type postRepository struct {
@@ -22,4 +23,9 @@ func NewPostRepository(db *gorm.DB) PostRepository {
 func (r *postRepository) GetPosts(ctx context.Context) ([]*domain.Post, error) {
 	var posts []*domain.Post
 	return posts, r.db.WithContext(ctx).Preload("Creator").Preload("Tags").Find(&posts).Error
+}
+
+func (r *postRepository) GetPostsRandom(limit int) ([]*domain.Post, error) {
+	var posts []*domain.Post
+	return posts, r.db.Preload("Creator").Preload("Tags").Order("RANDOM()").Limit(limit).Find(&posts).Error
 }
