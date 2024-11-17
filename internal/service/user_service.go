@@ -30,7 +30,7 @@ func (s *userService) GetByID(ctx context.Context, id string) (*domain.UserRespo
 
 	return &domain.UserResponse{
 		ID:        user.ID,
-		Name:      user.Name,
+		Username:  user.Name,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
@@ -47,7 +47,7 @@ func (s *userService) GetUsers(ctx context.Context) ([]*domain.UserResponse, err
 	for _, user := range users {
 		userResponses = append(userResponses, &domain.UserResponse{
 			ID:        user.ID,
-			Name:      user.Name,
+			Username:  user.Username,
 			Email:     user.Email,
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
