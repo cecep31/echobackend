@@ -20,8 +20,10 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 
 	response, err := h.userService.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error":   err.Error(),
+			"message": "Failed to get user",
+			"success": false,
 		})
 	}
 
