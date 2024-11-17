@@ -7,19 +7,19 @@ import (
 )
 
 type Config struct {
-	JWTSecret string `mapstructure:"JWT_SECRET"`
-	DSN       string `mapstructure:"DATABASE_URL"`
+	JWT_SECRET   string `mapstructure:"JWT_SECRET"`
+	DATABASE_URL string `mapstructure:"DATABASE_URL"`
 }
 
 // Load reads configuration from environment variables with defaults
 func Load() (*Config, error) {
 	config := &Config{}
 
+	setDefaults()
+
 	viper.SetConfigName(".env") // name of config file (without extension)
 	viper.SetConfigType("env")  // type of config file
 	viper.AddConfigPath(".")    // optionally look for config in the working directory
-
-	setDefaults()
 
 	viper.AutomaticEnv()
 
@@ -51,17 +51,17 @@ func Load() (*Config, error) {
 func setDefaults() {
 
 	// Database defaults
-	viper.SetDefault("database.DSN", "")
+	viper.SetDefault("DATABASE_URL", "")
 
 	// Auth defaults
-	viper.SetDefault("auth.JWTSecret", "")
+	viper.SetDefault("JWT_SECRET", "")
 }
 
 func (c *Config) validate() error {
-	if c.DSN == "" {
+	if c.DATABASE_URL == "" {
 		return fmt.Errorf("database url is required")
 	}
-	if c.JWTSecret == "" {
+	if c.JWT_SECRET == "" {
 		return fmt.Errorf("JWT secret is required")
 	}
 	return nil
@@ -69,9 +69,9 @@ func (c *Config) validate() error {
 
 // GetDSN returns the database connection string
 func (c *Config) GetDSN() string {
-	return c.DSN
+	return c.DATABASE_URL
 }
 
 func (c *Config) GetJWTSecret() string {
-	return c.JWTSecret
+	return c.JWT_SECRET
 }
