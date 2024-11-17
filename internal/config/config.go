@@ -19,6 +19,8 @@ func Load() (*Config, error) {
 	viper.SetConfigType("env")  // type of config file
 	viper.AddConfigPath(".")    // optionally look for config in the working directory
 
+	viper.AutomaticEnv()
+
 	// Set defaults
 	setDefaults()
 
