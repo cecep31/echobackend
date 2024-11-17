@@ -2,30 +2,32 @@ package routes
 
 import (
 	"echobackend/internal/handler"
-	"log"
+	"echobackend/internal/middleware"
 
 	"github.com/labstack/echo/v4"
 )
 
 type Routes struct {
-	userHandler *handler.UserHandler
-	postHandler *handler.PostHandler
+	userHandler    *handler.UserHandler
+	postHandler    *handler.PostHandler
+	authMiddleware *middleware.AuthMiddleware
 	// Add other handlers
 }
 
 func NewRoutes(
 	userHandler *handler.UserHandler,
 	postHandler *handler.PostHandler,
+	authMiddleware *middleware.AuthMiddleware,
 ) *Routes {
 	return &Routes{
-		userHandler: userHandler,
-		postHandler: postHandler,
+		userHandler:    userHandler,
+		postHandler:    postHandler,
+		authMiddleware: authMiddleware,
 	}
 }
 
 func (r *Routes) Setup(e *echo.Echo) {
 	// API Group
-	log.Println("setup v1 routes")
 	v1 := e.Group("/v1")
 	r.setupV1Routes(v1)
 }
@@ -41,7 +43,7 @@ func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 
 	{
 		users.GET("/:id", r.userHandler.GetByID)
-		users.GET("", r.userHandler.GetUsers)
+		users.GET("", r.userHandler.GetUsers, r.authMiddleware.Auth())
 	}
 }
 

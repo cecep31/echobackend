@@ -29,4 +29,5 @@ func InitMiddleware(e *echo.Echo) {
 			return nil
 		},
 	}))
+	e.Use(middleware.Recover())
 }

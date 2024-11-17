@@ -1,40 +1,43 @@
 package main
 
 import (
+	"echobackend/internal/config"
 	"echobackend/internal/handler"
 	"echobackend/internal/middleware"
 	"echobackend/internal/repository"
 	"echobackend/internal/routes"
 	"echobackend/internal/service"
 	"echobackend/pkg/database"
-	"echobackend/server"
-	"log"
 	"net/http"
 
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalln("Error loading .env file")
+	cfg, errconf := config.Load()
+	if errconf != nil {
+		panic(errconf)
 	}
 
 	// Initialize database
-	db := database.SetupDatabase()
+	db := database.SetupDatabase(cfg)
 	// Initialize dependencies
 	userRepo := repository.NewUserRepository(db)
-	userService := service.NewUserService(userRepo)
-	userHandler := handler.NewUserHandler(userService) //
 	postrepo := repository.NewPostRepository(db)
+	// Initialize services
+	userService := service.NewUserService(userRepo)
 	postService := service.NewPostService(postrepo)
+	// Initialize handlers
+	userHandler := handler.NewUserHandler(userService) //
 	postHandler := handler.NewPostHandler(postService)
+	//setupMiddleware
+	authmid := middleware.NewAuthMiddleware(cfg)
 
 	// Initialize server
-	e := server.InitServer()
+	routes := routes.NewRoutes(userHandler, postHandler, authmid)
 
-	routes := routes.NewRoutes(userHandler, postHandler)
+	e := echo.New()
+
 	routes.Setup(e)
 
 	api := e.Group("/api")

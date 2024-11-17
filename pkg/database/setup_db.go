@@ -1,6 +1,7 @@
 package database
 
 import (
+	"echobackend/internal/config"
 	"log"
 	"os"
 
@@ -9,8 +10,8 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func SetupDatabase() *gorm.DB {
-	dsn := os.Getenv("DATABASE_URL")
+func SetupDatabase(conf *config.Config) *gorm.DB {
+	dsn := conf.GetDSN()
 
 	var config gorm.Config
 	if os.Getenv("ENABLE_GORM_LOGGER") != "" {
