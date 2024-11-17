@@ -33,10 +33,16 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 func (h *UserHandler) GetUsers(c echo.Context) error {
 	response, err := h.userService.GetUsers(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error":   err.Error(),
+			"message": "Failed to get users",
+			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, echo.Map{
+		"data":    response,
+		"message": "Successfully get users",
+		"success": true,
+	})
 }
