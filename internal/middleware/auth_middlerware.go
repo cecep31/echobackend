@@ -8,14 +8,14 @@ import (
 )
 
 type AuthMiddleware struct {
-	cfg *config.Config
+	conf *config.Config
 }
 
-func NewAuthMiddleware(cfg *config.Config) *AuthMiddleware {
-	return &AuthMiddleware{cfg: cfg}
+func NewAuthMiddleware(conf *config.Config) *AuthMiddleware {
+	return &AuthMiddleware{conf: conf}
 }
 
-func (a *AuthMiddleware) Middleware(next echo.HandlerFunc) echo.HandlerFunc {
+func (a *AuthMiddleware) ExampleMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return next(c)
 	}
@@ -24,6 +24,6 @@ func (a *AuthMiddleware) Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 	return echojwt.WithConfig(echojwt.Config{
 		SigningMethod: "HS256",
-		SigningKey:    []byte(a.cfg.GetJWTSecret()),
+		SigningKey:    []byte(a.conf.GetJWTSecret()),
 	})
 }

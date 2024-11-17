@@ -22,10 +22,24 @@ func NewPostRepository(db *gorm.DB) PostRepository {
 
 func (r *postRepository) GetPosts(ctx context.Context) ([]*domain.Post, error) {
 	var posts []*domain.Post
-	return posts, r.db.WithContext(ctx).Preload("Creator").Preload("Tags").Find(&posts).Error
+	err := r.db.WithContext(ctx).
+		Preload("Creator").
+		Preload("Tags").
+		Find(&posts).
+		Error
+
+	return posts, err
 }
 
 func (r *postRepository) GetPostsRandom(limit int) ([]*domain.Post, error) {
-	var posts []*domain.Post
-	return posts, r.db.Preload("Creator").Preload("Tags").Order("RANDOM()").Limit(limit).Find(&posts).Error
+	var randomPosts []*domain.Post
+	err := r.db.
+		Preload("Creator").
+		Preload("Tags").
+		Order("RANDOM()").
+		Limit(limit).
+		Find(&randomPosts).
+		Error
+
+	return randomPosts, err
 }

@@ -14,35 +14,43 @@ import (
 )
 
 func main() {
-	cfg, errconf := config.Load()
-	if errconf != nil {
-		panic(errconf)
+	conf, err := config.Load()
+	if err != nil {
+		panic(err)
 	}
 
 	// Initialize database
-	db := database.SetupDatabase(cfg)
-	// Initialize dependencies
-	userRepo := repository.NewUserRepository(db)
-	postrepo := repository.NewPostRepository(db)
+	databaseConnection, err := database.SetupDatabase(conf)
+	if err != nil {
+		panic(err)
+	}
+
+	// Initialize repositories
+	userRepository := repository.NewUserRepository(databaseConnection)
+	postRepository := repository.NewPostRepository(databaseConnection)
+
 	// Initialize services
-	userService := service.NewUserService(userRepo)
-	postService := service.NewPostService(postrepo)
+	userService := service.NewUserService(userRepository)
+	postService := service.NewPostService(postRepository)
+
 	// Initialize handlers
-	userHandler := handler.NewUserHandler(userService) //
+	userHandler := handler.NewUserHandler(userService)
 	postHandler := handler.NewPostHandler(postService)
-	//setupMiddleware
-	authmid := middleware.NewAuthMiddleware(cfg)
+
+	// Initialize middleware
+	authMiddleware := middleware.NewAuthMiddleware(conf)
 
 	// Initialize server
-	routes := routes.NewRoutes(userHandler, postHandler, authmid)
-
 	e := echo.New()
-
+	routes := routes.NewRoutes(userHandler, postHandler, authMiddleware)
 	routes.Setup(e)
-
 	middleware.InitMiddleware(e)
+
+	// Define routes
 	e.GET("/", hellworld)
-	port := cfg.GetAppPort()
+
+	// Start server
+	port := conf.GetAppPort()
 	e.Logger.Fatal(e.Start(":" + port))
 }
 

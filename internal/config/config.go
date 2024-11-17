@@ -18,31 +18,25 @@ func Load() (*Config, error) {
 
 	setDefaults()
 
-	viper.SetConfigName(".env") // name of config file (without extension)
-	viper.SetConfigType("env")  // type of config file
-	viper.AddConfigPath(".")    // optionally look for config in the working directory
-
-	viper.AutomaticEnv()
+	viper.SetConfigName(".env")
+	viper.SetConfigType("env")
+	viper.AddConfigPath(".")
 
 	err := viper.ReadInConfig()
-	// Read config file
 	if err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("error reading config file: %w", err)
 		}
-		// Config file not found; ignore error if desired
-		fmt.Println("No configuration file found. Using defaults and environment variables.")
+		// Ignore error if config file not found
 	}
 
-	// Set defaults
-
-	// Unmarshal config
-	if err := viper.Unmarshal(config); err != nil {
+	err = viper.Unmarshal(config)
+	if err != nil {
 		return nil, fmt.Errorf("unable to decode config into struct: %w", err)
 	}
 
-	// Validate config
-	if err := config.validate(); err != nil {
+	err = config.validate()
+	if err != nil {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 

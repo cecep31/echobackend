@@ -2,7 +2,7 @@ package database
 
 import (
 	"echobackend/internal/config"
-	"log"
+	"fmt"
 	"os"
 
 	"gorm.io/driver/postgres"
@@ -10,26 +10,26 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func SetupDatabase(conf *config.Config) *gorm.DB {
+func SetupDatabase(conf *config.Config) (*gorm.DB, error) {
 	dsn := conf.GetDSN()
 
-	var config gorm.Config
+	var gormConfig gorm.Config
 	if os.Getenv("ENABLE_GORM_LOGGER") != "" {
-		config = gorm.Config{}
+		gormConfig = gorm.Config{} // Default to verbose logging
 	} else {
-		config = gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent),
+		gormConfig = gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent), // Disable logging
 		}
 	}
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: dsn, PreferSimpleProtocol: true,
-	}), &config)
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
+	}), &gormConfig)
 
 	if err != nil {
-		log.Fatal(err)
-		panic(err.Error()) // Note: This line is redundant after log.Fatal
+		return nil, fmt.Errorf("error connecting to database: %w", err)
 	}
 
-	return db
+	return db, nil
 }

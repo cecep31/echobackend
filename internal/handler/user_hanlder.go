@@ -16,33 +16,34 @@ func NewUserHandler(userService service.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetByID(c echo.Context) error {
-	id := c.Param("id")
+	userID := c.Param("id")
 
-	response, err := h.userService.GetByID(c.Request().Context(), id)
+	userResponse, err := h.userService.GetByID(c.Request().Context(), userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
-			"message": "Failed to get user",
-			"success": false,
-		})
-	}
-
-	return c.JSON(http.StatusOK, response)
-}
-
-func (h *UserHandler) GetUsers(c echo.Context) error {
-	response, err := h.userService.GetUsers(c.Request().Context())
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error":   err.Error(),
-			"message": "Failed to get users",
+			"message": "Failed to retrieve user",
 			"success": false,
 		})
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"data":    response,
-		"message": "Successfully get users",
+		"data":    userResponse,
+		"success": true,
+	})
+}
+
+func (h *UserHandler) GetUsers(c echo.Context) error {
+	users, err := h.userService.GetUsers(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"data":    users,
 		"success": true,
 	})
 }
