@@ -19,6 +19,10 @@ func Load() (*Config, error) {
 	viper.SetConfigType("env")  // type of config file
 	viper.AddConfigPath(".")    // optionally look for config in the working directory
 
+	setDefaults()
+
+	viper.AutomaticEnv()
+
 	err := viper.ReadInConfig()
 	// Read config file
 	if err != nil {
@@ -29,10 +33,7 @@ func Load() (*Config, error) {
 		fmt.Println("No configuration file found. Using defaults and environment variables.")
 	}
 
-	viper.AutomaticEnv()
-
 	// Set defaults
-	setDefaults()
 
 	// Unmarshal config
 	if err := viper.Unmarshal(config); err != nil {
