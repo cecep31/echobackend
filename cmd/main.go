@@ -46,7 +46,8 @@ func main() {
 
 	middleware.InitMiddleware(e)
 	e.GET("/", hellworld)
-	e.Logger.Fatal(e.Start(":1323"))
+	port := cfg.GetAppPort()
+	e.Logger.Fatal(e.Start(":" + port))
 }
 
 func hellworld(c echo.Context) error {

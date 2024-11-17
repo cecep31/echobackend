@@ -9,6 +9,7 @@ import (
 type Config struct {
 	JWT_SECRET   string `mapstructure:"JWT_SECRET"`
 	DATABASE_URL string `mapstructure:"DATABASE_URL"`
+	PORT         string `mapstructure:"PORT"`
 }
 
 // Load reads configuration from environment variables with defaults
@@ -49,10 +50,9 @@ func Load() (*Config, error) {
 }
 
 func setDefaults() {
-
+	viper.SetDefault("PORT", "1323")
 	// Database defaults
 	viper.SetDefault("DATABASE_URL", "")
-
 	// Auth defaults
 	viper.SetDefault("JWT_SECRET", "")
 }
@@ -74,4 +74,8 @@ func (c *Config) GetDSN() string {
 
 func (c *Config) GetJWTSecret() string {
 	return c.JWT_SECRET
+}
+
+func (c *Config) GetAppPort() string {
+	return c.PORT
 }
