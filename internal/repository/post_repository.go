@@ -25,6 +25,7 @@ func (r *postRepository) GetPosts(ctx context.Context) ([]*domain.Post, error) {
 	err := r.db.WithContext(ctx).
 		Preload("Creator").
 		Preload("Tags").
+		Order("created_at DESC").
 		Find(&posts).
 		Error
 
