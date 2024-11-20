@@ -1,13 +1,12 @@
 package service
 
 import (
-	"context"
 	"echobackend/internal/domain"
 	"echobackend/internal/repository"
 )
 
 type PostService interface {
-	GetPosts(ctx context.Context) ([]*domain.Post, error)
+	GetPosts(limit int, offset int) ([]*domain.Post, int64, error)
 	GetPostsRandom(limit int) ([]*domain.Post, error)
 }
 
@@ -19,8 +18,16 @@ func NewPostService(postRepo repository.PostRepository) PostService {
 	return &postService{postRepo: postRepo}
 }
 
-func (s *postService) GetPosts(ctx context.Context) ([]*domain.Post, error) {
-	return s.postRepo.GetPosts(ctx)
+func (s *postService) GetPosts(limit int, offset int) ([]*domain.Post, int64, error) {
+	total, err := s.postRepo.GetTotalPosts()
+	if err != nil {
+		return nil, 0, err
+	}
+	posts, err := s.postRepo.GetPosts(limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	return posts, total, err
 }
 
 func (s *postService) GetPostsRandom(limit int) ([]*domain.Post, error) {

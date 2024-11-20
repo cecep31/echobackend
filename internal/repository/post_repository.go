@@ -1,15 +1,15 @@
 package repository
 
 import (
-	"context"
 	"echobackend/internal/domain"
 
 	"gorm.io/gorm"
 )
 
 type PostRepository interface {
-	GetPosts(ctx context.Context) ([]*domain.Post, error)
+	GetPosts(limit int, offset int) ([]*domain.Post, error)
 	GetPostsRandom(limit int) ([]*domain.Post, error)
+	GetTotalPosts() (int64, error)
 }
 
 type postRepository struct {
@@ -20,12 +20,14 @@ func NewPostRepository(db *gorm.DB) PostRepository {
 	return &postRepository{db: db}
 }
 
-func (r *postRepository) GetPosts(ctx context.Context) ([]*domain.Post, error) {
+func (r *postRepository) GetPosts(limit int, offset int) ([]*domain.Post, error) {
 	var posts []*domain.Post
-	err := r.db.WithContext(ctx).
+	err := r.db.
 		Preload("Creator").
 		Preload("Tags").
 		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
 		Find(&posts).
 		Error
 
@@ -43,4 +45,11 @@ func (r *postRepository) GetPostsRandom(limit int) ([]*domain.Post, error) {
 		Error
 
 	return randomPosts, err
+}
+
+func (r *postRepository) GetTotalPosts() (int64, error) {
+	var count int64
+	err := r.db.Model(&domain.Post{}).Count(&count).Error
+
+	return count, err
 }
