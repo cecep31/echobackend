@@ -19,15 +19,21 @@ func NewPostService(postRepo repository.PostRepository) PostService {
 }
 
 func (s *postService) GetPosts(limit int, offset int) ([]*domain.Post, int64, error) {
-	total, err := s.postRepo.GetTotalPosts()
+	var posts []*domain.Post
+	var total int64
+	var err error
+
+	total, err = s.postRepo.GetTotalPosts()
 	if err != nil {
 		return nil, 0, err
 	}
-	posts, err := s.postRepo.GetPosts(limit, offset)
+
+	posts, err = s.postRepo.GetPosts(limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
-	return posts, total, err
+
+	return posts, total, nil
 }
 
 func (s *postService) GetPostsRandom(limit int) ([]*domain.Post, error) {
