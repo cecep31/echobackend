@@ -2,6 +2,7 @@ package main
 
 import (
 	"echobackend/internal/di"
+	"echobackend/internal/middleware"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -18,11 +19,14 @@ func main() {
 	routes := container.Routes()
 
 	routes.Setup(e)
-	conf := container.Config()
-	e.GET("/", hellworld)
-	// Setup middleware
 
-	// Start server
+	e.GET("/", hellworld)
+
+	// Setup middleware
+	middleware.InitMiddleware(e)
+
+	// load config
+	conf := container.Config()
 	// Start server
 	port := conf.GetAppPort()
 	e.Logger.Fatal(e.Start(":" + port))
