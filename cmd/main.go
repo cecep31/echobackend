@@ -1,54 +1,28 @@
 package main
 
 import (
-	"echobackend/internal/config"
-	"echobackend/internal/handler"
-	"echobackend/internal/middleware"
-	"echobackend/internal/repository"
-	"echobackend/internal/routes"
-	"echobackend/internal/service"
-	"echobackend/pkg/database"
+	"echobackend/internal/di"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
 func main() {
-	conf, err := config.Load()
-	if err != nil {
-		panic(err)
-	}
+	// Initialize dependency container
+	container := di.NewContainer()
 
-	// Initialize database
-	databaseConnection, err := database.SetupDatabase(conf)
-	if err != nil {
-		panic(err)
-	}
-
-	// Initialize repositories
-	userRepository := repository.NewUserRepository(databaseConnection)
-	postRepository := repository.NewPostRepository(databaseConnection)
-
-	// Initialize services
-	userService := service.NewUserService(userRepository)
-	postService := service.NewPostService(postRepository)
-
-	// Initialize handlers
-	userHandler := handler.NewUserHandler(userService)
-	postHandler := handler.NewPostHandler(postService)
-
-	// Initialize middleware
-	authMiddleware := middleware.NewAuthMiddleware(conf)
-
-	// Initialize server
+	// Initialize Echo
 	e := echo.New()
-	routes := routes.NewRoutes(userHandler, postHandler, authMiddleware)
+
+	// Initialize handlers with dependencies
+	routes := container.Routes()
+
 	routes.Setup(e)
-	middleware.InitMiddleware(e)
-
-	// Define routes
+	conf := container.Config()
 	e.GET("/", hellworld)
+	// Setup middleware
 
+	// Start server
 	// Start server
 	port := conf.GetAppPort()
 	e.Logger.Fatal(e.Start(":" + port))
