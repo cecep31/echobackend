@@ -37,13 +37,16 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 	users, err := h.userService.GetUsers(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"data":    nil,
 			"error":   err.Error(),
 			"success": false,
 		})
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{
-		"data":    users,
-		"success": true,
+		"messsage": "Success",
+		"success":  true,
+		"data":     users,
+		"error":    nil,
 	})
 }

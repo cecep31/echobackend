@@ -10,6 +10,7 @@ import (
 type User struct {
 	ID        string         `json:"id" gorm:"primaryKey"`
 	Email     string         `json:"email" gorm:"unique;not null"`
+	Name      string         `json:"name" gorm:"not null"`
 	Password  string         `json:"-" gorm:"not null"` // "-" means this field won't be included in JSON
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -25,6 +26,7 @@ func (User) TableName() string {
 type UserResponse struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
+	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -34,6 +36,7 @@ func (u *User) ToResponse() *UserResponse {
 	return &UserResponse{
 		ID:        u.ID,
 		Email:     u.Email,
+		Name:      u.Name,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	}
