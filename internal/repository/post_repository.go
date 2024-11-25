@@ -10,6 +10,7 @@ type PostRepository interface {
 	GetPosts(limit int, offset int) ([]*domain.Post, error)
 	GetPostsRandom(limit int) ([]*domain.Post, error)
 	GetTotalPosts() (int64, error)
+	GetPostByID(id string) (*domain.Post, error)
 }
 
 type postRepository struct {
@@ -32,6 +33,30 @@ func (r *postRepository) GetPosts(limit int, offset int) ([]*domain.Post, error)
 		Error
 
 	return posts, err
+}
+
+func (r *postRepository) GetPostsBySlugAndUsername(slug string, username string) ([]*domain.Post, error) {
+	var posts []*domain.Post
+	err := r.db.
+		Preload("Creator").
+		Preload("Tags").
+		Where("slug = ? AND creator.username = ?", slug, username).
+		Find(&posts).
+		Error
+
+	return posts, err
+}
+
+func (r *postRepository) GetPostByID(id string) (*domain.Post, error) {
+	var post domain.Post
+	err := r.db.
+		Preload("Creator").
+		Preload("Tags").
+		Where("id = ?", id).
+		First(&post).
+		Error
+
+	return &post, err
 }
 
 func (r *postRepository) GetPostsRandom(limit int) ([]*domain.Post, error) {

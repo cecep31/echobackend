@@ -3,6 +3,7 @@ package main
 import (
 	"echobackend/internal/di"
 	"echobackend/internal/middleware"
+	"echobackend/pkg/validator"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -14,6 +15,9 @@ func main() {
 
 	// Initialize Echo
 	e := echo.New()
+
+	// Set custom validator
+	e.Validator = validator.NewValidator()
 
 	// Initialize handlers with dependencies
 	routes := container.Routes()
@@ -32,5 +36,5 @@ func main() {
 }
 
 func hellworld(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{"message": "Hello World!"})
+	return c.String(http.StatusOK, "Hello, World!")
 }

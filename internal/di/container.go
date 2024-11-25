@@ -21,9 +21,12 @@ type Container struct {
 	postService    service.PostService
 	userRepo       repository.UserRepository
 	userService    service.UserService
+	authRepo       repository.AuthRepository
+	authService    service.AuthService
 	routes         *routes.Routes
 	userHandler    *handler.UserHandler
 	postHandler    *handler.PostHandler
+	authHandler    *handler.AuthHandler
 	authMiddleware *middleware.AuthMiddleware
 	// Add other dependencies here
 
@@ -56,9 +59,16 @@ func (c *Container) PostHandler() *handler.PostHandler {
 	return c.postHandler
 }
 
+func (c *Container) AuthHandler() *handler.AuthHandler {
+	if c.authHandler == nil {
+		c.authHandler = handler.NewAuthHandler(c.AuthService())
+	}
+	return c.authHandler
+}
+
 func (c *Container) Routes() *routes.Routes {
 	if c.routes == nil {
-		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler())
+		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler())
 	}
 	return c.routes
 }
@@ -116,4 +126,18 @@ func (c *Container) UserRepository() repository.UserRepository {
 		c.userRepo = repository.NewUserRepository(c.Database())
 	}
 	return c.userRepo
+}
+
+func (c *Container) AuthRepository() repository.AuthRepository {
+	if c.authRepo == nil {
+		c.authRepo = repository.NewAuthRepository(c.Database())
+	}
+	return c.authRepo
+}
+
+func (c *Container) AuthService() service.AuthService {
+	if c.authService == nil {
+		c.authService = service.NewAuthService(c.AuthRepository(), c.Config())
+	}
+	return c.authService
 }
