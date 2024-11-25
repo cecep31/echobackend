@@ -8,7 +8,7 @@ import (
 
 // User represents the user model in the database
 type User struct {
-	ID        uint           `json:"id" gorm:"primaryKey"`
+	ID        string         `json:"id" gorm:"primaryKey"`
 	Email     string         `json:"email" gorm:"unique;not null"`
 	Password  string         `json:"-" gorm:"not null"` // "-" means this field won't be included in JSON
 	CreatedAt time.Time      `json:"created_at"`
@@ -23,7 +23,7 @@ func (User) TableName() string {
 
 // UserResponse represents the user data that can be safely sent to clients
 type UserResponse struct {
-	ID        uint      `json:"id"`
+	ID        string    `json:"id"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
