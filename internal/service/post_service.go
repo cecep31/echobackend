@@ -1,13 +1,13 @@
 package service
 
 import (
-	"echobackend/internal/domain"
+	"echobackend/internal/model"
 	"echobackend/internal/repository"
 )
 
 type PostService interface {
-	GetPosts(limit int, offset int) ([]*domain.Post, int64, error)
-	GetPostsRandom(limit int) ([]*domain.Post, error)
+	GetPosts(limit int, offset int) ([]*model.Post, int64, error)
+	GetPostsRandom(limit int) ([]*model.Post, error)
 }
 
 type postService struct {
@@ -18,8 +18,8 @@ func NewPostService(postRepo repository.PostRepository) PostService {
 	return &postService{postRepo: postRepo}
 }
 
-func (s *postService) GetPosts(limit int, offset int) ([]*domain.Post, int64, error) {
-	var posts []*domain.Post
+func (s *postService) GetPosts(limit int, offset int) ([]*model.Post, int64, error) {
+	var posts []*model.Post
 	var total int64
 	var err error
 
@@ -36,6 +36,6 @@ func (s *postService) GetPosts(limit int, offset int) ([]*domain.Post, int64, er
 	return posts, total, nil
 }
 
-func (s *postService) GetPostsRandom(limit int) ([]*domain.Post, error) {
+func (s *postService) GetPostsRandom(limit int) ([]*model.Post, error) {
 	return s.postRepo.GetPostsRandom(limit)
 }

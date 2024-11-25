@@ -5,6 +5,7 @@ import (
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -60,6 +61,8 @@ func (s *authService) Register(email, password string) (*model.User, error) {
 func (s *authService) Login(email, password string) (string, *model.User, error) {
 	user, err := s.repo.FindUserByEmail(email)
 	if err != nil {
+		fmt.Println("email not found")
+		fmt.Println(err)
 		return "", nil, ErrInvalidCredentials
 	}
 

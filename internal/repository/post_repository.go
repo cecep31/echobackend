@@ -2,15 +2,16 @@ package repository
 
 import (
 	"echobackend/internal/domain"
+	"echobackend/internal/model"
 
 	"gorm.io/gorm"
 )
 
 type PostRepository interface {
-	GetPosts(limit int, offset int) ([]*domain.Post, error)
-	GetPostsRandom(limit int) ([]*domain.Post, error)
+	GetPosts(limit int, offset int) ([]*model.Post, error)
+	GetPostsRandom(limit int) ([]*model.Post, error)
 	GetTotalPosts() (int64, error)
-	GetPostByID(id string) (*domain.Post, error)
+	GetPostByID(id string) (*model.Post, error)
 }
 
 type postRepository struct {
@@ -21,8 +22,8 @@ func NewPostRepository(db *gorm.DB) PostRepository {
 	return &postRepository{db: db}
 }
 
-func (r *postRepository) GetPosts(limit int, offset int) ([]*domain.Post, error) {
-	var posts []*domain.Post
+func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, error) {
+	var posts []*model.Post
 	err := r.db.
 		Preload("Creator").
 		Preload("Tags").
@@ -35,20 +36,20 @@ func (r *postRepository) GetPosts(limit int, offset int) ([]*domain.Post, error)
 	return posts, err
 }
 
-func (r *postRepository) GetPostsBySlugAndUsername(slug string, username string) ([]*domain.Post, error) {
-	var posts []*domain.Post
+func (r *postRepository) GetPostBySlugAndUsername(slug string, username string) (*model.Post, error) {
+	var post model.Post
 	err := r.db.
 		Preload("Creator").
 		Preload("Tags").
-		Where("slug = ? AND creator.username = ?", slug, username).
-		Find(&posts).
+		Where("slug = ? AND username = ?", slug, username).
+		First(&post).
 		Error
 
-	return posts, err
+	return &post, err
 }
 
-func (r *postRepository) GetPostByID(id string) (*domain.Post, error) {
-	var post domain.Post
+func (r *postRepository) GetPostByID(id string) (*model.Post, error) {
+	var post model.Post
 	err := r.db.
 		Preload("Creator").
 		Preload("Tags").
@@ -59,8 +60,8 @@ func (r *postRepository) GetPostByID(id string) (*domain.Post, error) {
 	return &post, err
 }
 
-func (r *postRepository) GetPostsRandom(limit int) ([]*domain.Post, error) {
-	var randomPosts []*domain.Post
+func (r *postRepository) GetPostsRandom(limit int) ([]*model.Post, error) {
+	var randomPosts []*model.Post
 	err := r.db.
 		Preload("Creator").
 		Preload("Tags").
