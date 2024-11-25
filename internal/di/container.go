@@ -3,6 +3,7 @@ package di
 import (
 	"echobackend/internal/config"
 	"echobackend/internal/handler"
+	"echobackend/internal/middleware"
 	"echobackend/internal/repository"
 	"echobackend/internal/routes"
 	"echobackend/internal/service"
@@ -14,15 +15,16 @@ import (
 
 // Container holds all dependencies
 type Container struct {
-	config      *config.Config
-	db          *gorm.DB
-	postRepo    repository.PostRepository
-	postService service.PostService
-	userRepo    repository.UserRepository
-	userService service.UserService
-	routes      *routes.Routes
-	userHandler *handler.UserHandler
-	postHandler *handler.PostHandler
+	config         *config.Config
+	db             *gorm.DB
+	postRepo       repository.PostRepository
+	postService    service.PostService
+	userRepo       repository.UserRepository
+	userService    service.UserService
+	routes         *routes.Routes
+	userHandler    *handler.UserHandler
+	postHandler    *handler.PostHandler
+	authMiddleware *middleware.AuthMiddleware
 	// Add other dependencies here
 
 	once sync.Once
@@ -31,6 +33,13 @@ type Container struct {
 // NewContainer creates a new dependency injection container
 func NewContainer() *Container {
 	return &Container{}
+}
+
+func (c *Container) AuthMiddleware() *middleware.AuthMiddleware {
+	if c.authMiddleware == nil {
+		c.authMiddleware = middleware.NewAuthMiddleware(c.Config())
+	}
+	return c.authMiddleware
 }
 
 func (c *Container) UserHandler() *handler.UserHandler {

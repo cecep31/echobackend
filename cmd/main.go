@@ -17,7 +17,6 @@ func main() {
 
 	// Initialize handlers with dependencies
 	routes := container.Routes()
-
 	routes.Setup(e)
 
 	e.GET("/", hellworld)

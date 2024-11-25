@@ -1,0 +1,22 @@
+# fly.toml app configuration file generated for echobackend on 2024-11-25T09:50:39+07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'echobackend'
+primary_region = 'sin'
+
+[build]
+  image = 'cecep31/echobackend:latest'
+
+[http_service]
+  internal_port = 1323
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  max_machines_running = 3
+  processes = ['app']
+
+[[vm]]
+  size = 'shared-cpu-1x'
