@@ -68,7 +68,7 @@ func (c *Container) AuthHandler() *handler.AuthHandler {
 
 func (c *Container) Routes() *routes.Routes {
 	if c.routes == nil {
-		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler())
+		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler(), c.AuthMiddleware())
 	}
 	return c.routes
 }

@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"echobackend/internal/config"
+	"fmt"
+	"strings"
 
-	echojwt "github.com/labstack/echo-jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 )
 
@@ -22,8 +24,40 @@ func (a *AuthMiddleware) ExampleMiddleware(next echo.HandlerFunc) echo.HandlerFu
 }
 
 func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
-	return echojwt.WithConfig(echojwt.Config{
-		SigningMethod: "HS256",
-		SigningKey:    []byte(a.conf.GetJWTSecret()),
-	})
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			authHeader := c.Request().Header.Get("Authorization")
+			if authHeader == "" {
+				return echo.NewHTTPError(401, "missing authorization header")
+			}
+
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			if tokenString == authHeader {
+				return echo.NewHTTPError(401, "invalid token format")
+			}
+
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+				return []byte(a.conf.GetJWTSecret()), nil
+			})
+
+			if err != nil {
+				return echo.NewHTTPError(401, "invalid or expired token")
+			}
+
+			if !token.Valid {
+				return echo.NewHTTPError(401, "invalid token")
+			}
+
+			claims, ok := token.Claims.(jwt.MapClaims)
+			if !ok {
+				return echo.NewHTTPError(401, "invalid token claims")
+			}
+
+			c.Set("user", claims)
+			return next(c)
+		}
+	}
 }
