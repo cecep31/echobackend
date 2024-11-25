@@ -130,7 +130,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		Success: true,
 		Message: "Login successful",
 		Data: map[string]interface{}{
-			"token": token,
+			"access_token": token,
 			"user": map[string]interface{}{
 				"id":    user.ID,
 				"email": user.Email,

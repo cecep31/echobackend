@@ -1,7 +1,7 @@
 package database
 
 import (
-	"echobackend/internal/config"
+	"echobackend/config"
 	"fmt"
 	"os"
 

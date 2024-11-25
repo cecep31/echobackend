@@ -1,7 +1,7 @@
 package di
 
 import (
-	"echobackend/internal/config"
+	"echobackend/config"
 	"echobackend/internal/handler"
 	"echobackend/internal/middleware"
 	"echobackend/internal/repository"

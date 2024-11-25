@@ -22,43 +22,37 @@ func Load() (*Config, error) {
 	viper.SetConfigType("env")
 	viper.AddConfigPath(".")
 
-	viper.AutomaticEnv()
-
-	err := viper.ReadInConfig()
-	if err != nil {
+	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return nil, fmt.Errorf("error reading config file: %w", err)
 		}
-		// Ignore error if config file not found
 	}
 
-	err = viper.Unmarshal(config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to decode config into struct: %w", err)
+	viper.AutomaticEnv()
+
+	if err := viper.Unmarshal(config); err != nil {
+		return nil, fmt.Errorf("error unmarshaling config: %w", err)
 	}
 
-	err = config.validate()
-	if err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
+	if err := config.validate(); err != nil {
+		return nil, err
 	}
 
 	return config, nil
 }
 
 func setDefaults() {
-	viper.SetDefault("PORT", "1323")
-	// Database defaults
-	viper.SetDefault("DATABASE_URL", "")
-	// Auth defaults
-	viper.SetDefault("JWT_SECRET", "")
+	viper.SetDefault("PORT", "8080")
+	viper.SetDefault("JWT_SECRET", "your-secret-key")
+	viper.SetDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
 }
 
 func (c *Config) validate() error {
-	if c.DATABASE_URL == "" {
-		return fmt.Errorf("database url is required")
-	}
 	if c.JWT_SECRET == "" {
-		return fmt.Errorf("JWT secret is required")
+		return fmt.Errorf("JWT_SECRET is required")
+	}
+	if c.DATABASE_URL == "" {
+		return fmt.Errorf("DATABASE_URL is required")
 	}
 	return nil
 }

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"echobackend/internal/config"
+	"echobackend/config"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
 	"errors"

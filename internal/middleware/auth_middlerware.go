@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"echobackend/internal/config"
+	"echobackend/config"
 	"fmt"
 	"strings"
 
