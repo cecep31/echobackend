@@ -11,6 +11,7 @@ type PostRepository interface {
 	GetPostsRandom(limit int) ([]*model.Post, error)
 	GetTotalPosts() (int64, error)
 	GetPostByID(id string) (*model.Post, error)
+	DeletePostByID(id string) error
 }
 
 type postRepository struct {
@@ -19,6 +20,10 @@ type postRepository struct {
 
 func NewPostRepository(db *gorm.DB) PostRepository {
 	return &postRepository{db: db}
+}
+
+func (r *postRepository) DeletePostByID(id string) error {
+	return r.db.Where("id = ?", id).Delete(&model.Post{}).Error
 }
 
 func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, error) {

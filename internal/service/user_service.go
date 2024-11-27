@@ -27,14 +27,7 @@ func (s *userService) GetByID(ctx context.Context, id string) (*model.UserRespon
 	if err != nil {
 		return nil, err
 	}
-
-	return &model.UserResponse{
-		ID:        user.ID,
-		Username:  user.Username,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-	}, nil
+	return user.ToResponse(), nil
 }
 
 func (s *userService) GetUsers(ctx context.Context) ([]*model.UserResponse, error) {
@@ -45,13 +38,7 @@ func (s *userService) GetUsers(ctx context.Context) ([]*model.UserResponse, erro
 
 	var userResponses []*model.UserResponse
 	for _, user := range users {
-		userResponses = append(userResponses, &model.UserResponse{
-			ID:        user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-		})
+		userResponses = append(userResponses, user.ToResponse())
 	}
 
 	return userResponses, nil

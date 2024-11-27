@@ -41,8 +41,8 @@ func (u *User) ToResponse() *UserResponse {
 	return &UserResponse{
 		ID:        u.ID,
 		Email:     u.Email,
-		FirstName: u.FirstName,
 		Name:      u.FirstName + " " + u.LastName,
+		FirstName: u.FirstName,
 		LastName:  u.LastName,
 		Username:  u.Username,
 		CreatedAt: u.CreatedAt,

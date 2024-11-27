@@ -55,6 +55,41 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	})
 }
 
+func (h *PostHandler) GetPost(c echo.Context) error {
+	id := c.Param("id")
+	post, err := h.userService.GetPostByID(id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error":   err.Error(),
+			"message": "Failed to get post",
+			"success": false,
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"data":    post,
+		"message": "Successfully retrieved post",
+		"success": true,
+	})
+}
+
+func (h *PostHandler) DeletePost(c echo.Context) error {
+	id := c.Param("id")
+	err := h.userService.DeletePostByID(id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error":   err.Error(),
+			"message": "Failed to delete post",
+			"success": false,
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "Successfully deleted post",
+		"success": true,
+	})
+}
+
 func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	const limit = 6
 	posts, err := h.userService.GetPostsRandom(limit)

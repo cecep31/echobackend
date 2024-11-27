@@ -51,10 +51,11 @@ func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 
 func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 	posts := v1.Group("/posts")
-
 	{
 		posts.GET("", r.postHandler.GetPosts)
+		posts.DELETE("/:id", r.postHandler.DeletePost, r.authMiddleware.Auth())
 		posts.GET("/random", r.postHandler.GetPostsRandom)
+		posts.GET("/:id", r.postHandler.GetPost)
 	}
 }
 

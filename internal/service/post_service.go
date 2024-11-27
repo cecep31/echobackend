@@ -6,8 +6,10 @@ import (
 )
 
 type PostService interface {
-	GetPosts(limit int, offset int) ([]*model.Post, int64, error)
-	GetPostsRandom(limit int) ([]*model.Post, error)
+	GetPosts(limit int, offset int) ([]*model.PostResponse, int64, error)
+	GetPostsRandom(limit int) ([]*model.PostResponse, error)
+	GetPostByID(id string) (*model.PostResponse, error)
+	DeletePostByID(id string) error
 }
 
 type postService struct {
@@ -18,8 +20,20 @@ func NewPostService(postRepo repository.PostRepository) PostService {
 	return &postService{postRepo: postRepo}
 }
 
-func (s *postService) GetPosts(limit int, offset int) ([]*model.Post, int64, error) {
-	var posts []*model.Post
+func (s *postService) DeletePostByID(id string) error {
+	return s.postRepo.DeletePostByID(id)
+}
+
+func (s *postService) GetPostByID(id string) (*model.PostResponse, error) {
+	post, err := s.postRepo.GetPostByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return post.ToResponse(), nil
+}
+
+func (s *postService) GetPosts(limit int, offset int) ([]*model.PostResponse, int64, error) {
 	var total int64
 	var err error
 
@@ -28,14 +42,33 @@ func (s *postService) GetPosts(limit int, offset int) ([]*model.Post, int64, err
 		return nil, 0, err
 	}
 
-	posts, err = s.postRepo.GetPosts(limit, offset)
+	posts, err := s.postRepo.GetPosts(limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return posts, total, nil
+	var postsResponse []*model.PostResponse
+
+	for _, post := range posts {
+		postResponse := post.ToResponse()
+		postsResponse = append(postsResponse, postResponse)
+	}
+
+	return postsResponse, total, nil
 }
 
-func (s *postService) GetPostsRandom(limit int) ([]*model.Post, error) {
-	return s.postRepo.GetPostsRandom(limit)
+func (s *postService) GetPostsRandom(limit int) ([]*model.PostResponse, error) {
+	posts, err := s.postRepo.GetPostsRandom(limit)
+	if err != nil {
+		return nil, err
+	}
+
+	var postsResponse []*model.PostResponse
+
+	for _, post := range posts {
+		postResponse := post.ToResponse()
+		postsResponse = append(postsResponse, postResponse)
+	}
+
+	return postsResponse, nil
 }
