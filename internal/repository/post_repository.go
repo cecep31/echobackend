@@ -43,7 +43,6 @@ func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, error) 
 
 func (r *postRepository) GetPostBySlugAndUsername(slug string, username string) (*model.Post, error) {
 	var post model.Post
-	// fmt.Println("test wkwkwkwkkwkwkkwkwkwk")
 	err := r.db.
 		Joins("JOIN users ON users.id = posts.created_by").
 		Preload("Creator").

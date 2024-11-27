@@ -3,7 +3,6 @@ package database
 import (
 	"echobackend/config"
 	"fmt"
-	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -12,9 +11,8 @@ import (
 
 func SetupDatabase(conf *config.Config) (*gorm.DB, error) {
 	dsn := conf.GetDSN()
-
 	var gormConfig gorm.Config
-	if os.Getenv("ENABLE_GORM_LOGGER") != "" {
+	if "" == "" {
 		gormConfig = gorm.Config{} // Default to verbose logging
 	} else {
 		gormConfig = gorm.Config{

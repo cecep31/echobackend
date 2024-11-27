@@ -34,6 +34,7 @@ type PostResponse struct {
 	Body      string       `json:"body"`
 	Slug      string       `json:"slug"`
 	Creator   UserResponse `json:"creator"`
+	Tags      []Tag        `json:"tags"`
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt time.Time    `json:"updated_at"`
 }
@@ -47,6 +48,7 @@ func (p *Post) ToResponse() *PostResponse {
 		Body:      p.Body,
 		Slug:      p.Slug,
 		Creator:   *p.Creator.ToResponse(),
+		Tags:      p.Tags,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
 	}
