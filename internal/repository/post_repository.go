@@ -11,6 +11,7 @@ type PostRepository interface {
 	GetPostsRandom(limit int) ([]*model.Post, error)
 	GetTotalPosts() (int64, error)
 	GetPostByID(id string) (*model.Post, error)
+	GetPostBySlugAndUsername(slug string, username string) (*model.Post, error)
 	DeletePostByID(id string) error
 }
 
@@ -42,10 +43,12 @@ func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, error) 
 
 func (r *postRepository) GetPostBySlugAndUsername(slug string, username string) (*model.Post, error) {
 	var post model.Post
+	// fmt.Println("test wkwkwkwkkwkwkkwkwkwk")
 	err := r.db.
+		Joins("JOIN users ON users.id = posts.created_by").
 		Preload("Creator").
 		Preload("Tags").
-		Where("slug = ? AND username = ?", slug, username).
+		Where("posts.slug = ?", slug).Where("users.username = ?", username).
 		First(&post).
 		Error
 

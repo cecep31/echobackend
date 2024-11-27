@@ -55,6 +55,25 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	})
 }
 
+func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
+	slug := c.Param("slug")
+	username := c.Param("username")
+	post, err := h.userService.GetPostBySlugAndUsername(slug, username)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error":   err.Error(),
+			"message": "Failed to get post",
+			"success": false,
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"data":    post,
+		"message": "Successfully retrieved post",
+		"success": true,
+	})
+}
+
 func (h *PostHandler) GetPost(c echo.Context) error {
 	id := c.Param("id")
 	post, err := h.userService.GetPostByID(id)

@@ -9,6 +9,7 @@ type PostService interface {
 	GetPosts(limit int, offset int) ([]*model.PostResponse, int64, error)
 	GetPostsRandom(limit int) ([]*model.PostResponse, error)
 	GetPostByID(id string) (*model.PostResponse, error)
+	GetPostBySlugAndUsername(slug string, username string) (*model.PostResponse, error)
 	DeletePostByID(id string) error
 }
 
@@ -18,6 +19,15 @@ type postService struct {
 
 func NewPostService(postRepo repository.PostRepository) PostService {
 	return &postService{postRepo: postRepo}
+}
+
+func (s *postService) GetPostBySlugAndUsername(slug string, username string) (*model.PostResponse, error) {
+	post, err := s.postRepo.GetPostBySlugAndUsername(slug, username)
+	if err != nil {
+		return nil, err
+	}
+
+	return post.ToResponse(), nil
 }
 
 func (s *postService) DeletePostByID(id string) error {
