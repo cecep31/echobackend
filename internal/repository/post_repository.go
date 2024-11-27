@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"echobackend/internal/domain"
 	"echobackend/internal/model"
 
 	"gorm.io/gorm"
@@ -75,7 +74,7 @@ func (r *postRepository) GetPostsRandom(limit int) ([]*model.Post, error) {
 
 func (r *postRepository) GetTotalPosts() (int64, error) {
 	var count int64
-	err := r.db.Model(&domain.Post{}).Count(&count).Error
+	err := r.db.Model(&model.Post{}).Count(&count).Error
 
 	return count, err
 }
