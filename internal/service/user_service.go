@@ -9,9 +9,9 @@ import (
 type UserService interface {
 	// Create(ctx context.Context, user *domain.User) (*domain.UserResponse, error)
 	GetByID(ctx context.Context, id string) (*model.UserResponse, error)
-	GetUsers(ctx context.Context) ([]*model.UserResponse, error)
+	GetUsers(ctx context.Context, offset int, limit int) ([]*model.UserResponse, int64, error)
 	// Update(ctx context.Context, user *domain.User) (*domain.UserResponse, error)
-	// Delete(ctx context.Context, id uint) error
+	Delete(ctx context.Context, id string) error
 }
 
 type userService struct {
@@ -30,10 +30,10 @@ func (s *userService) GetByID(ctx context.Context, id string) (*model.UserRespon
 	return user.ToResponse(), nil
 }
 
-func (s *userService) GetUsers(ctx context.Context) ([]*model.UserResponse, error) {
-	users, err := s.userRepo.GetUsers(ctx)
+func (s *userService) GetUsers(ctx context.Context, offset int, limit int) ([]*model.UserResponse, int64, error) {
+	users, total, err := s.userRepo.GetUsers(ctx, offset, limit)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var userResponses []*model.UserResponse
@@ -41,5 +41,9 @@ func (s *userService) GetUsers(ctx context.Context) ([]*model.UserResponse, erro
 		userResponses = append(userResponses, user.ToResponse())
 	}
 
-	return userResponses, nil
+	return userResponses, total, nil
+}
+
+func (s *userService) Delete(ctx context.Context, id string) error {
+	return s.userRepo.SoftDeleteByID(ctx, id)
 }

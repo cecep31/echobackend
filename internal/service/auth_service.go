@@ -72,9 +72,10 @@ func (s *authService) Login(email, password string) (string, *model.User, error)
 
 	// Generate JWT token
 	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"email":   user.Email,
-		"exp":     time.Now().Add(time.Hour * 48).Unix(), // Token expires after 48 hours
+		"user_id":      user.ID,
+		"email":        user.Email,
+		"isSuperadmin": user.IsSuperAdmin,
+		"exp":          time.Now().Add(time.Hour * 48).Unix(), // Token expires after 48 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 

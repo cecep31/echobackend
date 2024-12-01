@@ -7,9 +7,8 @@ import (
 )
 
 type PostRepository interface {
-	GetPosts(limit int, offset int) ([]*model.Post, error)
+	GetPosts(limit int, offset int) ([]*model.Post, int64, error)
 	GetPostsRandom(limit int) ([]*model.Post, error)
-	GetTotalPosts() (int64, error)
 	GetPostByID(id string) (*model.Post, error)
 	GetPostBySlugAndUsername(slug string, username string) (*model.Post, error)
 	DeletePostByID(id string) error
@@ -27,8 +26,14 @@ func (r *postRepository) DeletePostByID(id string) error {
 	return r.db.Where("id = ?", id).Delete(&model.Post{}).Error
 }
 
-func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, error) {
+func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, int64, error) {
 	var posts []*model.Post
+
+	var count int64
+	if errcount := r.db.Model(&model.Post{}).Count(&count).Error; errcount != nil {
+		return nil, 0, errcount
+	}
+
 	err := r.db.
 		Preload("Creator").
 		Preload("Tags").
@@ -38,7 +43,7 @@ func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, error) 
 		Find(&posts).
 		Error
 
-	return posts, err
+	return posts, count, err
 }
 
 func (r *postRepository) GetPostBySlugAndUsername(slug string, username string) (*model.Post, error) {
@@ -77,11 +82,4 @@ func (r *postRepository) GetPostsRandom(limit int) ([]*model.Post, error) {
 		Error
 
 	return randomPosts, err
-}
-
-func (r *postRepository) GetTotalPosts() (int64, error) {
-	var count int64
-	err := r.db.Model(&model.Post{}).Count(&count).Error
-
-	return count, err
 }

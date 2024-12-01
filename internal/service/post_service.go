@@ -44,15 +44,7 @@ func (s *postService) GetPostByID(id string) (*model.PostResponse, error) {
 }
 
 func (s *postService) GetPosts(limit int, offset int) ([]*model.PostResponse, int64, error) {
-	var total int64
-	var err error
-
-	total, err = s.postRepo.GetTotalPosts()
-	if err != nil {
-		return nil, 0, err
-	}
-
-	posts, err := s.postRepo.GetPosts(limit, offset)
+	posts, total, err := s.postRepo.GetPosts(limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}

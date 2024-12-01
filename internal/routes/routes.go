@@ -46,6 +46,7 @@ func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 	{
 		users.GET("/:id", r.userHandler.GetByID)
 		users.GET("", r.userHandler.GetUsers)
+		users.DELETE("/:id", r.userHandler.DeleteUser, r.authMiddleware.AuthAdmin())
 	}
 }
 

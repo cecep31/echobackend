@@ -3,6 +3,7 @@ package handler
 import (
 	"echobackend/internal/service"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -34,7 +35,15 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 }
 
 func (h *UserHandler) GetUsers(c echo.Context) error {
-	users, err := h.userService.GetUsers(c.Request().Context())
+	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	if err != nil {
+		offset = 0
+	}
+	limit, err := strconv.Atoi(c.QueryParam("limit"))
+	if err != nil {
+		limit = 10
+	}
+	users, total, err := h.userService.GetUsers(c.Request().Context(), offset, limit)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"data":    nil,
@@ -47,6 +56,27 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 		"messsage": "Success",
 		"success":  true,
 		"data":     users,
-		"error":    nil,
+		"metadata": echo.Map{
+			"totalItems": total,
+		},
+		"error": nil,
+	})
+}
+
+// delete user
+func (h *UserHandler) DeleteUser(c echo.Context) error {
+	id := c.Param("id")
+	err := h.userService.Delete(c.Request().Context(), id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error":   err.Error(),
+			"message": "Failed to delete user",
+			"success": false,
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "Successfully deleted user",
+		"success": true,
 	})
 }
