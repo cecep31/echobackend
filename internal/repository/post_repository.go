@@ -8,6 +8,7 @@ import (
 
 type PostRepository interface {
 	GetPosts(limit int, offset int) ([]*model.Post, int64, error)
+	GetPostByUsername(username string, offset int, limit int) ([]*model.Post, int64, error)
 	GetPostsRandom(limit int) ([]*model.Post, error)
 	GetPostByID(id string) (*model.Post, error)
 	GetPostBySlugAndUsername(slug string, username string) (*model.Post, error)
@@ -20,6 +21,30 @@ type postRepository struct {
 
 func NewPostRepository(db *gorm.DB) PostRepository {
 	return &postRepository{db: db}
+}
+
+func (r *postRepository) GetPostByUsername(username string, offset int, limit int) ([]*model.Post, int64, error) {
+
+	var posts []*model.Post
+	var count int64
+
+	if errcount := r.db.Model(&model.Post{}).
+		Joins("JOIN users ON users.id = posts.created_by").
+		Where("users.username = ?", username).
+		Count(&count).Error; errcount != nil {
+		return nil, 0, errcount
+	}
+
+	err := r.db.
+		Joins("JOIN users ON users.id = posts.created_by").
+		Preload("Creator").
+		Preload("Tags").
+		Where("users.username = ?", username).
+		Offset(offset).
+		Limit(limit).
+		Find(&posts).
+		Error
+	return posts, count, err
 }
 
 func (r *postRepository) DeletePostByID(id string) error {

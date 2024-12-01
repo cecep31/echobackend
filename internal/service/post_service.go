@@ -7,6 +7,7 @@ import (
 
 type PostService interface {
 	GetPosts(limit int, offset int) ([]*model.PostResponse, int64, error)
+	GetPostsByUsername(username string, offset int, limit int) ([]*model.PostResponse, int64, error)
 	GetPostsRandom(limit int) ([]*model.PostResponse, error)
 	GetPostByID(id string) (*model.PostResponse, error)
 	GetPostBySlugAndUsername(slug string, username string) (*model.PostResponse, error)
@@ -19,6 +20,21 @@ type postService struct {
 
 func NewPostService(postRepo repository.PostRepository) PostService {
 	return &postService{postRepo: postRepo}
+}
+
+func (s *postService) GetPostsByUsername(username string, offset int, limit int) ([]*model.PostResponse, int64, error) {
+	posts, total, err := s.postRepo.GetPostByUsername(username, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var postsResponse []*model.PostResponse
+
+	for _, post := range posts {
+		postsResponse = append(postsResponse, post.ToResponse())
+	}
+
+	return postsResponse, total, nil
 }
 
 func (s *postService) GetPostBySlugAndUsername(slug string, username string) (*model.PostResponse, error) {
