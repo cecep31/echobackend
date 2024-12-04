@@ -1,6 +1,6 @@
 module echobackend
 
-go 1.22.0
+go 1.23
 
 require (
 	github.com/go-playground/validator/v10 v10.23.0
@@ -10,7 +10,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	golang.org/x/crypto v0.29.0
 	golang.org/x/time v0.8.0
-	gorm.io/driver/postgres v1.5.10
+	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )
 

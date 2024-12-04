@@ -18,7 +18,7 @@ type Post struct {
 	Tags      []Tag          `json:"tags" gorm:"many2many:posts_to_tags"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
 }
 
 // TableName specifies the table name for the Post model
@@ -37,6 +37,7 @@ type PostResponse struct {
 	Tags      []Tag        `json:"tags"`
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt time.Time    `json:"updated_at"`
+	DeletedAt *time.Time   `json:"deleted_at,omitempty"`
 }
 
 // ToResponse converts a Post model to a PostResponse
@@ -51,5 +52,6 @@ func (p *Post) ToResponse() *PostResponse {
 		Tags:      p.Tags,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
+		DeletedAt: &p.DeletedAt.Time,
 	}
 }

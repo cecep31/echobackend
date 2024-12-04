@@ -27,15 +27,16 @@ func (User) TableName() string {
 
 // UserResponse represents the user data that can be safely sent to clients
 type UserResponse struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	Name         string    `json:"name"`
-	Username     string    `json:"username"`
-	IsSuperAdmin bool      `json:"is_super_admin"`
-	FirstName    string    `json:"first_name"`
-	LastName     string    `json:"last_name"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID           string     `json:"id"`
+	Email        string     `json:"email"`
+	Name         string     `json:"name"`
+	Username     string     `json:"username"`
+	IsSuperAdmin bool       `json:"is_super_admin"`
+	FirstName    string     `json:"first_name"`
+	LastName     string     `json:"last_name"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 }
 
 // ToResponse converts a User model to a UserResponse
@@ -50,5 +51,6 @@ func (u *User) ToResponse() *UserResponse {
 		Username:     u.Username,
 		CreatedAt:    u.CreatedAt,
 		UpdatedAt:    u.UpdatedAt,
+		DeletedAt:    &u.DeletedAt.Time,
 	}
 }
