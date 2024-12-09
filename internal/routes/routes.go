@@ -12,6 +12,7 @@ type Routes struct {
 	postHandler    *handler.PostHandler
 	authHandler    *handler.AuthHandler
 	authMiddleware *middleware.AuthMiddleware
+	tagHandler     *handler.TagHandler
 	// Add other handlers
 }
 
@@ -20,12 +21,14 @@ func NewRoutes(
 	postHandler *handler.PostHandler,
 	authHandler *handler.AuthHandler,
 	authMiddleware *middleware.AuthMiddleware,
+	tagHandler *handler.TagHandler,
 ) *Routes {
 	return &Routes{
 		userHandler:    userHandler,
 		postHandler:    postHandler,
 		authHandler:    authHandler,
 		authMiddleware: authMiddleware,
+		tagHandler:     tagHandler,
 	}
 }
 
@@ -39,6 +42,7 @@ func (r *Routes) setupV1Routes(v1 *echo.Group) {
 	r.setupUserRoutes(v1)
 	r.setupPostRoutes(v1)
 	r.setupAuthRoutes(v1)
+	r.setupTagRoutes(v1)
 }
 
 func (r *Routes) setupUserRoutes(v1 *echo.Group) {
@@ -67,5 +71,16 @@ func (r *Routes) setupAuthRoutes(v1 *echo.Group) {
 	{
 		auth.POST("/register", r.authHandler.Register)
 		auth.POST("/login", r.authHandler.Login)
+	}
+}
+
+func (r *Routes) setupTagRoutes(v1 *echo.Group) {
+	tags := v1.Group("/tags", r.authMiddleware.Auth())
+	{
+		tags.POST("", r.tagHandler.CreateTag)
+		tags.GET("", r.tagHandler.GetTags)
+		tags.GET("/:id", r.tagHandler.GetTagByID)
+		tags.PUT("/:id", r.tagHandler.UpdateTag)
+		tags.DELETE("/:id", r.tagHandler.DeleteTag)
 	}
 }

@@ -15,22 +15,24 @@ import (
 
 // Container holds all dependencies
 type Container struct {
+	once           sync.Once
 	config         *config.Config
 	db             *gorm.DB
+	userRepo       repository.UserRepository
 	postRepo       repository.PostRepository
 	postService    service.PostService
-	userRepo       repository.UserRepository
 	userService    service.UserService
 	authRepo       repository.AuthRepository
 	authService    service.AuthService
+	tagRepo        repository.TagRepository
+	tagService     service.TagService
 	routes         *routes.Routes
 	userHandler    *handler.UserHandler
 	postHandler    *handler.PostHandler
 	authHandler    *handler.AuthHandler
+	tagHandler     *handler.TagHandler
 	authMiddleware *middleware.AuthMiddleware
 	// Add other dependencies here
-
-	once sync.Once
 }
 
 // NewContainer creates a new dependency injection container
@@ -52,6 +54,13 @@ func (c *Container) UserHandler() *handler.UserHandler {
 	return c.userHandler
 }
 
+func (c *Container) TagHandler() *handler.TagHandler {
+	if c.tagHandler == nil {
+		c.tagHandler = handler.NewTagHandler(c.TagService())
+	}
+	return c.tagHandler
+}
+
 func (c *Container) PostHandler() *handler.PostHandler {
 	if c.postHandler == nil {
 		c.postHandler = handler.NewPostHandler(c.PostService())
@@ -68,7 +77,7 @@ func (c *Container) AuthHandler() *handler.AuthHandler {
 
 func (c *Container) Routes() *routes.Routes {
 	if c.routes == nil {
-		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler(), c.AuthMiddleware())
+		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler(), c.AuthMiddleware(), c.TagHandler())
 	}
 	return c.routes
 }
@@ -78,6 +87,20 @@ func (c *Container) UserServices() service.UserService {
 		c.userService = service.NewUserService(c.UserRepository())
 	}
 	return c.userService
+}
+
+func (c *Container) TagService() service.TagService {
+	if c.tagService == nil {
+		c.tagService = service.NewTagService(c.TagRepository())
+	}
+	return c.tagService
+}
+
+func (c *Container) TagRepository() repository.TagRepository {
+	if c.tagRepo == nil {
+		c.tagRepo = repository.NewTagRepository(c.Database())
+	}
+	return c.tagRepo
 }
 
 // Config returns the application configuration
