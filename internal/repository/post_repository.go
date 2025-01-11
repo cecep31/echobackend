@@ -12,6 +12,7 @@ type PostRepository interface {
 	GetPostsRandom(limit int) ([]*model.Post, error)
 	GetPostByID(id string) (*model.Post, error)
 	GetPostBySlugAndUsername(slug string, username string) (*model.Post, error)
+	GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.Post, int64, error)
 	DeletePostByID(id string) error
 }
 
@@ -107,4 +108,26 @@ func (r *postRepository) GetPostsRandom(limit int) ([]*model.Post, error) {
 		Error
 
 	return randomPosts, err
+}
+
+func (r *postRepository) GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.Post, int64, error) {
+	var posts []*model.Post
+	var count int64
+
+	if errcount := r.db.Model(&model.Post{}).
+		Where("created_by = ?", createdBy).
+		Count(&count).Error; errcount != nil {
+		return nil, 0, errcount
+	}
+
+	err := r.db.
+		Preload("Creator").
+		Preload("Tags").
+		Where("created_by = ?", createdBy).
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&posts).
+		Error
+	return posts, count, err
 }

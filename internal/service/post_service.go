@@ -11,6 +11,7 @@ type PostService interface {
 	GetPostsRandom(limit int) ([]*model.PostResponse, error)
 	GetPostByID(id string) (*model.PostResponse, error)
 	GetPostBySlugAndUsername(slug string, username string) (*model.PostResponse, error)
+	GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
 	DeletePostByID(id string) error
 }
 
@@ -89,4 +90,18 @@ func (s *postService) GetPostsRandom(limit int) ([]*model.PostResponse, error) {
 	}
 
 	return postsResponse, nil
+}
+
+func (s *postService) GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error) {
+	posts, total, err := s.postRepo.GetPostsByCreatedBy(createdBy, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var postsResponse []*model.PostResponse
+	for _, post := range posts {
+		postsResponse = append(postsResponse, post.ToResponse())
+	}
+
+	return postsResponse, total, nil
 }

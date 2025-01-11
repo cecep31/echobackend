@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 )
 
@@ -130,6 +131,47 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 		"data":    posts,
 		"message": "Successfully retrieved posts",
 		"success": true,
+	})
+}
+
+func (h *PostHandler) GetMyPosts(c echo.Context) error {
+	offset := c.QueryParam("offset")
+	limit := c.QueryParam("limit")
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		offsetInt = 0 // Default offset if not provided or invalid
+	}
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		limitInt = 10 // Default limit if not provided or invalid
+	}
+	claims := c.Get("user").(jwt.MapClaims)
+	userID := (claims)["user_id"].(string)
+	posts, total, err := h.userService.GetPostsByCreatedBy(userID, offsetInt, limitInt)
+
+	for _, post := range posts {
+		if len(post.Body) > 250 {
+			post.Body = post.Body[:250] + " ..."
+		}
+	}
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error":   err.Error(),
+			"message": "Failed to get posts",
+			"success": false,
+		})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"success": true,
+		"message": "success retrieving posts",
+		"data":    posts,
+		"metadata": echo.Map{
+			"totalItems": total,
+			"limit":      limitInt,
+			"offset":     offsetInt,
+		},
 	})
 }
 
