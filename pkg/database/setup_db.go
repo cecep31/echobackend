@@ -3,6 +3,7 @@ package database
 import (
 	"echobackend/config"
 	"fmt"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,22 +12,27 @@ import (
 
 func SetupDatabase(conf *config.Config) (*gorm.DB, error) {
 	dsn := conf.GetDSN()
-	var gormConfig gorm.Config
-	if "" == "" {
-		gormConfig = gorm.Config{} // Default to verbose logging
-	} else {
-		gormConfig = gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent), // Disable logging
-		}
+	gormConfig := gorm.Config{
+		Logger:      logger.Default.LogMode(logger.Warn),
+		PrepareStmt: true,
 	}
 
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  dsn,
-		PreferSimpleProtocol: true,
-	}), &gormConfig)
-
+	db, err := gorm.Open(postgres.Open(dsn), &gormConfig)
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to database: %w", err)
+		return nil, fmt.Errorf("failed to connect database: %w", err)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database instance: %w", err)
+	}
+
+	sqlDB.SetMaxOpenConns(20)
+	sqlDB.SetMaxIdleConns(5)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
+
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
 	return db, nil
