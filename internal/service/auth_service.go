@@ -23,43 +23,44 @@ type AuthService interface {
 }
 
 type authService struct {
-	repo      repository.AuthRepository
+	authRepo  repository.AuthRepository
 	jwtSecret []byte
 }
 
 func NewAuthService(repo repository.AuthRepository, config *config.Config) AuthService {
 	return &authService{
-		repo:      repo,
+		authRepo:  repo,
 		jwtSecret: []byte(config.JWT_SECRET),
 	}
 }
 
+// should be error not hanlde yet
 func (s *authService) Register(email, password string) (*model.User, error) {
-	// Check if user exists
-	if _, err := s.repo.FindUserByEmail(email); err == nil {
+	_, err := s.authRepo.FindUserByEmail(email)
+	if err == nil {
 		return nil, ErrUserExists
 	}
 
-	// Hash password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	user := &model.User{
+	newUser := &model.User{
 		Email:    email,
-		Password: string(hashedPassword),
+		Password: string(hashedPasswordBytes),
 	}
 
-	if err := s.repo.CreateUser(user); err != nil {
+	if err := s.authRepo.CreateUser(newUser); err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return newUser, nil
 }
 
 func (s *authService) Login(email, password string) (string, *model.User, error) {
-	user, err := s.repo.FindUserByEmail(email)
+
+	user, err := s.authRepo.FindUserByEmail(email)
 	if err != nil {
 		fmt.Println("email not found")
 		fmt.Println(err)
@@ -74,7 +75,7 @@ func (s *authService) Login(email, password string) (string, *model.User, error)
 	claims := jwt.MapClaims{
 		"user_id":      user.ID,
 		"email":        user.Email,
-		"isSuperadmin": user.IsSuperAdmin,
+		"isSuperAdmin": user.IsSuperAdmin,
 		"exp":          time.Now().Add(time.Hour * 48).Unix(), // Token expires after 48 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

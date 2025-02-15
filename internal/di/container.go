@@ -10,6 +10,8 @@ import (
 	"echobackend/pkg/database"
 	"sync"
 
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"gorm.io/gorm"
 )
 
@@ -32,12 +34,13 @@ type Container struct {
 	authHandler    *handler.AuthHandler
 	tagHandler     *handler.TagHandler
 	authMiddleware *middleware.AuthMiddleware
+	minioClient    *minio.Client
 	// Add other dependencies here
 }
 
 // NewContainer creates a new dependency injection container
-func NewContainer() *Container {
-	return &Container{}
+func NewContainer(config *config.Config) *Container {
+	return &Container{config: config}
 }
 
 func (c *Container) AuthMiddleware() *middleware.AuthMiddleware {
@@ -163,4 +166,25 @@ func (c *Container) AuthService() service.AuthService {
 		c.authService = service.NewAuthService(c.AuthRepository(), c.Config())
 	}
 	return c.authService
+}
+
+func (c *Container) MinioClient() (*minio.Client, error) {
+	if c.minioClient == nil {
+		endpoint := c.Config().GetMinioEndpoint()         // MinIO server endpoint
+		accessKeyID := c.Config().GetMinioAccessKey()     // Replace with your access key
+		secretAccessKey := c.Config().GetMinioSecretKey() // Replace with your secret key
+		useSSL := false                                   // Set to true if you're using HTTPS
+
+		// Initialize MinIO client
+		minioClient, err := minio.New(endpoint, &minio.Options{
+			Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
+			Secure: useSSL,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		c.minioClient = minioClient
+	}
+	return c.minioClient, nil
 }

@@ -10,6 +10,13 @@ type Config struct {
 	JWT_SECRET   string `mapstructure:"JWT_SECRET"`
 	DATABASE_URL string `mapstructure:"DATABASE_URL"`
 	PORT         string `mapstructure:"PORT"`
+
+	RATE_LIMITER_MAX int `mapstructure:"RATE_LIMITER_MAX"`
+	RATE_LIMITER_TTL int `mapstructure:"RATE_LIMITER_TTL"`
+
+	MINIO_ENDPOINT   string `mapstructure:"MINIO_ENDPOINT"`
+	MINIO_ACCESS_KEY string `mapstructure:"MINIO_ACCESS_KEY"`
+	MINIO_SECRET_KEY string `mapstructure:"MINIO_SECRET_KEY"`
 }
 
 // Load reads configuration from environment variables with defaults
@@ -45,6 +52,11 @@ func setDefaults() {
 	viper.SetDefault("PORT", "8080")
 	viper.SetDefault("JWT_SECRET", "your-secret-key")
 	viper.SetDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	viper.SetDefault("RATE_LIMITER_MAX", 1000)
+	viper.SetDefault("RATE_LIMITER_TTL", 60)
+	viper.SetDefault("MINIO_ENDPOINT", "localhost:9000")
+	viper.SetDefault("MINIO_ACCESS_KEY", "minioadmin")
+	viper.SetDefault("MINIO_SECRET_KEY", "minioadmin")
 }
 
 func (c *Config) validate() error {
@@ -68,4 +80,20 @@ func (c *Config) GetJWTSecret() string {
 
 func (c *Config) GetAppPort() string {
 	return c.PORT
+}
+
+func (c *Config) GetRateLimiterMax() int {
+	return c.RATE_LIMITER_MAX
+}
+
+func (c *Config) GetMinioEndpoint() string {
+	return c.MINIO_ENDPOINT
+}
+
+func (c *Config) GetMinioAccessKey() string {
+	return c.MINIO_ACCESS_KEY
+}
+
+func (c *Config) GetMinioSecretKey() string {
+	return c.MINIO_SECRET_KEY
 }

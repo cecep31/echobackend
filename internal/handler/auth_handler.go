@@ -86,8 +86,8 @@ func (h *AuthHandler) Register(c echo.Context) error {
 }
 
 func (h *AuthHandler) Login(c echo.Context) error {
-	var req LoginRequest
-	if err := c.Bind(&req); err != nil {
+	var loginReq LoginRequest
+	if err := c.Bind(&loginReq); err != nil {
 		return c.JSON(http.StatusBadRequest, Response{
 			Success: false,
 			Message: "Invalid request format",
@@ -95,7 +95,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		})
 	}
 
-	if err := c.Validate(req); err != nil {
+	if err := c.Validate(loginReq); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			return c.JSON(http.StatusBadRequest, Response{
 				Success: false,
@@ -110,7 +110,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		})
 	}
 
-	token, user, err := h.authService.Login(req.Email, req.Password)
+	token, user, err := h.authService.Login(loginReq.Email, loginReq.Password)
 	if err == service.ErrInvalidCredentials {
 		return c.JSON(http.StatusUnauthorized, Response{
 			Success: false,

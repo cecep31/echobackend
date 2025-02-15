@@ -1,6 +1,7 @@
 package main
 
 import (
+	"echobackend/config"
 	"echobackend/internal/di"
 	"echobackend/internal/middleware"
 	"echobackend/pkg/validator"
@@ -10,8 +11,15 @@ import (
 )
 
 func main() {
+
+	// load config
+	conf, errconf := config.Load()
+	if errconf != nil {
+		panic(errconf)
+	}
+
 	// Initialize dependency container
-	container := di.NewContainer()
+	container := di.NewContainer(conf)
 
 	// Initialize Echo
 	e := echo.New()
@@ -26,10 +34,8 @@ func main() {
 	e.GET("/", hellworld)
 
 	// Setup middleware
-	middleware.InitMiddleware(e)
+	middleware.InitMiddleware(e, conf)
 
-	// load config
-	conf := container.Config()
 	// Start server
 	port := conf.GetAppPort()
 	e.Logger.Fatal(e.Start(":" + port))

@@ -3,6 +3,8 @@ package middleware
 import (
 	"os"
 
+	"echobackend/config"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
@@ -10,7 +12,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-func InitMiddleware(e *echo.Echo) {
+func InitMiddleware(e *echo.Echo, config *config.Config) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	logger := log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 
@@ -32,7 +34,7 @@ func InitMiddleware(e *echo.Echo) {
 		},
 	}))
 
-	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(200))))
+	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(config.GetRateLimiterMax()))))
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Gzip())
 	e.Use(middleware.Recover())

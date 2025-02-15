@@ -111,7 +111,7 @@ func (h *PostHandler) DeletePost(c echo.Context) error {
 }
 
 func (h *PostHandler) GetPostsRandom(c echo.Context) error {
-	const limit = 6
+	limit := 6
 	posts, err := h.userService.GetPostsRandom(limit)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
