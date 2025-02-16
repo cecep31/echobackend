@@ -1,8 +1,11 @@
 package service
 
 import (
+	"context"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
+	"echobackend/internal/storage"
+	"mime/multipart"
 )
 
 type PostService interface {
@@ -13,14 +16,16 @@ type PostService interface {
 	GetPostBySlugAndUsername(slug string, username string) (*model.PostResponse, error)
 	GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
 	DeletePostByID(id string) error
+	UploadImagePosts(file *multipart.FileHeader) error
 }
 
 type postService struct {
-	postRepo repository.PostRepository
+	postRepo     repository.PostRepository
+	miniostorage *storage.MinioStorage
 }
 
-func NewPostService(postRepo repository.PostRepository) PostService {
-	return &postService{postRepo: postRepo}
+func NewPostService(postRepo repository.PostRepository, storageclient *storage.MinioStorage) PostService {
+	return &postService{postRepo: postRepo, miniostorage: storageclient}
 }
 
 func (s *postService) GetPostsByUsername(username string, offset int, limit int) ([]*model.PostResponse, int64, error) {
@@ -104,4 +109,14 @@ func (s *postService) GetPostsByCreatedBy(createdBy string, offset int, limit in
 	}
 
 	return postsResponse, total, nil
+}
+
+func (s *postService) UploadImagePosts(file *multipart.FileHeader) error {
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	return s.miniostorage.Save(context.Background(), file.Filename, src)
 }

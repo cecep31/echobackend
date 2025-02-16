@@ -10,11 +10,11 @@ import (
 )
 
 type PostHandler struct {
-	userService service.PostService
+	postService service.PostService
 }
 
 func NewPostHandler(postService service.PostService) *PostHandler {
-	return &PostHandler{userService: postService}
+	return &PostHandler{postService: postService}
 }
 
 func (h *PostHandler) GetPosts(c echo.Context) error {
@@ -29,7 +29,7 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	if err != nil {
 		offsetInt = 0 // Default offset if not provided or invalid
 	}
-	posts, total, err := h.userService.GetPosts(limitInt, offsetInt)
+	posts, total, err := h.postService.GetPosts(limitInt, offsetInt)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -59,7 +59,7 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 	slug := c.Param("slug")
 	username := c.Param("username")
-	post, err := h.userService.GetPostBySlugAndUsername(slug, username)
+	post, err := h.postService.GetPostBySlugAndUsername(slug, username)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -77,7 +77,7 @@ func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 
 func (h *PostHandler) GetPost(c echo.Context) error {
 	id := c.Param("id")
-	post, err := h.userService.GetPostByID(id)
+	post, err := h.postService.GetPostByID(id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -95,7 +95,7 @@ func (h *PostHandler) GetPost(c echo.Context) error {
 
 func (h *PostHandler) DeletePost(c echo.Context) error {
 	id := c.Param("id")
-	err := h.userService.DeletePostByID(id)
+	err := h.postService.DeletePostByID(id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -112,7 +112,7 @@ func (h *PostHandler) DeletePost(c echo.Context) error {
 
 func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	limit := 6
-	posts, err := h.userService.GetPostsRandom(limit)
+	posts, err := h.postService.GetPostsRandom(limit)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -147,7 +147,7 @@ func (h *PostHandler) GetMyPosts(c echo.Context) error {
 	}
 	claims := c.Get("user").(jwt.MapClaims)
 	userID := (claims)["user_id"].(string)
-	posts, total, err := h.userService.GetPostsByCreatedBy(userID, offsetInt, limitInt)
+	posts, total, err := h.postService.GetPostsByCreatedBy(userID, offsetInt, limitInt)
 
 	for _, post := range posts {
 		if len(post.Body) > 250 {
@@ -187,7 +187,7 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 	if err != nil {
 		limitInt = 10 // Default limit if not provided or invalid
 	}
-	posts, total, err := h.userService.GetPostsByUsername(username, offsetInt, limitInt)
+	posts, total, err := h.postService.GetPostsByUsername(username, offsetInt, limitInt)
 
 	for _, post := range posts {
 		if len(post.Body) > 250 {
@@ -212,5 +212,41 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 			"limit":      limitInt,
 			"offset":     offsetInt,
 		},
+	})
+}
+
+func (h *PostHandler) UploadImagePosts(c echo.Context) error {
+	file, err := c.FormFile("image")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"success": false,
+			"message": "Failed to upload image",
+			"data":    nil,
+			"error":   err.Error(),
+		})
+	}
+
+	if file == nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"success": false,
+			"message": "No file uploaded",
+			"data":    nil,
+			"error":   nil,
+		})
+	}
+
+	if err := h.postService.UploadImagePosts(file); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"success": false,
+			"message": "Failed to upload image",
+			"data":    nil,
+			"error":   err.Error(),
+		})
+	}
+	return c.JSON(http.StatusOK, echo.Map{
+		"success": true,
+		"message": "success uploading image",
+		"data":    nil,
+		"error":   nil,
 	})
 }

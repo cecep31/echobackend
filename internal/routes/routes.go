@@ -64,6 +64,7 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 		posts.GET("/:id", r.postHandler.GetPost)
 		posts.GET("/mine", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
 		posts.GET("/username/:username", r.postHandler.GetPostsByUsername)
+		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
 	}
 }
 

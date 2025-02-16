@@ -2,9 +2,11 @@ package storage
 
 import (
 	"context"
+	"echobackend/config"
 	"io"
 
 	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 type MinioStorage struct {
@@ -12,10 +14,16 @@ type MinioStorage struct {
 	bucket string
 }
 
-func NewMinioStorage(client *minio.Client, bucket string) *MinioStorage {
+func NewMinioStorage(config *config.Config) *MinioStorage {
+	client, err := minio.New(config.GetMinioEndpoint(), &minio.Options{
+		Creds: credentials.NewStaticV4(config.GetMinioAccessKey(), config.GetMinioSecretKey(), ""),
+	})
+	if err != nil {
+		panic(err)
+	}
 	return &MinioStorage{
 		client: client,
-		bucket: bucket,
+		bucket: config.MINIO_BUCKET,
 	}
 }
 

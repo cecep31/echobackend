@@ -17,6 +17,8 @@ type Config struct {
 	MINIO_ENDPOINT   string `mapstructure:"MINIO_ENDPOINT"`
 	MINIO_ACCESS_KEY string `mapstructure:"MINIO_ACCESS_KEY"`
 	MINIO_SECRET_KEY string `mapstructure:"MINIO_SECRET_KEY"`
+	MINIO_BUCKET     string `mapstructure:"MINIO_BUCKET"`
+	MINIO_USE_SSL    bool   `mapstructure:"MINIO_USE_SSL"`
 }
 
 // Load reads configuration from environment variables with defaults
