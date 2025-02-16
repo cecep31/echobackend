@@ -43,8 +43,6 @@ func NewContainer(config *config.Config) *Container {
 }
 
 func (c *Container) AuthMiddleware() *middleware.AuthMiddleware {
-	c.Lock()
-	defer c.Unlock()
 	if c.authMiddleware == nil {
 		c.authMiddleware = middleware.NewAuthMiddleware(c.Config())
 	}
@@ -52,8 +50,6 @@ func (c *Container) AuthMiddleware() *middleware.AuthMiddleware {
 }
 
 func (c *Container) UserHandler() *handler.UserHandler {
-	c.Lock()
-	defer c.Unlock()
 	if c.userHandler == nil {
 		c.userHandler = handler.NewUserHandler(c.UserServices())
 	}
@@ -61,8 +57,6 @@ func (c *Container) UserHandler() *handler.UserHandler {
 }
 
 func (c *Container) TagHandler() *handler.TagHandler {
-	c.Lock()
-	defer c.Unlock()
 	if c.tagHandler == nil {
 		c.tagHandler = handler.NewTagHandler(c.TagService())
 	}
@@ -70,8 +64,6 @@ func (c *Container) TagHandler() *handler.TagHandler {
 }
 
 func (c *Container) PostHandler() *handler.PostHandler {
-	c.Lock()
-	defer c.Unlock()
 	if c.postHandler == nil {
 		c.postHandler = handler.NewPostHandler(c.PostService())
 	}
@@ -79,8 +71,7 @@ func (c *Container) PostHandler() *handler.PostHandler {
 }
 
 func (c *Container) AuthHandler() *handler.AuthHandler {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.authHandler == nil {
 		c.authHandler = handler.NewAuthHandler(c.AuthService())
 	}
@@ -88,8 +79,7 @@ func (c *Container) AuthHandler() *handler.AuthHandler {
 }
 
 func (c *Container) Routes() *routes.Routes {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.routes == nil {
 		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler(), c.AuthMiddleware(), c.TagHandler())
 	}
@@ -97,8 +87,7 @@ func (c *Container) Routes() *routes.Routes {
 }
 
 func (c *Container) UserServices() service.UserService {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.userService == nil {
 		c.userService = service.NewUserService(c.UserRepository())
 	}
@@ -106,8 +95,7 @@ func (c *Container) UserServices() service.UserService {
 }
 
 func (c *Container) TagService() service.TagService {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.tagService == nil {
 		c.tagService = service.NewTagService(c.TagRepository())
 	}
@@ -115,8 +103,7 @@ func (c *Container) TagService() service.TagService {
 }
 
 func (c *Container) TagRepository() repository.TagRepository {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.tagRepo == nil {
 		c.tagRepo = repository.NewTagRepository(c.Database())
 	}
@@ -125,8 +112,7 @@ func (c *Container) TagRepository() repository.TagRepository {
 
 // Config returns the application configuration
 func (c *Container) Config() *config.Config {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.config == nil {
 		conf, err := config.Load()
 		if err != nil {
@@ -139,8 +125,7 @@ func (c *Container) Config() *config.Config {
 
 // Database returns the database instance
 func (c *Container) Database() *gorm.DB {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.db == nil {
 		db, err := database.SetupDatabase(c.Config())
 		if err != nil {
@@ -153,8 +138,7 @@ func (c *Container) Database() *gorm.DB {
 
 // PostRepository returns the post repository instance
 func (c *Container) PostRepository() repository.PostRepository {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.postRepo == nil {
 		c.postRepo = repository.NewPostRepository(c.Database())
 	}
@@ -163,8 +147,7 @@ func (c *Container) PostRepository() repository.PostRepository {
 
 // PostService returns the post service instance
 func (c *Container) PostService() service.PostService {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.postService == nil {
 		c.postService = service.NewPostService(c.PostRepository(), c.MinioStorage())
 	}
@@ -173,8 +156,7 @@ func (c *Container) PostService() service.PostService {
 
 // UserRepository returns the user repository instance
 func (c *Container) UserRepository() repository.UserRepository {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.userRepo == nil {
 		c.userRepo = repository.NewUserRepository(c.Database())
 	}
@@ -182,8 +164,7 @@ func (c *Container) UserRepository() repository.UserRepository {
 }
 
 func (c *Container) AuthRepository() repository.AuthRepository {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.authRepo == nil {
 		c.authRepo = repository.NewAuthRepository(c.Database())
 	}
@@ -191,8 +172,7 @@ func (c *Container) AuthRepository() repository.AuthRepository {
 }
 
 func (c *Container) AuthService() service.AuthService {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.authService == nil {
 		c.authService = service.NewAuthService(c.AuthRepository(), c.Config())
 	}
@@ -200,8 +180,7 @@ func (c *Container) AuthService() service.AuthService {
 }
 
 func (c *Container) MinioStorage() *storage.MinioStorage {
-	c.Lock()
-	defer c.Unlock()
+
 	if c.miniostorage == nil {
 		c.miniostorage = storage.NewMinioStorage(c.Config())
 	}
