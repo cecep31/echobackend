@@ -27,30 +27,3 @@ func (Block) TableName() string {
 	return "blocks"
 }
 
-// BlockResponse represents a block with a simplified structure
-type BlockResponse struct {
-	ID        uuid.UUID  `json:"id"`
-	Type      string     `json:"type"`
-	Props     string     `json:"props"`
-	Content   string     `json:"content"`
-	ParentID  *uuid.UUID `json:"parent_id,omitempty"`
-	Position  float64    `json:"position"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
-}
-
-// ToResponse converts a Block model to a BlockResponse
-func (b *Block) ToResponse() *BlockResponse {
-	return &BlockResponse{
-		ID:        b.ID,
-		Type:      b.Type,
-		Props:     b.Props,
-		Content:   b.Content,
-		ParentID:  b.ParentID,
-		Position:  b.Position,
-		CreatedAt: b.CreatedAt,
-		UpdatedAt: b.UpdatedAt,
-		DeletedAt: &b.DeletedAt.Time,
-	}
-}

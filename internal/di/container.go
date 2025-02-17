@@ -23,15 +23,18 @@ type Container struct {
 	postRepo       repository.PostRepository
 	postService    service.PostService
 	userService    service.UserService
+	pageService    *service.PageService
 	authRepo       repository.AuthRepository
 	authService    service.AuthService
 	tagRepo        repository.TagRepository
+	pageRepo       *repository.PageRepository
 	tagService     service.TagService
 	routes         *routes.Routes
 	userHandler    *handler.UserHandler
 	postHandler    *handler.PostHandler
 	authHandler    *handler.AuthHandler
 	tagHandler     *handler.TagHandler
+	pageHandler    *handler.PageHandler
 	authMiddleware *middleware.AuthMiddleware
 	miniostorage   *storage.MinioStorage
 	// Add other dependencies here
@@ -81,7 +84,7 @@ func (c *Container) AuthHandler() *handler.AuthHandler {
 func (c *Container) Routes() *routes.Routes {
 
 	if c.routes == nil {
-		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler(), c.AuthMiddleware(), c.TagHandler())
+		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler(), c.AuthMiddleware(), c.TagHandler(), c.PageHandler())
 	}
 	return c.routes
 }
@@ -180,9 +183,26 @@ func (c *Container) AuthService() service.AuthService {
 }
 
 func (c *Container) MinioStorage() *storage.MinioStorage {
-
 	if c.miniostorage == nil {
 		c.miniostorage = storage.NewMinioStorage(c.Config())
 	}
 	return c.miniostorage
+}
+func (c *Container) PageService() *service.PageService {
+	if c.pageService == nil {
+		c.pageService = service.NewPageService(c.PageRepository())
+	}
+	return c.pageService
+}
+func (c *Container) PageRepository() *repository.PageRepository {
+	if c.pageRepo == nil {
+		c.pageRepo = repository.NewPageRepository(c.Database())
+	}
+	return c.pageRepo
+}
+func (c *Container) PageHandler() *handler.PageHandler {
+	if c.pageHandler == nil {
+		c.pageHandler = handler.NewPageHandler(c.PageService())
+	}
+	return c.pageHandler
 }

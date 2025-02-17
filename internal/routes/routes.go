@@ -13,7 +13,7 @@ type Routes struct {
 	authHandler    *handler.AuthHandler
 	authMiddleware *middleware.AuthMiddleware
 	tagHandler     *handler.TagHandler
-	// Add other handlers
+	pageHandler    *handler.PageHandler
 }
 
 func NewRoutes(
@@ -22,6 +22,7 @@ func NewRoutes(
 	authHandler *handler.AuthHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	tagHandler *handler.TagHandler,
+	pageHandler *handler.PageHandler,
 ) *Routes {
 	return &Routes{
 		userHandler:    userHandler,
@@ -29,6 +30,7 @@ func NewRoutes(
 		authHandler:    authHandler,
 		authMiddleware: authMiddleware,
 		tagHandler:     tagHandler,
+		pageHandler:    pageHandler,
 	}
 }
 
@@ -43,6 +45,7 @@ func (r *Routes) setupV1Routes(v1 *echo.Group) {
 	r.setupPostRoutes(v1)
 	r.setupAuthRoutes(v1)
 	r.setupTagRoutes(v1)
+	r.setupPageRoutes(v1)
 }
 
 func (r *Routes) setupUserRoutes(v1 *echo.Group) {
@@ -73,6 +76,18 @@ func (r *Routes) setupAuthRoutes(v1 *echo.Group) {
 	{
 		auth.POST("/register", r.authHandler.Register)
 		auth.POST("/login", r.authHandler.Login)
+	}
+}
+
+func (r *Routes) setupPageRoutes(v1 *echo.Group) {
+	pages := v1.Group("/pages", r.authMiddleware.Auth())
+	{
+		pages.POST("", r.pageHandler.CreatePage)
+		pages.GET("/:id", r.pageHandler.GetPage)
+		pages.PUT("/:id", r.pageHandler.UpdatePage)
+		pages.DELETE("/:id", r.pageHandler.DeletePage)
+		pages.GET("/workspace/:workspace_id", r.pageHandler.GetWorkspacePages)
+		pages.GET("/children/:parent_id", r.pageHandler.GetChildPages)
 	}
 }
 

@@ -29,7 +29,7 @@ func SetupDatabase(conf *config.Config) (*gorm.DB, error) {
 
 	sqlDB.SetMaxOpenConns(20)
 	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(30 * time.Minute)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute) // Set the maximum connection lifetime to 30 minutes
 
 	if err := sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
