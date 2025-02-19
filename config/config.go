@@ -2,14 +2,18 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	JWT_SECRET   string `mapstructure:"JWT_SECRET"`
-	DATABASE_URL string `mapstructure:"DATABASE_URL"`
-	PORT         string `mapstructure:"PORT"`
+	JWT_SECRET      string        `mapstructure:"JWT_SECRET"`
+	DATABASE_URL    string        `mapstructure:"DATABASE_URL"`
+	MaxOpenConns    int           `mapstructure:"MAX_OPEN_CONNS"`
+	MaxIdleConns    int           `mapstructure:"MAX_IDLE_CONNS"`
+	ConnMaxLifetime time.Duration `mapstructure:"CONN_MAX_LIFETIME"`
+	PORT            string        `mapstructure:"PORT"`
 
 	RATE_LIMITER_MAX int `mapstructure:"RATE_LIMITER_MAX"`
 	RATE_LIMITER_TTL int `mapstructure:"RATE_LIMITER_TTL"`
@@ -54,11 +58,16 @@ func setDefaults() {
 	viper.SetDefault("PORT", "8080")
 	viper.SetDefault("JWT_SECRET", "your-secret-key")
 	viper.SetDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
+	viper.SetDefault("MAX_OPEN_CONNS", 20)
+	viper.SetDefault("MAX_IDLE_CONNS", 5)
+	viper.SetDefault("CONN_MAX_LIFETIME", 30*time.Minute)
 	viper.SetDefault("RATE_LIMITER_MAX", 1000)
 	viper.SetDefault("RATE_LIMITER_TTL", 60)
 	viper.SetDefault("MINIO_ENDPOINT", "localhost:9000")
 	viper.SetDefault("MINIO_ACCESS_KEY", "minioadmin")
 	viper.SetDefault("MINIO_SECRET_KEY", "minioadmin")
+	viper.SetDefault("MINIO_BUCKET", "minio-bucket")
+	viper.SetDefault("MINIO_USE_SSL", false)
 }
 
 func (c *Config) validate() error {
