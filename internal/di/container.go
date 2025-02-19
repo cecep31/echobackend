@@ -9,200 +9,58 @@ import (
 	"echobackend/internal/service"
 	"echobackend/internal/storage"
 	"echobackend/pkg/database"
-	"sync"
 
-	"gorm.io/gorm"
+	"go.uber.org/dig"
 )
 
-// Container holds all dependencies
-type Container struct {
-	sync.Mutex
-	config         *config.Config
-	db             *gorm.DB
-	userRepo       repository.UserRepository
-	postRepo       repository.PostRepository
-	postService    service.PostService
-	userService    service.UserService
-	pageService    *service.PageService
-	authRepo       repository.AuthRepository
-	authService    service.AuthService
-	tagRepo        repository.TagRepository
-	pageRepo       *repository.PageRepository
-	tagService     service.TagService
-	routes         *routes.Routes
-	userHandler    *handler.UserHandler
-	postHandler    *handler.PostHandler
-	authHandler    *handler.AuthHandler
-	tagHandler     *handler.TagHandler
-	pageHandler    *handler.PageHandler
-	authMiddleware *middleware.AuthMiddleware
-	miniostorage   *storage.MinioStorage
-	// Add other dependencies here
+var container *dig.Container
+
+// BuildContainer initializes the dependency injection container
+func BuildContainer(configgure *config.Config) *dig.Container {
+	container = dig.New()
+
+	// Provide config
+	container.Provide(func() *config.Config {
+		return configgure
+	})
+
+	// Provide database
+	container.Provide(database.NewDatabase)
+
+	// Provide repositories
+	container.Provide(repository.NewUserRepository)
+	container.Provide(repository.NewPostRepository)
+	container.Provide(repository.NewAuthRepository)
+	container.Provide(repository.NewTagRepository)
+	container.Provide(repository.NewPageRepository)
+
+	// Provide services
+	container.Provide(service.NewUserService)
+	container.Provide(service.NewPostService)
+	container.Provide(service.NewAuthService)
+	container.Provide(service.NewTagService)
+	container.Provide(service.NewPageService)
+
+	// Provide storage
+	container.Provide(storage.NewMinioStorage)
+
+	// Provide middleware
+	container.Provide(middleware.NewAuthMiddleware)
+
+	// Provide handlers
+	container.Provide(handler.NewUserHandler)
+	container.Provide(handler.NewPostHandler)
+	container.Provide(handler.NewAuthHandler)
+	container.Provide(handler.NewTagHandler)
+	container.Provide(handler.NewPageHandler)
+
+	// Provide routes
+	container.Provide(routes.NewRoutes)
+
+	return container
 }
 
-// NewContainer creates a new dependency injection container
-func NewContainer(config *config.Config) *Container {
-	return &Container{config: config}
-}
-
-func (c *Container) AuthMiddleware() *middleware.AuthMiddleware {
-	if c.authMiddleware == nil {
-		c.authMiddleware = middleware.NewAuthMiddleware(c.Config())
-	}
-	return c.authMiddleware
-}
-
-func (c *Container) UserHandler() *handler.UserHandler {
-	if c.userHandler == nil {
-		c.userHandler = handler.NewUserHandler(c.UserServices())
-	}
-	return c.userHandler
-}
-
-func (c *Container) TagHandler() *handler.TagHandler {
-	if c.tagHandler == nil {
-		c.tagHandler = handler.NewTagHandler(c.TagService())
-	}
-	return c.tagHandler
-}
-
-func (c *Container) PostHandler() *handler.PostHandler {
-	if c.postHandler == nil {
-		c.postHandler = handler.NewPostHandler(c.PostService())
-	}
-	return c.postHandler
-}
-
-func (c *Container) AuthHandler() *handler.AuthHandler {
-
-	if c.authHandler == nil {
-		c.authHandler = handler.NewAuthHandler(c.AuthService())
-	}
-	return c.authHandler
-}
-
-func (c *Container) Routes() *routes.Routes {
-
-	if c.routes == nil {
-		c.routes = routes.NewRoutes(c.UserHandler(), c.PostHandler(), c.AuthHandler(), c.AuthMiddleware(), c.TagHandler(), c.PageHandler())
-	}
-	return c.routes
-}
-
-func (c *Container) UserServices() service.UserService {
-
-	if c.userService == nil {
-		c.userService = service.NewUserService(c.UserRepository())
-	}
-	return c.userService
-}
-
-func (c *Container) TagService() service.TagService {
-
-	if c.tagService == nil {
-		c.tagService = service.NewTagService(c.TagRepository())
-	}
-	return c.tagService
-}
-
-func (c *Container) TagRepository() repository.TagRepository {
-
-	if c.tagRepo == nil {
-		c.tagRepo = repository.NewTagRepository(c.Database())
-	}
-	return c.tagRepo
-}
-
-// Config returns the application configuration
-func (c *Container) Config() *config.Config {
-
-	if c.config == nil {
-		conf, err := config.Load()
-		if err != nil {
-			panic(err)
-		}
-		c.config = conf
-	}
-	return c.config
-}
-
-// Database returns the database instance
-func (c *Container) Database() *gorm.DB {
-
-	if c.db == nil {
-		db, err := database.SetupDatabase(c.Config())
-		if err != nil {
-			panic(err)
-		}
-		c.db = db
-	}
-	return c.db
-}
-
-// PostRepository returns the post repository instance
-func (c *Container) PostRepository() repository.PostRepository {
-
-	if c.postRepo == nil {
-		c.postRepo = repository.NewPostRepository(c.Database())
-	}
-	return c.postRepo
-}
-
-// PostService returns the post service instance
-func (c *Container) PostService() service.PostService {
-
-	if c.postService == nil {
-		c.postService = service.NewPostService(c.PostRepository(), c.MinioStorage())
-	}
-	return c.postService
-}
-
-// UserRepository returns the user repository instance
-func (c *Container) UserRepository() repository.UserRepository {
-
-	if c.userRepo == nil {
-		c.userRepo = repository.NewUserRepository(c.Database())
-	}
-	return c.userRepo
-}
-
-func (c *Container) AuthRepository() repository.AuthRepository {
-
-	if c.authRepo == nil {
-		c.authRepo = repository.NewAuthRepository(c.Database())
-	}
-	return c.authRepo
-}
-
-func (c *Container) AuthService() service.AuthService {
-
-	if c.authService == nil {
-		c.authService = service.NewAuthService(c.AuthRepository(), c.Config())
-	}
-	return c.authService
-}
-
-func (c *Container) MinioStorage() *storage.MinioStorage {
-	if c.miniostorage == nil {
-		c.miniostorage = storage.NewMinioStorage(c.Config())
-	}
-	return c.miniostorage
-}
-func (c *Container) PageService() *service.PageService {
-	if c.pageService == nil {
-		c.pageService = service.NewPageService(c.PageRepository())
-	}
-	return c.pageService
-}
-func (c *Container) PageRepository() *repository.PageRepository {
-	if c.pageRepo == nil {
-		c.pageRepo = repository.NewPageRepository(c.Database())
-	}
-	return c.pageRepo
-}
-func (c *Container) PageHandler() *handler.PageHandler {
-	if c.pageHandler == nil {
-		c.pageHandler = handler.NewPageHandler(c.PageService())
-	}
-	return c.pageHandler
+// GetContainer returns the dig container instance
+func GetContainer() *dig.Container {
+	return container
 }

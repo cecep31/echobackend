@@ -4,6 +4,7 @@ import (
 	"echobackend/config"
 	"echobackend/internal/di"
 	"echobackend/internal/middleware"
+	"echobackend/internal/routes"
 	"echobackend/pkg/validator"
 	"net/http"
 
@@ -11,7 +12,6 @@ import (
 )
 
 func main() {
-
 	// load config
 	conf, errconf := config.Load()
 	if errconf != nil {
@@ -19,7 +19,7 @@ func main() {
 	}
 
 	// Initialize dependency container
-	container := di.NewContainer(conf)
+	container := di.BuildContainer(conf)
 
 	// Initialize Echo
 	e := echo.New()
@@ -27,9 +27,14 @@ func main() {
 	// Set custom validator
 	e.Validator = validator.NewValidator()
 
-	// Initialize handlers with dependencies
-	routes := container.Routes()
-	routes.Setup(e)
+	// Initialize routes with dependencies
+	var newroutes *routes.Routes
+	if err := container.Invoke(func(r *routes.Routes) {
+		newroutes = r
+	}); err != nil {
+		panic(err)
+	}
+	newroutes.Setup(e)
 
 	e.GET("/", hellworld)
 

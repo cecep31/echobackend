@@ -10,14 +10,14 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func SetupDatabase(conf *config.Config) (*gorm.DB, error) {
-	dsn := conf.GetDSN()
+// NewDatabase creates a new database connection using the provided configuration
+func NewDatabase(config *config.Config) (*gorm.DB, error) {
 	gormConfig := gorm.Config{
-		Logger:      logger.Default.LogMode(logger.Warn),
+		Logger:      logger.Default.LogMode(logger.Silent),
 		PrepareStmt: true,
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gormConfig)
+	db, err := gorm.Open(postgres.Open(config.GetDSN()), &gormConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect database: %w", err)
 	}
@@ -29,7 +29,7 @@ func SetupDatabase(conf *config.Config) (*gorm.DB, error) {
 
 	sqlDB.SetMaxOpenConns(20)
 	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(30 * time.Minute) // Set the maximum connection lifetime to 30 minutes
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 
 	if err := sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("database connection failed: %w", err)
