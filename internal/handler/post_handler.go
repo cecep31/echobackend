@@ -111,8 +111,12 @@ func (h *PostHandler) DeletePost(c echo.Context) error {
 }
 
 func (h *PostHandler) GetPostsRandom(c echo.Context) error {
-	limit := 6
-	posts, err := h.postService.GetPostsRandom(limit)
+	limit := c.QueryParam("limit") // Default limit if not provided or invalid
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		limitInt = 6 // Default limit if not provided or invalid
+	}
+	posts, err := h.postService.GetPostsRandom(limitInt)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
