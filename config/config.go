@@ -8,16 +8,18 @@ import (
 )
 
 type Config struct {
-	JWT_SECRET      string        `mapstructure:"JWT_SECRET"`
-	DATABASE_URL    string        `mapstructure:"DATABASE_URL"`
+	Port string `mapstructure:"PORT"`
+	// JWT configuration
+	JWT_SECRET string `mapstructure:"JWT_SECRET"`
+	// Database configuration
+	Database_URL    string        `mapstructure:"DATABASE_URL"`
 	MaxOpenConns    int           `mapstructure:"MAX_OPEN_CONNS"`
 	MaxIdleConns    int           `mapstructure:"MAX_IDLE_CONNS"`
 	ConnMaxLifetime time.Duration `mapstructure:"CONN_MAX_LIFETIME"`
-	PORT            string        `mapstructure:"PORT"`
-
+	// Rate limiter configuration
 	RATE_LIMITER_MAX int `mapstructure:"RATE_LIMITER_MAX"`
 	RATE_LIMITER_TTL int `mapstructure:"RATE_LIMITER_TTL"`
-
+	// Minio configuration
 	MINIO_ENDPOINT   string `mapstructure:"MINIO_ENDPOINT"`
 	MINIO_ACCESS_KEY string `mapstructure:"MINIO_ACCESS_KEY"`
 	MINIO_SECRET_KEY string `mapstructure:"MINIO_SECRET_KEY"`
@@ -74,7 +76,7 @@ func (c *Config) validate() error {
 	if c.JWT_SECRET == "" {
 		return fmt.Errorf("JWT_SECRET is required")
 	}
-	if c.DATABASE_URL == "" {
+	if c.Database_URL == "" {
 		return fmt.Errorf("DATABASE_URL is required")
 	}
 	return nil
@@ -82,7 +84,7 @@ func (c *Config) validate() error {
 
 // GetDSN returns the database connection string
 func (c *Config) GetDSN() string {
-	return c.DATABASE_URL
+	return c.Database_URL
 }
 
 func (c *Config) GetJWTSecret() string {
@@ -90,7 +92,7 @@ func (c *Config) GetJWTSecret() string {
 }
 
 func (c *Config) GetAppPort() string {
-	return c.PORT
+	return c.Port
 }
 
 func (c *Config) GetRateLimiterMax() int {
