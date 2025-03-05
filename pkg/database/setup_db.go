@@ -2,7 +2,6 @@ package database
 
 import (
 	"echobackend/config"
-	"fmt"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -10,7 +9,7 @@ import (
 )
 
 // NewDatabase creates a new database connection using the provided configuration
-func NewDatabase(config *config.Config) (*gorm.DB, error) {
+func NewDatabase(config *config.Config) *gorm.DB {
 	gormConfig := gorm.Config{
 		Logger:      logger.Default.LogMode(logger.Silent),
 		PrepareStmt: true,
@@ -18,12 +17,14 @@ func NewDatabase(config *config.Config) (*gorm.DB, error) {
 
 	db, err := gorm.Open(postgres.Open(config.GetDSN()), &gormConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect database: %w", err)
+		panic(err)
+		// return nil, fmt.Errorf("failed to connect database: %w", err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database instance: %w", err)
+		panic(err)
+		// return nil, fmt.Errorf("failed to get database instance: %w", err)
 	}
 
 	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
@@ -31,8 +32,9 @@ func NewDatabase(config *config.Config) (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(config.ConnMaxLifetime)
 
 	if err := sqlDB.Ping(); err != nil {
-		return nil, fmt.Errorf("database connection failed: %w", err)
+		panic(err)
+		// return nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
-	return db, nil
+	return db
 }
