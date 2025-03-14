@@ -15,16 +15,14 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		PrepareStmt: true,
 	}
 
-	db, err := gorm.Open(postgres.Open(config.GetDSN()), &gormConfig)
+	db, err := gorm.Open(postgres.Open(config.Database_URL), &gormConfig)
 	if err != nil {
 		panic(err)
-		// return nil, fmt.Errorf("failed to connect database: %w", err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
 		panic(err)
-		// return nil, fmt.Errorf("failed to get database instance: %w", err)
 	}
 
 	sqlDB.SetMaxOpenConns(config.MaxOpenConns)
@@ -33,7 +31,6 @@ func NewDatabase(config *config.Config) *gorm.DB {
 
 	if err := sqlDB.Ping(); err != nil {
 		panic(err)
-		// return nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
 	return db

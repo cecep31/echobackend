@@ -34,7 +34,9 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		},
 	}))
 
-	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(config.RATE_LIMITER_MAX))))
+	if config.RATE_LIMITER_MAX > 0 {
+		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(config.RATE_LIMITER_MAX))))
+	}
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Gzip())
 	e.Use(middleware.Recover())

@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	Port string `mapstructure:"PORT"`
+	App_Port string `mapstructure:"PORT"`
 	// JWT configuration
 	JWT_SECRET string `mapstructure:"JWT_SECRET"`
 	// Database configuration
@@ -63,7 +63,7 @@ func setDefaults() {
 	viper.SetDefault("MAX_OPEN_CONNS", 30)
 	viper.SetDefault("MAX_IDLE_CONNS", 5)
 	viper.SetDefault("CONN_MAX_LIFETIME", 30*time.Minute)
-	viper.SetDefault("RATE_LIMITER_MAX", 1000)
+	viper.SetDefault("RATE_LIMITER_MAX", 0)
 	viper.SetDefault("RATE_LIMITER_TTL", 60)
 	viper.SetDefault("MINIO_ENDPOINT", "localhost:9000")
 	viper.SetDefault("MINIO_ACCESS_KEY", "minioadmin")
@@ -80,33 +80,4 @@ func (c *Config) validate() error {
 		return fmt.Errorf("DATABASE_URL is required")
 	}
 	return nil
-}
-
-// GetDSN returns the database connection string
-func (c *Config) GetDSN() string {
-	return c.Database_URL
-}
-
-func (c *Config) GetJWTSecret() string {
-	return c.JWT_SECRET
-}
-
-func (c *Config) GetAppPort() string {
-	return c.Port
-}
-
-func (c *Config) GetRateLimiterMax() int {
-	return c.RATE_LIMITER_MAX
-}
-
-func (c *Config) GetMinioEndpoint() string {
-	return c.MINIO_ENDPOINT
-}
-
-func (c *Config) GetMinioAccessKey() string {
-	return c.MINIO_ACCESS_KEY
-}
-
-func (c *Config) GetMinioSecretKey() string {
-	return c.MINIO_SECRET_KEY
 }

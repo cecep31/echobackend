@@ -15,8 +15,8 @@ type MinioStorage struct {
 }
 
 func NewMinioStorage(config *config.Config) *MinioStorage {
-	client, err := minio.New(config.GetMinioEndpoint(), &minio.Options{
-		Creds: credentials.NewStaticV4(config.GetMinioAccessKey(), config.GetMinioSecretKey(), ""),
+	client, err := minio.New(config.MINIO_ENDPOINT, &minio.Options{
+		Creds: credentials.NewStaticV4(config.MINIO_ACCESS_KEY, config.MINIO_SECRET_KEY, ""),
 	})
 	if err != nil {
 		panic(err)

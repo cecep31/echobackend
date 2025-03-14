@@ -40,7 +40,7 @@ func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
-				return []byte(a.conf.GetJWTSecret()), nil
+				return []byte(a.conf.JWT_SECRET), nil
 			})
 
 			if err != nil {
