@@ -7,10 +7,8 @@ import (
 )
 
 type UserService interface {
-	// Create(ctx context.Context, user *domain.User) (*domain.UserResponse, error)
 	GetByID(ctx context.Context, id string) (*model.UserResponse, error)
 	GetUsers(ctx context.Context, offset int, limit int) ([]*model.UserResponse, int64, error)
-	// Update(ctx context.Context, user *domain.User) (*domain.UserResponse, error)
 	Delete(ctx context.Context, id string) error
 }
 

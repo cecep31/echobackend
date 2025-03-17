@@ -8,12 +8,13 @@ import (
 )
 
 type Routes struct {
-	userHandler    *handler.UserHandler
-	postHandler    *handler.PostHandler
-	authHandler    *handler.AuthHandler
-	authMiddleware *middleware.AuthMiddleware
-	tagHandler     *handler.TagHandler
-	pageHandler    *handler.PageHandler
+	userHandler      *handler.UserHandler
+	postHandler      *handler.PostHandler
+	authHandler      *handler.AuthHandler
+	authMiddleware   *middleware.AuthMiddleware
+	tagHandler       *handler.TagHandler
+	pageHandler      *handler.PageHandler
+	workspaceHandler *handler.WorkspaceHandler
 }
 
 func NewRoutes(
@@ -23,14 +24,16 @@ func NewRoutes(
 	authMiddleware *middleware.AuthMiddleware,
 	tagHandler *handler.TagHandler,
 	pageHandler *handler.PageHandler,
+	workspaceHandler *handler.WorkspaceHandler,
 ) *Routes {
 	return &Routes{
-		userHandler:    userHandler,
-		postHandler:    postHandler,
-		authHandler:    authHandler,
-		authMiddleware: authMiddleware,
-		tagHandler:     tagHandler,
-		pageHandler:    pageHandler,
+		userHandler:      userHandler,
+		postHandler:      postHandler,
+		authHandler:      authHandler,
+		authMiddleware:   authMiddleware,
+		tagHandler:       tagHandler,
+		pageHandler:      pageHandler,
+		workspaceHandler: workspaceHandler,
 	}
 }
 
@@ -46,6 +49,7 @@ func (r *Routes) setupV1Routes(v1 *echo.Group) {
 	r.setupAuthRoutes(v1)
 	r.setupTagRoutes(v1)
 	r.setupPageRoutes(v1)
+	r.setupWorkspaceRoutes(v1)
 }
 
 func (r *Routes) setupUserRoutes(v1 *echo.Group) {
@@ -99,5 +103,23 @@ func (r *Routes) setupTagRoutes(v1 *echo.Group) {
 		tags.GET("/:id", r.tagHandler.GetTagByID)
 		tags.PUT("/:id", r.tagHandler.UpdateTag)
 		tags.DELETE("/:id", r.tagHandler.DeleteTag)
+	}
+}
+
+func (r *Routes) setupWorkspaceRoutes(v1 *echo.Group) {
+	workspaces := v1.Group("/workspaces", r.authMiddleware.Auth())
+	{
+		workspaces.POST("", r.workspaceHandler.CreateWorkspace)
+		workspaces.GET("", r.workspaceHandler.GetAllWorkspaces)
+		workspaces.GET("/me", r.workspaceHandler.GetUserWorkspaces)
+		workspaces.GET("/:id", r.workspaceHandler.GetWorkspaceByID)
+		workspaces.PUT("/:id", r.workspaceHandler.UpdateWorkspace)
+		workspaces.DELETE("/:id", r.workspaceHandler.DeleteWorkspace)
+		
+		// Workspace members
+		workspaces.POST("/:id/members", r.workspaceHandler.AddMember)
+		workspaces.GET("/:id/members", r.workspaceHandler.GetMembers)
+		workspaces.PUT("/:id/members/:user_id", r.workspaceHandler.UpdateMemberRole)
+		workspaces.DELETE("/:id/members/:user_id", r.workspaceHandler.RemoveMember)
 	}
 }
