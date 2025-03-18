@@ -9,14 +9,14 @@ import (
 )
 
 type PostService interface {
-	GetPosts(limit int, offset int) ([]*model.PostResponse, int64, error)
-	GetPostsByUsername(username string, offset int, limit int) ([]*model.PostResponse, int64, error)
-	GetPostsRandom(limit int) ([]*model.PostResponse, error)
-	GetPostByID(id string) (*model.PostResponse, error)
-	GetPostBySlugAndUsername(slug string, username string) (*model.PostResponse, error)
-	GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
-	DeletePostByID(id string) error
-	UploadImagePosts(file *multipart.FileHeader) error
+	GetPosts(ctx context.Context, limit int, offset int) ([]*model.PostResponse, int64, error)
+	GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.PostResponse, int64, error)
+	GetPostsRandom(ctx context.Context, limit int) ([]*model.PostResponse, error)
+	GetPostByID(ctx context.Context, id string) (*model.PostResponse, error)
+	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error)
+	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
+	DeletePostByID(ctx context.Context, id string) error
+	UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error
 }
 
 type postService struct {
@@ -28,8 +28,8 @@ func NewPostService(postRepo repository.PostRepository, storageclient *storage.M
 	return &postService{postRepo: postRepo, miniostorage: storageclient}
 }
 
-func (s *postService) GetPostsByUsername(username string, offset int, limit int) ([]*model.PostResponse, int64, error) {
-	posts, total, err := s.postRepo.GetPostByUsername(username, offset, limit)
+func (s *postService) GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.PostResponse, int64, error) {
+	posts, total, err := s.postRepo.GetPostByUsername(ctx, username, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -43,8 +43,8 @@ func (s *postService) GetPostsByUsername(username string, offset int, limit int)
 	return postsResponse, total, nil
 }
 
-func (s *postService) GetPostBySlugAndUsername(slug string, username string) (*model.PostResponse, error) {
-	post, err := s.postRepo.GetPostBySlugAndUsername(slug, username)
+func (s *postService) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error) {
+	post, err := s.postRepo.GetPostBySlugAndUsername(ctx, slug, username)
 	if err != nil {
 		return nil, err
 	}
@@ -52,12 +52,12 @@ func (s *postService) GetPostBySlugAndUsername(slug string, username string) (*m
 	return post.ToResponse(), nil
 }
 
-func (s *postService) DeletePostByID(id string) error {
-	return s.postRepo.DeletePostByID(id)
+func (s *postService) DeletePostByID(ctx context.Context, id string) error {
+	return s.postRepo.DeletePostByID(ctx, id)
 }
 
-func (s *postService) GetPostByID(id string) (*model.PostResponse, error) {
-	post, err := s.postRepo.GetPostByID(id)
+func (s *postService) GetPostByID(ctx context.Context, id string) (*model.PostResponse, error) {
+	post, err := s.postRepo.GetPostByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (s *postService) GetPostByID(id string) (*model.PostResponse, error) {
 	return post.ToResponse(), nil
 }
 
-func (s *postService) GetPosts(limit int, offset int) ([]*model.PostResponse, int64, error) {
-	posts, total, err := s.postRepo.GetPosts(limit, offset)
+func (s *postService) GetPosts(ctx context.Context, limit int, offset int) ([]*model.PostResponse, int64, error) {
+	posts, total, err := s.postRepo.GetPosts(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -81,8 +81,8 @@ func (s *postService) GetPosts(limit int, offset int) ([]*model.PostResponse, in
 	return postsResponse, total, nil
 }
 
-func (s *postService) GetPostsRandom(limit int) ([]*model.PostResponse, error) {
-	posts, err := s.postRepo.GetPostsRandom(limit)
+func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*model.PostResponse, error) {
+	posts, err := s.postRepo.GetPostsRandom(ctx, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -97,8 +97,8 @@ func (s *postService) GetPostsRandom(limit int) ([]*model.PostResponse, error) {
 	return postsResponse, nil
 }
 
-func (s *postService) GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error) {
-	posts, total, err := s.postRepo.GetPostsByCreatedBy(createdBy, offset, limit)
+func (s *postService) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error) {
+	posts, total, err := s.postRepo.GetPostsByCreatedBy(ctx, createdBy, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -111,7 +111,7 @@ func (s *postService) GetPostsByCreatedBy(createdBy string, offset int, limit in
 	return postsResponse, total, nil
 }
 
-func (s *postService) UploadImagePosts(file *multipart.FileHeader) error {
+func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error {
 	src, err := file.Open()
 	if err != nil {
 		return err

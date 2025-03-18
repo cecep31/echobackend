@@ -29,7 +29,7 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	if err != nil {
 		offsetInt = 0 // Default offset if not provided or invalid
 	}
-	posts, total, err := h.postService.GetPosts(limitInt, offsetInt)
+	posts, total, err := h.postService.GetPosts(c.Request().Context(), limitInt, offsetInt)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -59,7 +59,7 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 	slug := c.Param("slug")
 	username := c.Param("username")
-	post, err := h.postService.GetPostBySlugAndUsername(slug, username)
+	post, err := h.postService.GetPostBySlugAndUsername(c.Request().Context(), slug, username)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -77,7 +77,7 @@ func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 
 func (h *PostHandler) GetPost(c echo.Context) error {
 	id := c.Param("id")
-	post, err := h.postService.GetPostByID(id)
+	post, err := h.postService.GetPostByID(c.Request().Context(), id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -95,7 +95,7 @@ func (h *PostHandler) GetPost(c echo.Context) error {
 
 func (h *PostHandler) DeletePost(c echo.Context) error {
 	id := c.Param("id")
-	err := h.postService.DeletePostByID(id)
+	err := h.postService.DeletePostByID(c.Request().Context(), id)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -116,7 +116,7 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	if err != nil {
 		limitInt = 6 // Default limit if not provided or invalid
 	}
-	posts, err := h.postService.GetPostsRandom(limitInt)
+	posts, err := h.postService.GetPostsRandom(c.Request().Context(), limitInt)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error":   err.Error(),
@@ -151,7 +151,7 @@ func (h *PostHandler) GetMyPosts(c echo.Context) error {
 	}
 	claims := c.Get("user").(jwt.MapClaims)
 	userID := (claims)["user_id"].(string)
-	posts, total, err := h.postService.GetPostsByCreatedBy(userID, offsetInt, limitInt)
+	posts, total, err := h.postService.GetPostsByCreatedBy(c.Request().Context(), userID, offsetInt, limitInt)
 
 	for _, post := range posts {
 		if len(post.Body) > 250 {
@@ -191,7 +191,7 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 	if err != nil {
 		limitInt = 10 // Default limit if not provided or invalid
 	}
-	posts, total, err := h.postService.GetPostsByUsername(username, offsetInt, limitInt)
+	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offsetInt, limitInt)
 
 	for _, post := range posts {
 		if len(post.Body) > 250 {
@@ -239,7 +239,7 @@ func (h *PostHandler) UploadImagePosts(c echo.Context) error {
 		})
 	}
 
-	if err := h.postService.UploadImagePosts(file); err != nil {
+	if err := h.postService.UploadImagePosts(c.Request().Context(), file); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"success": false,
 			"message": "Failed to upload image",

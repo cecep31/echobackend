@@ -1,19 +1,20 @@
 package repository
 
 import (
+	"context"
 	"echobackend/internal/model"
 
 	"gorm.io/gorm"
 )
 
 type PostRepository interface {
-	GetPosts(limit int, offset int) ([]*model.Post, int64, error)
-	GetPostByUsername(username string, offset int, limit int) ([]*model.Post, int64, error)
-	GetPostsRandom(limit int) ([]*model.Post, error)
-	GetPostByID(id string) (*model.Post, error)
-	GetPostBySlugAndUsername(slug string, username string) (*model.Post, error)
-	GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.Post, int64, error)
-	DeletePostByID(id string) error
+	GetPosts(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error)
+	GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error)
+	GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error)
+	GetPostByID(ctx context.Context, id string) (*model.Post, error)
+	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error)
+	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error)
+	DeletePostByID(ctx context.Context, id string) error
 }
 
 type postRepository struct {
@@ -24,19 +25,20 @@ func NewPostRepository(db *gorm.DB) PostRepository {
 	return &postRepository{db: db}
 }
 
-func (r *postRepository) GetPostByUsername(username string, offset int, limit int) ([]*model.Post, int64, error) {
+func (r *postRepository) GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error) {
 
 	var posts []*model.Post
 	var count int64
 
-	if errcount := r.db.Model(&model.Post{}).
+	if errcount := r.db.WithContext(ctx).
+		Model(&model.Post{}).
 		Joins("JOIN users ON users.id = posts.created_by").
 		Where("users.username = ?", username).
 		Count(&count).Error; errcount != nil {
 		return nil, 0, errcount
 	}
 
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Joins("JOIN users ON users.id = posts.created_by").
 		Preload("Creator").
 		Preload("Tags").
@@ -48,11 +50,15 @@ func (r *postRepository) GetPostByUsername(username string, offset int, limit in
 	return posts, count, err
 }
 
-func (r *postRepository) DeletePostByID(id string) error {
-	return r.db.Where("id = ?", id).Delete(&model.Post{}).Error
+func (r *postRepository) DeletePostByID(ctx context.Context, id string) error {
+	return r.db.
+		WithContext(ctx).
+		Where("id = ?", id).
+		Delete(&model.Post{}).
+		Error
 }
 
-func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, int64, error) {
+func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error) {
 	var posts []*model.Post
 
 	var count int64
@@ -60,7 +66,7 @@ func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, int64, 
 		return nil, 0, errcount
 	}
 
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Preload("Creator").
 		Preload("Tags").
 		Order("created_at DESC").
@@ -72,9 +78,9 @@ func (r *postRepository) GetPosts(limit int, offset int) ([]*model.Post, int64, 
 	return posts, count, err
 }
 
-func (r *postRepository) GetPostBySlugAndUsername(slug string, username string) (*model.Post, error) {
+func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error) {
 	var post model.Post
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Joins("JOIN users ON users.id = posts.created_by").
 		Preload("Creator").
 		Preload("Tags").
@@ -85,9 +91,9 @@ func (r *postRepository) GetPostBySlugAndUsername(slug string, username string) 
 	return &post, err
 }
 
-func (r *postRepository) GetPostByID(id string) (*model.Post, error) {
+func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Post, error) {
 	var post model.Post
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Preload("Creator").
 		Preload("Tags").
 		Where("id = ?", id).
@@ -97,9 +103,9 @@ func (r *postRepository) GetPostByID(id string) (*model.Post, error) {
 	return &post, err
 }
 
-func (r *postRepository) GetPostsRandom(limit int) ([]*model.Post, error) {
+func (r *postRepository) GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error) {
 	var randomPosts []*model.Post
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Preload("Creator").
 		Preload("Tags").
 		Order("RANDOM()").
@@ -110,17 +116,17 @@ func (r *postRepository) GetPostsRandom(limit int) ([]*model.Post, error) {
 	return randomPosts, err
 }
 
-func (r *postRepository) GetPostsByCreatedBy(createdBy string, offset int, limit int) ([]*model.Post, int64, error) {
+func (r *postRepository) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error) {
 	var posts []*model.Post
 	var count int64
 
-	if errcount := r.db.Model(&model.Post{}).
+	if errcount := r.db.WithContext(ctx).
 		Where("created_by = ?", createdBy).
 		Count(&count).Error; errcount != nil {
 		return nil, 0, errcount
 	}
 
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Preload("Creator").
 		Preload("Tags").
 		Where("created_by = ?", createdBy).
