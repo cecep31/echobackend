@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"echobackend/internal/model"
 
@@ -47,8 +48,21 @@ func NewWorkspaceRepository(db *gorm.DB) WorkspaceRepository {
 	return &workspaceRepository{db: db}
 }
 
+// withTimeout adds a timeout to the context if one doesn't exist
+func withTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	// Check if context already has a deadline
+	if _, ok := ctx.Deadline(); ok {
+		return ctx, func() {}
+	}
+	// Add a reasonable timeout for database operations
+	return context.WithTimeout(ctx, 5*time.Second)
+}
+
 // Create adds a new workspace to the database
 func (r *workspaceRepository) Create(ctx context.Context, workspace *model.Workspace) error {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	exists, err := r.Exists(ctx, workspace.Name, workspace.CreatedBy)
 	if err != nil {
 		return fmt.Errorf("failed to check workspace existence: %w", err)
@@ -61,6 +75,13 @@ func (r *workspaceRepository) Create(ctx context.Context, workspace *model.Works
 	if tx.Error != nil {
 		return fmt.Errorf("failed to begin transaction: %w", tx.Error)
 	}
+
+	// Use defer with named return value to ensure proper rollback on panic
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
 	// Create the workspace
 	if err := tx.Create(workspace).Error; err != nil {
@@ -86,6 +107,9 @@ func (r *workspaceRepository) Create(ctx context.Context, workspace *model.Works
 
 // GetByID retrieves a workspace by its ID
 func (r *workspaceRepository) GetByID(ctx context.Context, id uuid.UUID) (*model.Workspace, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var workspace model.Workspace
 	if err := r.db.WithContext(ctx).Preload("Members").Where("id = ?", id).First(&workspace).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -98,6 +122,9 @@ func (r *workspaceRepository) GetByID(ctx context.Context, id uuid.UUID) (*model
 
 // GetAll retrieves all workspaces with pagination
 func (r *workspaceRepository) GetAll(ctx context.Context, offset int, limit int) ([]*model.Workspace, int64, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var workspaces []*model.Workspace
 	var total int64
 
@@ -116,6 +143,9 @@ func (r *workspaceRepository) GetAll(ctx context.Context, offset int, limit int)
 
 // GetByUserID retrieves all workspaces a user is a member of
 func (r *workspaceRepository) GetByUserID(ctx context.Context, userID string) ([]*model.Workspace, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var workspaces []*model.Workspace
 
 	err := r.db.WithContext(ctx).
@@ -133,6 +163,9 @@ func (r *workspaceRepository) GetByUserID(ctx context.Context, userID string) ([
 
 // Update updates an existing workspace
 func (r *workspaceRepository) Update(ctx context.Context, workspace *model.Workspace) error {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	result := r.db.WithContext(ctx).Model(&model.Workspace{}).
 		Where("id = ?", workspace.ID).
 		Updates(map[string]interface{}{
@@ -152,6 +185,9 @@ func (r *workspaceRepository) Update(ctx context.Context, workspace *model.Works
 
 // SoftDelete soft deletes a workspace
 func (r *workspaceRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Workspace{})
 	if result.Error != nil {
 		return fmt.Errorf("failed to soft delete workspace: %w", result.Error)
@@ -164,10 +200,20 @@ func (r *workspaceRepository) SoftDelete(ctx context.Context, id uuid.UUID) erro
 
 // HardDelete permanently deletes a workspace
 func (r *workspaceRepository) HardDelete(ctx context.Context, id uuid.UUID) error {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	tx := r.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return fmt.Errorf("failed to begin transaction: %w", tx.Error)
 	}
+
+	// Use defer with named return value to ensure proper rollback on panic
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
 	// Delete workspace members first
 	if err := tx.Where("workspace_id = ?", id).Delete(&model.WorkspaceMember{}).Error; err != nil {
@@ -191,6 +237,9 @@ func (r *workspaceRepository) HardDelete(ctx context.Context, id uuid.UUID) erro
 
 // Exists checks if a workspace with the given name already exists for the user
 func (r *workspaceRepository) Exists(ctx context.Context, name string, createdBy string) (bool, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var count int64
 	err := r.db.WithContext(ctx).Model(&model.Workspace{}).
 		Where("name = ? AND created_by = ?", name, createdBy).
@@ -203,6 +252,9 @@ func (r *workspaceRepository) Exists(ctx context.Context, name string, createdBy
 
 // AddMember adds a new member to a workspace
 func (r *workspaceRepository) AddMember(ctx context.Context, member *model.WorkspaceMember) error {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	// Check if workspace exists
 	exists, err := r.workspaceExists(ctx, member.WorkspaceID)
 	if err != nil {
@@ -220,29 +272,28 @@ func (r *workspaceRepository) AddMember(ctx context.Context, member *model.Works
 	if err != nil {
 		return fmt.Errorf("failed to check member existence: %w", err)
 	}
-
-	// If member exists, update role
 	if count > 0 {
+		// Update role instead of creating a new member
 		return r.UpdateMemberRole(ctx, member.WorkspaceID, member.UserID, member.Role)
 	}
 
-	// Otherwise add new member
-	return r.db.WithContext(ctx).Create(member).Error
+	// Create new member
+	if err := r.db.WithContext(ctx).Create(member).Error; err != nil {
+		return fmt.Errorf("failed to add workspace member: %w", err)
+	}
+	return nil
 }
 
 // GetMembers retrieves all members of a workspace
 func (r *workspaceRepository) GetMembers(ctx context.Context, workspaceID uuid.UUID) ([]*model.WorkspaceMember, error) {
-	// Check if workspace exists
-	exists, err := r.workspaceExists(ctx, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, ErrWorkspaceNotFound
-	}
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
 
 	var members []*model.WorkspaceMember
-	if err := r.db.WithContext(ctx).Where("workspace_id = ?", workspaceID).Find(&members).Error; err != nil {
+	err := r.db.WithContext(ctx).
+		Where("workspace_id = ?", workspaceID).
+		Find(&members).Error
+	if err != nil {
 		return nil, fmt.Errorf("failed to get workspace members: %w", err)
 	}
 	return members, nil
@@ -250,10 +301,12 @@ func (r *workspaceRepository) GetMembers(ctx context.Context, workspaceID uuid.U
 
 // UpdateMemberRole updates a member's role in a workspace
 func (r *workspaceRepository) UpdateMemberRole(ctx context.Context, workspaceID uuid.UUID, userID string, role string) error {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	result := r.db.WithContext(ctx).Model(&model.WorkspaceMember{}).
 		Where("workspace_id = ? AND user_id = ?", workspaceID, userID).
 		Update("role", role)
-
 	if result.Error != nil {
 		return fmt.Errorf("failed to update member role: %w", result.Error)
 	}
@@ -265,9 +318,11 @@ func (r *workspaceRepository) UpdateMemberRole(ctx context.Context, workspaceID 
 
 // RemoveMember removes a member from a workspace
 func (r *workspaceRepository) RemoveMember(ctx context.Context, workspaceID uuid.UUID, userID string) error {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	result := r.db.WithContext(ctx).Where("workspace_id = ? AND user_id = ?", workspaceID, userID).
 		Delete(&model.WorkspaceMember{})
-
 	if result.Error != nil {
 		return fmt.Errorf("failed to remove workspace member: %w", result.Error)
 	}
@@ -279,18 +334,19 @@ func (r *workspaceRepository) RemoveMember(ctx context.Context, workspaceID uuid
 
 // IsMember checks if a user is a member of a workspace and returns their role
 func (r *workspaceRepository) IsMember(ctx context.Context, workspaceID uuid.UUID, userID string) (bool, string, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var member model.WorkspaceMember
 	err := r.db.WithContext(ctx).
 		Where("workspace_id = ? AND user_id = ?", workspaceID, userID).
 		First(&member).Error
-
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, "", nil
 		}
 		return false, "", fmt.Errorf("failed to check membership: %w", err)
 	}
-
 	return true, member.Role, nil
 }
 

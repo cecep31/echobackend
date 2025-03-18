@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"os"
+	"time"
 
 	"echobackend/config"
 
@@ -15,6 +16,14 @@ import (
 func InitMiddleware(e *echo.Echo, config *config.Config) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	logger := log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+
+	// Set server timeouts
+	e.Server.ReadTimeout = 10 * time.Second
+	e.Server.WriteTimeout = 15 * time.Second
+	e.Server.IdleTimeout = 60 * time.Second
+
+	// Add body limit middleware to prevent memory exhaustion
+	e.Use(middleware.BodyLimit("2M")) // Limit request body to 2MB
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
@@ -37,6 +46,7 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 	if config.RATE_LIMITER_MAX > 0 {
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(config.RATE_LIMITER_MAX))))
 	}
+
 	e.Use(middleware.RequestID())
 	e.Use(middleware.Gzip())
 	e.Use(middleware.Recover())
