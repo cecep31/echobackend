@@ -26,6 +26,8 @@ func NewPostRepository(db *gorm.DB) PostRepository {
 }
 
 func (r *postRepository) GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
 
 	var posts []*model.Post
 	var count int64
@@ -51,6 +53,9 @@ func (r *postRepository) GetPostByUsername(ctx context.Context, username string,
 }
 
 func (r *postRepository) DeletePostByID(ctx context.Context, id string) error {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	return r.db.
 		WithContext(ctx).
 		Where("id = ?", id).
@@ -59,10 +64,13 @@ func (r *postRepository) DeletePostByID(ctx context.Context, id string) error {
 }
 
 func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var posts []*model.Post
 
 	var count int64
-	if errcount := r.db.Model(&model.Post{}).Count(&count).Error; errcount != nil {
+	if errcount := r.db.WithContext(ctx).Model(&model.Post{}).Count(&count).Error; errcount != nil {
 		return nil, 0, errcount
 	}
 
@@ -79,6 +87,9 @@ func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([
 }
 
 func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var post model.Post
 	err := r.db.WithContext(ctx).
 		Joins("JOIN users ON users.id = posts.created_by").
@@ -92,6 +103,9 @@ func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug stri
 }
 
 func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Post, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var post model.Post
 	err := r.db.WithContext(ctx).
 		Preload("Creator").
@@ -104,6 +118,9 @@ func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Pos
 }
 
 func (r *postRepository) GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var randomPosts []*model.Post
 	err := r.db.WithContext(ctx).
 		Preload("Creator").
@@ -117,6 +134,9 @@ func (r *postRepository) GetPostsRandom(ctx context.Context, limit int) ([]*mode
 }
 
 func (r *postRepository) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error) {
+	ctx, cancel := withTimeout(ctx)
+	defer cancel()
+
 	var posts []*model.Post
 	var count int64
 
