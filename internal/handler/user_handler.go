@@ -30,6 +30,7 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, echo.Map{
 		"data":    userResponse,
+		"message": "Successfully retrieved user",
 		"success": true,
 	})
 }

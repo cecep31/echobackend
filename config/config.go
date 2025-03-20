@@ -25,6 +25,8 @@ type Config struct {
 	MINIO_SECRET_KEY string `mapstructure:"MINIO_SECRET_KEY"`
 	MINIO_BUCKET     string `mapstructure:"MINIO_BUCKET"`
 	MINIO_USE_SSL    bool   `mapstructure:"MINIO_USE_SSL"`
+	// Debug mode
+	DEBUG bool `mapstructure:"DEBUG"`
 }
 
 // Load reads configuration from environment variables with defaults
@@ -70,6 +72,7 @@ func setDefaults() {
 	viper.SetDefault("MINIO_SECRET_KEY", "minioadmin")
 	viper.SetDefault("MINIO_BUCKET", "minio-bucket")
 	viper.SetDefault("MINIO_USE_SSL", false)
+	viper.SetDefault("DEBUG", false)
 }
 
 func (c *Config) validate() error {

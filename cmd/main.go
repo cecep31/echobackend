@@ -7,8 +7,6 @@ import (
 	"echobackend/internal/routes"
 	"echobackend/pkg/validator"
 	"net/http"
-	"net/http/pprof"
-	"os"
 	"runtime"
 
 	"github.com/labstack/echo/v4"
@@ -48,21 +46,6 @@ func main() {
 
 	// Setup middleware
 	middleware.InitMiddleware(e, conf)
-
-	// Add debug endpoints in non-production environments
-	if os.Getenv("APP_ENV") != "production" {
-		debug := e.Group("/debug")
-		debug.GET("/pprof/*", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
-		debug.GET("/pprof/cmdline", echo.WrapHandler(http.HandlerFunc(pprof.Cmdline)))
-		debug.GET("/pprof/profile", echo.WrapHandler(http.HandlerFunc(pprof.Profile)))
-		debug.GET("/pprof/symbol", echo.WrapHandler(http.HandlerFunc(pprof.Symbol)))
-		debug.GET("/pprof/trace", echo.WrapHandler(http.HandlerFunc(pprof.Trace)))
-		debug.GET("/pprof/heap", echo.WrapHandler(http.HandlerFunc(pprof.Handler("heap").ServeHTTP)))
-		debug.GET("/pprof/goroutine", echo.WrapHandler(http.HandlerFunc(pprof.Handler("goroutine").ServeHTTP)))
-		debug.GET("/pprof/allocs", echo.WrapHandler(http.HandlerFunc(pprof.Handler("allocs").ServeHTTP)))
-		debug.GET("/pprof/block", echo.WrapHandler(http.HandlerFunc(pprof.Handler("block").ServeHTTP)))
-		debug.GET("/pprof/mutex", echo.WrapHandler(http.HandlerFunc(pprof.Handler("mutex").ServeHTTP)))
-	}
 
 	// Start server
 	e.Logger.Printf("Starting server on port %s", conf.App_Port)

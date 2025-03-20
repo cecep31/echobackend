@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"echobackend/config"
 	"echobackend/internal/handler"
 	"echobackend/internal/middleware"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 )
 
 type Routes struct {
+	config           *config.Config
 	userHandler      *handler.UserHandler
 	postHandler      *handler.PostHandler
 	authHandler      *handler.AuthHandler
@@ -20,6 +22,7 @@ type Routes struct {
 }
 
 func NewRoutes(
+	config *config.Config,
 	userHandler *handler.UserHandler,
 	postHandler *handler.PostHandler,
 	authHandler *handler.AuthHandler,
@@ -29,6 +32,7 @@ func NewRoutes(
 	workspaceHandler *handler.WorkspaceHandler,
 ) *Routes {
 	return &Routes{
+		config:           config,
 		userHandler:      userHandler,
 		postHandler:      postHandler,
 		authHandler:      authHandler,
@@ -52,7 +56,9 @@ func (r *Routes) setupV1Routes(v1 *echo.Group) {
 	r.setupTagRoutes(v1)
 	r.setupPageRoutes(v1)
 	r.setupWorkspaceRoutes(v1)
-	r.setupDebugRoutes(v1)
+	if r.config.DEBUG {
+		r.setupDebugRoutes(v1)
+	}
 }
 
 func (r *Routes) setupUserRoutes(v1 *echo.Group) {
