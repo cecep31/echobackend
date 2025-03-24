@@ -4,11 +4,11 @@ go 1.24
 
 require (
 	github.com/go-playground/validator/v10 v10.25.0
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/minio/minio-go/v7 v7.0.88
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.34.0
 	github.com/spf13/viper v1.20.0
 	go.uber.org/dig v1.18.1
 	golang.org/x/crypto v0.36.0
