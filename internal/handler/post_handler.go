@@ -31,7 +31,7 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	}
 	posts, total, err := h.postService.GetPosts(c.Request().Context(), limitInt, offsetInt)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to get posts",
 			"success": false,
@@ -44,11 +44,11 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    posts,
 		"message": "Successfully retrieved posts",
 		"success": true,
-		"metadata": echo.Map{
+		"metadata": map[string]any{
 			"totalItems": total,
 			"limit":      limitInt,
 			"offset":     offsetInt,
@@ -61,14 +61,14 @@ func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 	username := c.Param("username")
 	post, err := h.postService.GetPostBySlugAndUsername(c.Request().Context(), slug, username)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to get post",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    post,
 		"message": "Successfully retrieved post",
 		"success": true,
@@ -79,14 +79,14 @@ func (h *PostHandler) GetPost(c echo.Context) error {
 	id := c.Param("id")
 	post, err := h.postService.GetPostByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to get post",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    post,
 		"message": "Successfully retrieved post",
 		"success": true,
@@ -97,14 +97,14 @@ func (h *PostHandler) DeletePost(c echo.Context) error {
 	id := c.Param("id")
 	err := h.postService.DeletePostByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to delete post",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Successfully deleted post",
 		"success": true,
 	})
@@ -118,7 +118,7 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	}
 	posts, err := h.postService.GetPostsRandom(c.Request().Context(), limitInt)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to get posts",
 			"success": false,
@@ -131,7 +131,7 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    posts,
 		"message": "Successfully retrieved posts",
 		"success": true,
@@ -160,18 +160,18 @@ func (h *PostHandler) GetMyPosts(c echo.Context) error {
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to get posts",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"success": true,
 		"message": "success retrieving posts",
 		"data":    posts,
-		"metadata": echo.Map{
+		"metadata": map[string]any{
 			"totalItems": total,
 			"limit":      limitInt,
 			"offset":     offsetInt,
@@ -200,18 +200,18 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to get posts",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"success": true,
 		"message": "success retrieving posts",
 		"data":    posts,
-		"metadata": echo.Map{
+		"metadata": map[string]any{
 			"totalItems": total,
 			"limit":      limitInt,
 			"offset":     offsetInt,
@@ -222,7 +222,7 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 func (h *PostHandler) UploadImagePosts(c echo.Context) error {
 	file, err := c.FormFile("image")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
 			"message": "Failed to upload image",
 			"data":    nil,
@@ -231,7 +231,7 @@ func (h *PostHandler) UploadImagePosts(c echo.Context) error {
 	}
 
 	if file == nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"success": false,
 			"message": "No file uploaded",
 			"data":    nil,
@@ -240,14 +240,14 @@ func (h *PostHandler) UploadImagePosts(c echo.Context) error {
 	}
 
 	if err := h.postService.UploadImagePosts(c.Request().Context(), file); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"success": false,
 			"message": "Failed to upload image",
 			"data":    nil,
 			"error":   err.Error(),
 		})
 	}
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"success": true,
 		"message": "success uploading image",
 		"data":    nil,

@@ -78,14 +78,14 @@ func (h *WorkspaceHandler) GetWorkspaceByID(c echo.Context) error {
 
 	workspace, err := h.workspaceService.GetByID(c.Request().Context(), workspaceID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to retrieve workspace",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    workspace,
 		"success": true,
 	})
@@ -104,17 +104,17 @@ func (h *WorkspaceHandler) GetAllWorkspaces(c echo.Context) error {
 
 	workspaces, total, err := h.workspaceService.GetAll(c.Request().Context(), offset, limit)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to retrieve workspaces",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    workspaces,
 		"success": true,
-		"metadata": echo.Map{
+		"metadata": map[string]any{
 			"totalItems": total,
 		},
 	})
@@ -127,14 +127,14 @@ func (h *WorkspaceHandler) GetUserWorkspaces(c echo.Context) error {
 
 	workspaces, err := h.workspaceService.GetByUserID(c.Request().Context(), userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to retrieve user workspaces",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    workspaces,
 		"success": true,
 	})
@@ -152,7 +152,7 @@ func (h *WorkspaceHandler) UpdateWorkspace(c echo.Context) error {
 
 	var req UpdateWorkspaceRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid request format",
 			"success": false,
@@ -160,7 +160,7 @@ func (h *WorkspaceHandler) UpdateWorkspace(c echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Validation failed",
 			"success": false,
@@ -170,7 +170,7 @@ func (h *WorkspaceHandler) UpdateWorkspace(c echo.Context) error {
 	// Get the existing workspace
 	wsID, err := uuid.Parse(workspaceID)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid workspace ID",
 			"success": false,
@@ -186,14 +186,14 @@ func (h *WorkspaceHandler) UpdateWorkspace(c echo.Context) error {
 	}
 
 	if err := h.workspaceService.Update(c.Request().Context(), workspace); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to update workspace",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Workspace updated successfully",
 		"success": true,
 	})
@@ -204,14 +204,14 @@ func (h *WorkspaceHandler) DeleteWorkspace(c echo.Context) error {
 	workspaceID := c.Param("id")
 
 	if err := h.workspaceService.Delete(c.Request().Context(), workspaceID); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to delete workspace",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Workspace deleted successfully",
 		"success": true,
 	})
@@ -228,7 +228,7 @@ func (h *WorkspaceHandler) AddMember(c echo.Context) error {
 
 	var req AddMemberRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid request format",
 			"success": false,
@@ -236,7 +236,7 @@ func (h *WorkspaceHandler) AddMember(c echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Validation failed",
 			"success": false,
@@ -244,14 +244,14 @@ func (h *WorkspaceHandler) AddMember(c echo.Context) error {
 	}
 
 	if err := h.workspaceService.AddMember(c.Request().Context(), workspaceID, req.UserID, req.Role); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to add member to workspace",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Member added to workspace successfully",
 		"success": true,
 	})
@@ -263,14 +263,14 @@ func (h *WorkspaceHandler) GetMembers(c echo.Context) error {
 
 	members, err := h.workspaceService.GetMembers(c.Request().Context(), workspaceID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to retrieve workspace members",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    members,
 		"success": true,
 	})
@@ -287,7 +287,7 @@ func (h *WorkspaceHandler) UpdateMemberRole(c echo.Context) error {
 
 	var req UpdateRoleRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid request format",
 			"success": false,
@@ -295,7 +295,7 @@ func (h *WorkspaceHandler) UpdateMemberRole(c echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Validation failed",
 			"success": false,
@@ -303,14 +303,14 @@ func (h *WorkspaceHandler) UpdateMemberRole(c echo.Context) error {
 	}
 
 	if err := h.workspaceService.UpdateMemberRole(c.Request().Context(), workspaceID, userID, req.Role); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to update member role",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Member role updated successfully",
 		"success": true,
 	})
@@ -322,14 +322,14 @@ func (h *WorkspaceHandler) RemoveMember(c echo.Context) error {
 	userID := c.Param("user_id")
 
 	if err := h.workspaceService.RemoveMember(c.Request().Context(), workspaceID, userID); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to remove member from workspace",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Member removed from workspace successfully",
 		"success": true,
 	})
