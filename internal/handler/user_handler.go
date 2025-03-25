@@ -21,14 +21,14 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 
 	userResponse, err := h.userService.GetByID(c.Request().Context(), userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to retrieve user",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    userResponse,
 		"message": "Successfully retrieved user",
 		"success": true,
@@ -46,18 +46,18 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 	}
 	users, total, err := h.userService.GetUsers(c.Request().Context(), offset, limit)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"data":    nil,
 			"error":   err.Error(),
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"messsage": "Success",
 		"success":  true,
 		"data":     users,
-		"metadata": echo.Map{
+		"metadata": map[string]any{
 			"totalItems": total,
 		},
 		"error": nil,
@@ -69,14 +69,14 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 	id := c.Param("id")
 	err := h.userService.Delete(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to delete user",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Successfully deleted user",
 		"success": true,
 	})

@@ -20,67 +20,67 @@ func NewTagHandler(service service.TagService) *TagHandler {
 func (h *TagHandler) CreateTag(c echo.Context) error {
 	tag := new(model.Tag)
 	if err := c.Bind(tag); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid request payload"})
 	}
 
 	if err := h.service.CreateTag(tag); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusCreated, tag)
+	return c.JSON(http.StatusCreated, map[string]any{"data": tag})
 }
 
 func (h *TagHandler) GetTags(c echo.Context) error {
 	tags, err := h.service.GetTags()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, tags)
+	return c.JSON(http.StatusOK, map[string]any{"data": tags})
 }
 
 func (h *TagHandler) GetTagByID(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid tag ID"})
+		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid tag ID"})
 	}
 
 	tag, err := h.service.GetTagByID(uint(id))
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusNotFound, map[string]any{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, tag)
+	return c.JSON(http.StatusOK, map[string]any{"data": tag})
 }
 
 func (h *TagHandler) UpdateTag(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid tag ID"})
+		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid tag ID"})
 	}
 
 	tag := new(model.Tag)
 	if err := c.Bind(tag); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid request payload"})
 	}
 	tag.ID = uint(id)
 
 	if err := h.service.UpdateTag(tag); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, tag)
+	return c.JSON(http.StatusOK, map[string]any{"message": "Tag updated successfully", "success": true, "data": tag})
 }
 
 func (h *TagHandler) DeleteTag(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid tag ID"})
+		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid tag ID"})
 	}
 
 	if err := h.service.DeleteTag(uint(id)); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"message": "Tag deleted successfully"})
+	return c.JSON(http.StatusOK, map[string]any{"message": "Tag deleted successfully", "success": true})
 }
