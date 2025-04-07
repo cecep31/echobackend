@@ -103,11 +103,11 @@ func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug stri
 
 	err := r.db.NewSelect().
 		Model(&post).
-		Join("JOIN users ON users.id = posts.created_by").
-		Relation("Creator").
+		Relation("Creator", func(q *bun.SelectQuery) *bun.SelectQuery {
+			return q.Where("username = ?", username)
+		}).
 		Relation("Tags").
-		Where("posts.slug = ?", slug).
-		Where("users.username = ?", username).
+		Where("p.slug = ?", slug).
 		Limit(1).
 		Scan(ctx)
 
