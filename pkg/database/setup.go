@@ -39,5 +39,8 @@ func NewDatabase(config *config.Config) *bun.DB {
 		panic(fmt.Errorf("failed to ping database: %w", err))
 	}
 
+	// Register models with Bun ORM
+	RegisterModels(db)
+
 	return db
 }

@@ -85,7 +85,7 @@ func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([
 	err = r.db.NewSelect().
 		Model(&posts).
 		Relation("Creator").
-		// Relation("Tags").
+		Relation("Tags").
 		OrderExpr("created_at DESC").
 		Limit(limit).
 		Offset(offset).

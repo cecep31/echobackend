@@ -10,20 +10,18 @@ import (
 type Post struct {
 	bun.BaseModel `bun:"table:posts,alias:p"`
 
-	ID        string `json:"id" bun:"id,pk,type:uuid,default:uuid_generate_v7()"`
-	Title     string `json:"title" bun:"title,notnull"`
-	Photo_url string `json:"photo_url" bun:"photo_url,type:text"`
-	Body      string `json:"body" bun:"body,notnull"`
-	Slug      string `json:"slug" bun:"slug,unique,notnull"`
-	CreatedBy string `json:"created_by" bun:"created_by"`
-	Creator   User   `json:"creator" bun:"rel:belongs-to,join:created_by=id"`
-	// Tags      []Tag      `json:"tags" bun:"m2m:posts_to_tags"`
+	ID        string     `json:"id" bun:"id,pk,type:uuid,default:uuid_generate_v7()"`
+	Title     string     `json:"title" bun:"title,notnull"`
+	Photo_url string     `json:"photo_url" bun:"photo_url,type:text"`
+	Body      string     `json:"body" bun:"body,notnull"`
+	Slug      string     `json:"slug" bun:"slug,unique,notnull"`
+	CreatedBy string     `json:"created_by" bun:"created_by"`
+	Creator   User       `json:"creator" bun:"rel:belongs-to,join:created_by=id"`
+	Tags      []Tag      `json:"tags" bun:"m2m:posts_to_tags,join:Post=Tag"`
 	CreatedAt time.Time  `json:"created_at" bun:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at" bun:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at" bun:"deleted_at,soft_delete"`
 }
-
-// No need for TableName with Bun as it's specified in the struct tag
 
 // PostResponse represents the post data that can be safely sent to clients
 type PostResponse struct {
@@ -48,7 +46,7 @@ func (p *Post) ToResponse() *PostResponse {
 		Body:      p.Body,
 		Slug:      p.Slug,
 		Creator:   *p.Creator.ToResponse(),
-		// Tags:      p.Tags,
+		Tags:      p.Tags,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
 		DeletedAt: p.DeletedAt,
