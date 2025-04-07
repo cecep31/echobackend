@@ -4,26 +4,24 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
+	"github.com/uptrace/bun"
 )
 
 // Block represents a content block within a page
 type Block struct {
-	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:uuid_generate_v4()" json:"id"`
-	PageID    uuid.UUID      `gorm:"type:uuid;not null" json:"page_id"`
-	Type      string         `gorm:"not null;type:varchar(50)" json:"type"` // paragraph, heading, list, image, etc.
-	Props     string         `gorm:"type:jsonb" json:"props"`               // Block properties (backgroundColor, textColor, level for headings, etc.)
-	Content   string         `gorm:"type:jsonb" json:"content"`            // InlineContent array or TableContent
-	ParentID  *uuid.UUID     `gorm:"type:uuid" json:"parent_id"`          // For nested blocks
-	Position  float64        `gorm:"not null" json:"position"`            // For ordering blocks
-	CreatedBy string         `gorm:"not null" json:"created_by"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
+	bun.BaseModel `bun:"table:blocks,alias:b"`
+
+	ID        uuid.UUID  `bun:"id,pk,type:uuid,default:uuid_generate_v4()" json:"id"`
+	PageID    uuid.UUID  `bun:"page_id,type:uuid,notnull" json:"page_id"`
+	Type      string     `bun:"type,notnull" json:"type"`             // paragraph, heading, list, image, etc.
+	Props     string     `bun:"props,type:jsonb" json:"props"`        // Block properties (backgroundColor, textColor, level for headings, etc.)
+	Content   string     `bun:"content,type:jsonb" json:"content"`    // InlineContent array or TableContent
+	ParentID  *uuid.UUID `bun:"parent_id,type:uuid" json:"parent_id"` // For nested blocks
+	Position  float64    `bun:"position,notnull" json:"position"`     // For ordering blocks
+	CreatedBy string     `bun:"created_by,notnull" json:"created_by"`
+	CreatedAt time.Time  `bun:"created_at" json:"created_at"`
+	UpdatedAt time.Time  `bun:"updated_at" json:"updated_at"`
+	DeletedAt *time.Time `bun:"deleted_at,soft_delete" json:"deleted_at,omitempty"`
 }
 
-// TableName specifies the table name for the Block model
-func (Block) TableName() string {
-	return "blocks"
-}
-
+// No need for TableName with Bun as it's specified in the struct tag

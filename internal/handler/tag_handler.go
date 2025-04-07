@@ -23,7 +23,7 @@ func (h *TagHandler) CreateTag(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid request payload"})
 	}
 
-	if err := h.service.CreateTag(tag); err != nil {
+	if err := h.service.CreateTag(c.Request().Context(), tag); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 	}
 
@@ -31,7 +31,7 @@ func (h *TagHandler) CreateTag(c echo.Context) error {
 }
 
 func (h *TagHandler) GetTags(c echo.Context) error {
-	tags, err := h.service.GetTags()
+	tags, err := h.service.GetTags(c.Request().Context())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 	}
@@ -45,7 +45,7 @@ func (h *TagHandler) GetTagByID(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid tag ID"})
 	}
 
-	tag, err := h.service.GetTagByID(uint(id))
+	tag, err := h.service.GetTagByID(c.Request().Context(), uint(id))
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]any{"error": err.Error()})
 	}
@@ -65,7 +65,7 @@ func (h *TagHandler) UpdateTag(c echo.Context) error {
 	}
 	tag.ID = uint(id)
 
-	if err := h.service.UpdateTag(tag); err != nil {
+	if err := h.service.UpdateTag(c.Request().Context(), tag); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 	}
 
@@ -78,7 +78,7 @@ func (h *TagHandler) DeleteTag(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid tag ID"})
 	}
 
-	if err := h.service.DeleteTag(uint(id)); err != nil {
+	if err := h.service.DeleteTag(c.Request().Context(), uint(id)); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
 	}
 

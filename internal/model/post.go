@@ -3,28 +3,27 @@ package model
 import (
 	"time"
 
-	"gorm.io/gorm"
+	"github.com/uptrace/bun"
 )
 
 // Post represents the post model in the database
 type Post struct {
-	ID        string         `json:"id" gorm:"primaryKey;type:uuid;default:uuid_generate_v7()"`
-	Title     string         `json:"title" gorm:"not null"`
-	Photo_url string         `json:"photo_url" gorm:"type:text"`
-	Body      string         `json:"body" gorm:"not null"`
-	Slug      string         `json:"slug" gorm:"unique;not null"`
-	CreatedBy string         `json:"created_by"`
-	Creator   User           `json:"creator" gorm:"foreignKey:CreatedBy"`
-	Tags      []Tag          `json:"tags" gorm:"many2many:posts_to_tags"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
+	bun.BaseModel `bun:"table:posts,alias:p"`
+
+	ID        string `json:"id" bun:"id,pk,type:uuid,default:uuid_generate_v7()"`
+	Title     string `json:"title" bun:"title,notnull"`
+	Photo_url string `json:"photo_url" bun:"photo_url,type:text"`
+	Body      string `json:"body" bun:"body,notnull"`
+	Slug      string `json:"slug" bun:"slug,unique,notnull"`
+	CreatedBy string `json:"created_by" bun:"created_by"`
+	Creator   User   `json:"creator" bun:"rel:belongs-to,join:created_by=id"`
+	// Tags      []Tag      `json:"tags" bun:"m2m:posts_to_tags"`
+	CreatedAt time.Time  `json:"created_at" bun:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at" bun:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at" bun:"deleted_at,soft_delete"`
 }
 
-// TableName specifies the table name for the Post model
-func (Post) TableName() string {
-	return "posts"
-}
+// No need for TableName with Bun as it's specified in the struct tag
 
 // PostResponse represents the post data that can be safely sent to clients
 type PostResponse struct {
@@ -49,9 +48,9 @@ func (p *Post) ToResponse() *PostResponse {
 		Body:      p.Body,
 		Slug:      p.Slug,
 		Creator:   *p.Creator.ToResponse(),
-		Tags:      p.Tags,
+		// Tags:      p.Tags,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
-		DeletedAt: &p.DeletedAt.Time,
+		DeletedAt: p.DeletedAt,
 	}
 }

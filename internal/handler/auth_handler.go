@@ -59,7 +59,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		})
 	}
 
-	user, err := h.authService.Register(req.Email, req.Password)
+	user, err := h.authService.Register(c.Request().Context(), req.Email, req.Password)
 	if err == service.ErrUserExists {
 		return c.JSON(http.StatusConflict, Response{
 			Success: false,
@@ -110,7 +110,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		})
 	}
 
-	token, user, err := h.authService.Login(loginReq.Email, loginReq.Password)
+	token, user, err := h.authService.Login(c.Request().Context(), loginReq.Email, loginReq.Password)
 	if err == service.ErrInvalidCredentials {
 		return c.JSON(http.StatusUnauthorized, Response{
 			Success: false,

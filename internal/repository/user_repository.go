@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
 	"echobackend/internal/model"
 
-	"gorm.io/gorm"
+	"github.com/uptrace/bun"
 )
 
 // Errors that can be returned by the repository
@@ -27,10 +28,10 @@ type UserRepository interface {
 }
 
 type userRepository struct {
-	db *gorm.DB
+	db *bun.DB
 }
 
-func NewUserRepository(db *gorm.DB) UserRepository {
+func NewUserRepository(db *bun.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
@@ -43,15 +44,27 @@ func (r *userRepository) Create(ctx context.Context, user *model.User) error {
 		return ErrUserExists
 	}
 
-	return r.db.WithContext(ctx).Create(user).Error
+	_, err = r.db.NewInsert().
+		Model(user).
+		Exec(ctx)
+	return err
 }
 
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
-	result := r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", user.ID).Updates(user)
-	if result.Error != nil {
-		return fmt.Errorf("failed to update user: %w", result.Error)
+	res, err := r.db.NewUpdate().
+		Model(user).
+		Column("name", "email", "username", "bio", "avatar", "updated_at").
+		Where("id = ?", user.ID).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
 	}
-	if result.RowsAffected == 0 {
+	
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
 		return ErrUserNotFound
 	}
 	return nil
@@ -59,8 +72,13 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 
 func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, error) {
 	var user model.User
-	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	err := r.db.NewSelect().
+		Model(&user).
+		Where("id = ?", id).
+		Limit(1).
+		Scan(ctx)
+	if err != nil {
+		if err == sql.ErrNoRows {
 			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -70,15 +88,23 @@ func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, e
 
 func (r *userRepository) GetUsers(ctx context.Context, offset, limit int) ([]*model.User, int64, error) {
 	var users []*model.User
-	var total int64
 
 	// Count total records
-	if err := r.db.WithContext(ctx).Model(&model.User{}).Count(&total).Error; err != nil {
+	totalCount, err := r.db.NewSelect().
+		Model((*model.User)(nil)).
+		Count(ctx)
+	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count users: %w", err)
 	}
+	total := int64(totalCount)
 
 	// Get paginated records
-	if err := r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&users).Error; err != nil {
+	err = r.db.NewSelect().
+		Model(&users).
+		Offset(offset).
+		Limit(limit).
+		Scan(ctx)
+	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get users: %w", err)
 	}
 
@@ -87,26 +113,37 @@ func (r *userRepository) GetUsers(ctx context.Context, offset, limit int) ([]*mo
 
 func (r *userRepository) GetUsersByEmail(ctx context.Context, email string) ([]*model.User, error) {
 	var users []*model.User
-	if err := r.db.WithContext(ctx).Where("email = ?", email).Find(&users).Error; err != nil {
+	err := r.db.NewSelect().
+		Model(&users).
+		Where("email = ?", email).
+		Scan(ctx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to get users by email: %w", err)
 	}
 	return users, nil
 }
 
 func (r *userRepository) SoftDeleteByID(ctx context.Context, id string) error {
-	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.User{})
-	if result.Error != nil {
-		return fmt.Errorf("failed to delete user: %w", result.Error)
+	res, err := r.db.NewDelete().
+		Model(&model.User{}).
+		Where("id = ?", id).
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
 	}
-	if result.RowsAffected == 0 {
+	
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
 		return ErrUserNotFound
 	}
 	return nil
 }
 
 func (r *userRepository) Exists(ctx context.Context, email string) (bool, error) {
-	var count int64
-	err := r.db.WithContext(ctx).Model(&model.User{}).Where("email = ?", email).Count(&count).Error
+	count, err := r.db.NewSelect().Model((*model.User)(nil)).Where("email = ?", email).Count(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to check user existence: %w", err)
 	}
