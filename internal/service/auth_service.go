@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"echobackend/config"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
@@ -18,8 +19,8 @@ var (
 )
 
 type AuthService interface {
-	Register(email, password string) (*model.User, error)
-	Login(email, password string) (string, *model.User, error)
+	Register(ctx context.Context, email, password string) (*model.User, error)
+	Login(ctx context.Context, email, password string) (string, *model.User, error)
 }
 
 type authService struct {
@@ -35,8 +36,8 @@ func NewAuthService(repo repository.AuthRepository, config *config.Config) AuthS
 }
 
 // should be error not hanlde yet
-func (s *authService) Register(email, password string) (*model.User, error) {
-	_, err := s.authRepo.FindUserByEmail(email)
+func (s *authService) Register(ctx context.Context, email, password string) (*model.User, error) {
+	_, err := s.authRepo.FindUserByEmail(ctx, email)
 	if err == nil {
 		return nil, ErrUserExists
 	}
@@ -51,16 +52,16 @@ func (s *authService) Register(email, password string) (*model.User, error) {
 		Password: string(hashedPasswordBytes),
 	}
 
-	if err := s.authRepo.CreateUser(newUser); err != nil {
+	if err := s.authRepo.CreateUser(ctx, newUser); err != nil {
 		return nil, err
 	}
 
 	return newUser, nil
 }
 
-func (s *authService) Login(email, password string) (string, *model.User, error) {
+func (s *authService) Login(ctx context.Context, email, password string) (string, *model.User, error) {
 
-	user, err := s.authRepo.FindUserByEmail(email)
+	user, err := s.authRepo.FindUserByEmail(ctx, email)
 	if err != nil {
 		fmt.Println("email not found")
 		fmt.Println(err)

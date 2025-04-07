@@ -1,29 +1,48 @@
 package repository
 
 import (
+	"context"
 	"echobackend/internal/model"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
+	"github.com/uptrace/bun"
 )
 
-type PageRepository struct {
-	db *gorm.DB
+type PageRepository interface {
+	CreatePage(ctx context.Context, page *model.Page) error
+	GetPageByID(ctx context.Context, id uuid.UUID) (*model.Page, error)
+	GetPagesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]model.Page, error)
+	GetChildPages(ctx context.Context, parentID uuid.UUID) ([]model.Page, error)
+	UpdatePage(ctx context.Context, page *model.Page) error
+	DeletePage(ctx context.Context, id uuid.UUID) error
+	HardDeletePage(ctx context.Context, id uuid.UUID) error
 }
 
-func NewPageRepository(db *gorm.DB) *PageRepository {
-	return &PageRepository{db: db}
+type pageRepository struct {
+	db *bun.DB
+}
+
+func NewPageRepository(db *bun.DB) PageRepository {
+	return &pageRepository{db: db}
 }
 
 // CreatePage creates a new page in the database
-func (r *PageRepository) CreatePage(page *model.Page) error {
-	return r.db.Create(page).Error
+func (r *pageRepository) CreatePage(ctx context.Context, page *model.Page) error {
+	_, err := r.db.NewInsert().
+		Model(page).
+		Exec(ctx)
+	return err
 }
 
 // GetPageByID retrieves a page by its ID
-func (r *PageRepository) GetPageByID(id uuid.UUID) (*model.Page, error) {
+func (r *pageRepository) GetPageByID(ctx context.Context, id uuid.UUID) (*model.Page, error) {
 	var page model.Page
-	err := r.db.Preload("Blocks").First(&page, "id = ?", id).Error
+	err := r.db.NewSelect().
+		Model(&page).
+		Relation("Blocks").
+		Where("id = ?", id).
+		Limit(1).
+		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -31,9 +50,12 @@ func (r *PageRepository) GetPageByID(id uuid.UUID) (*model.Page, error) {
 }
 
 // GetPagesByWorkspaceID retrieves all pages in a workspace
-func (r *PageRepository) GetPagesByWorkspaceID(workspaceID uuid.UUID) ([]model.Page, error) {
+func (r *pageRepository) GetPagesByWorkspaceID(ctx context.Context, workspaceID uuid.UUID) ([]model.Page, error) {
 	var pages []model.Page
-	err := r.db.Where("workspace_id = ?", workspaceID).Find(&pages).Error
+	err := r.db.NewSelect().
+		Model(&pages).
+		Where("workspace_id = ?", workspaceID).
+		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +63,12 @@ func (r *PageRepository) GetPagesByWorkspaceID(workspaceID uuid.UUID) ([]model.P
 }
 
 // GetChildPages retrieves all child pages of a given page
-func (r *PageRepository) GetChildPages(parentID uuid.UUID) ([]model.Page, error) {
+func (r *pageRepository) GetChildPages(ctx context.Context, parentID uuid.UUID) ([]model.Page, error) {
 	var pages []model.Page
-	err := r.db.Where("parent_id = ?", parentID).Find(&pages).Error
+	err := r.db.NewSelect().
+		Model(&pages).
+		Where("parent_id = ?", parentID).
+		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,16 +76,30 @@ func (r *PageRepository) GetChildPages(parentID uuid.UUID) ([]model.Page, error)
 }
 
 // UpdatePage updates an existing page
-func (r *PageRepository) UpdatePage(page *model.Page) error {
-	return r.db.Save(page).Error
+func (r *pageRepository) UpdatePage(ctx context.Context, page *model.Page) error {
+	_, err := r.db.NewUpdate().
+		Model(page).
+		WherePK().
+		Exec(ctx)
+	return err
 }
 
 // DeletePage soft deletes a page
-func (r *PageRepository) DeletePage(id uuid.UUID) error {
-	return r.db.Delete(&model.Page{}, "id = ?", id).Error
+func (r *pageRepository) DeletePage(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.NewDelete().
+		Model(&model.Page{}).
+		Where("id = ?", id).
+		Exec(ctx)
+	return err
 }
 
 // HardDeletePage permanently deletes a page
-func (r *PageRepository) HardDeletePage(id uuid.UUID) error {
-	return r.db.Unscoped().Delete(&model.Page{}, "id = ?", id).Error
+func (r *pageRepository) HardDeletePage(ctx context.Context, id uuid.UUID) error {
+	// In Bun, we need to use ForceDelete() for hard delete
+	_, err := r.db.NewDelete().
+		Model(&model.Page{}).
+		Where("id = ?", id).
+		ForceDelete().
+		Exec(ctx)
+	return err
 }

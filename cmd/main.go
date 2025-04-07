@@ -27,8 +27,6 @@ func main() {
 
 	// Initialize Echo
 	e := echo.New()
-	e.HideBanner = true
-	e.HidePort = true
 
 	// Set custom validator
 	e.Validator = validator.NewValidator()

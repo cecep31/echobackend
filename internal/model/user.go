@@ -3,27 +3,26 @@ package model
 import (
 	"time"
 
-	"gorm.io/gorm"
+	"github.com/uptrace/bun"
 )
 
 // User represents the user model in the database
 type User struct {
-	ID           string         `json:"id" gorm:"primaryKey"`
-	Email        string         `json:"email" gorm:"unique;not null"`
-	FirstName    string         `json:"first_name" gorm:"not null"`
-	LastName     string         `json:"last_name" gorm:"not null"`
-	Username     string         `json:"username" gorm:"unique;not null"`
-	Password     string         `json:"-" gorm:"not null"` // "-" means this field won't be included in JSON
-	IsSuperAdmin bool           `json:"is_super_admin"`
-	CreatedAt    time.Time      `json:"created_at"`
-	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
+	bun.BaseModel `bun:"table:users,alias:u"`
+
+	ID           string     `json:"id" bun:"id,pk"`
+	Email        string     `json:"email" bun:"email,unique,notnull"`
+	FirstName    string     `json:"first_name" bun:"first_name,notnull"`
+	LastName     string     `json:"last_name" bun:"last_name,notnull"`
+	Username     string     `json:"username" bun:"username,unique,notnull"`
+	Password     string     `json:"-" bun:"password,notnull"` // "-" means this field won't be included in JSON
+	IsSuperAdmin bool       `json:"is_super_admin" bun:"is_super_admin"`
+	CreatedAt    time.Time  `json:"created_at" bun:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at" bun:"updated_at"`
+	DeletedAt    *time.Time `json:"-" bun:"deleted_at,soft_delete"`
 }
 
-// TableName specifies the table name for the User model
-func (User) TableName() string {
-	return "users"
-}
+// No need for TableName with Bun as it's specified in the struct tag
 
 // UserResponse represents the user data that can be safely sent to clients
 type UserResponse struct {
@@ -51,6 +50,6 @@ func (u *User) ToResponse() *UserResponse {
 		Username:     u.Username,
 		CreatedAt:    u.CreatedAt,
 		UpdatedAt:    u.UpdatedAt,
-		DeletedAt:    &u.DeletedAt.Time,
+		DeletedAt:    u.DeletedAt,
 	}
 }
