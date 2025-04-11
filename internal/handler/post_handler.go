@@ -56,6 +56,10 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	})
 }
 
+func (h *PostHandler) UpdatePost(c echo.Context) error {
+	return nil
+}
+
 func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 	slug := c.Param("slug")
 	username := c.Param("username")

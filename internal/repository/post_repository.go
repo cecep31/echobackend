@@ -125,7 +125,7 @@ func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Pos
 		Model(&post).
 		Relation("Creator").
 		Relation("Tags").
-		Where("id = ?", id).
+		Where("p.id = ?", id).
 		Limit(1).
 		Scan(ctx)
 
