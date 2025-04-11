@@ -32,7 +32,7 @@ func (r *postRepository) GetPostByUsername(ctx context.Context, username string,
 
 	countInt, err := r.db.NewSelect().
 		Model(&model.Post{}).
-		Join("JOIN users ON users.id = posts.created_by").
+		Join("JOIN users ON users.id = p.created_by").
 		Where("users.username = ?", username).
 		Count(ctx)
 
@@ -44,7 +44,7 @@ func (r *postRepository) GetPostByUsername(ctx context.Context, username string,
 
 	err = r.db.NewSelect().
 		Model(&posts).
-		Join("JOIN users ON users.id = posts.created_by").
+		Join("JOIN users ON users.id = p.created_by").
 		Relation("Creator").
 		Relation("Tags").
 		Where("users.username = ?", username).
