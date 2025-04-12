@@ -9,6 +9,7 @@ import (
 	"time"
 
 	echomidleware "github.com/labstack/echo/v4/middleware"
+	"golang.org/x/time/rate"
 
 	"github.com/labstack/echo/v4"
 )
@@ -90,7 +91,7 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 
 func (r *Routes) setupAuthRoutes(v1 *echo.Group) {
 	auth := v1.Group("/auth")
-	confratelimit := echomidleware.RateLimiterMemoryStoreConfig{Rate: 5, ExpiresIn: 5 * time.Minute}
+	confratelimit := echomidleware.RateLimiterMemoryStoreConfig{Rate: rate.Limit(5), ExpiresIn: 5 * time.Minute}
 	{
 		auth.POST("/register", r.authHandler.Register)
 		auth.POST("/login", r.authHandler.Login, echomidleware.RateLimiter(echomidleware.NewRateLimiterMemoryStoreWithConfig(confratelimit)))
