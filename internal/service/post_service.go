@@ -17,6 +17,7 @@ type PostService interface {
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
 	DeletePostByID(ctx context.Context, id string) error
 	UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error
+	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
 }
 
 type postService struct {
@@ -41,6 +42,10 @@ func (s *postService) GetPostsByUsername(ctx context.Context, username string, o
 	}
 
 	return postsResponse, total, nil
+}
+
+func (s *postService) CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error) {
+	return s.postRepo.CreatePost(ctx, post, creator_id)
 }
 
 func (s *postService) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error) {

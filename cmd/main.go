@@ -46,7 +46,7 @@ func main() {
 	middleware.InitMiddleware(e, conf)
 
 	// Start server
-	e.Logger.Printf("Starting server on port %s", conf.App_Port)
+	// e.Logger.Printf("Starting server on port %s", conf.App_Port)
 	e.Logger.Fatal(e.Start(":" + conf.App_Port))
 }
 

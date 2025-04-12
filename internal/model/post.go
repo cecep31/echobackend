@@ -52,3 +52,11 @@ func (p *Post) ToResponse() *PostResponse {
 		DeletedAt: p.DeletedAt,
 	}
 }
+
+type CreatePostDTO struct {
+	Title     string   `json:"title" validate:"required,min=7"`
+	Photo_url string   `json:"photo_url"`
+	Slug      string   `json:"slug" validate:"required,min=7"`
+	Body      string   `json:"body" validate:"required,min=10"`
+	Tags      []string `json:"tags" `
+}

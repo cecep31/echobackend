@@ -9,6 +9,7 @@ import (
 )
 
 type PostRepository interface {
+	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
 	GetPosts(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error)
 	GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error)
 	GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error)
@@ -24,6 +25,21 @@ type postRepository struct {
 
 func NewPostRepository(db *bun.DB) PostRepository {
 	return &postRepository{db: db}
+}
+
+func (r *postRepository) CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error) {
+	newpost := &model.Post{
+		Title: post.Title,
+		Slug:  post.Slug,
+		Body:  post.Body,
+		// Tags:        post.Tags,
+		CreatedBy: creator_id,
+	}
+	_, err := r.db.NewInsert().
+		Model(newpost).
+		Exec(ctx)
+
+	return newpost, err
 }
 
 func (r *postRepository) GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error) {

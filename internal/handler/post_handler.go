@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"echobackend/internal/model"
 	"echobackend/internal/service"
+	"echobackend/pkg/validator"
 	"net/http"
 	"strconv"
 
@@ -53,6 +55,51 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 			"limit":      limitInt,
 			"offset":     offsetInt,
 		},
+	})
+}
+
+func (h *PostHandler) CreatePost(c echo.Context) error {
+	var postReq model.CreatePostDTO
+	if err := c.Bind(&postReq); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]any{
+			"success": false,
+			"message": "Failed to create post",
+		})
+	}
+
+	if err := c.Validate(postReq); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, Response{
+				Success: false,
+				Message: "Validation failed",
+				Errors:  validationErrors.Errors,
+			})
+		}
+		return c.JSON(http.StatusBadRequest, Response{
+			Success: false,
+			Message: "Validation failed",
+			Errors:  []string{err.Error()},
+		})
+	}
+
+	claims := c.Get("user").(jwt.MapClaims)
+	userID := (claims)["user_id"].(string)
+
+	newpost, err := h.postService.CreatePost(c.Request().Context(), &postReq, userID)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"error":   err.Error(),
+			"message": "Failed to create post",
+			"success": false,
+		})
+	}
+	return c.JSON(http.StatusCreated, map[string]any{
+		"data": map[string]any{
+			"id": newpost.ID,
+		},
+		"message": "Successfully created post",
+		"success": true,
 	})
 }
 

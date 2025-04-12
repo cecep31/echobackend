@@ -77,6 +77,7 @@ func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 	posts := v1.Group("/posts")
 	{
+		posts.POST("", r.postHandler.CreatePost, r.authMiddleware.Auth())
 		posts.GET("/username/:username", r.postHandler.GetPostsByUsername)
 		posts.GET("/u/:username/:slug", r.postHandler.GetPostBySlugAndUsername)
 		posts.GET("", r.postHandler.GetPosts)
