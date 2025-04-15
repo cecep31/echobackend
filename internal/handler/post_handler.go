@@ -107,7 +107,7 @@ func (h *PostHandler) UpdatePost(c echo.Context) error {
 	id := c.Param("id")
 	var updateDTO model.UpdatePostDTO
 	if err := c.Bind(&updateDTO); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid request payload",
 			"success": false,
@@ -115,24 +115,24 @@ func (h *PostHandler) UpdatePost(c echo.Context) error {
 	}
 
 	// Optional: validate the DTO if you have a validator
-	// if err := validator.Validate(updateDTO); err != nil {
-	// 	return c.JSON(http.StatusBadRequest, map[string]interface{}{
-	// 		"error":   err.Error(),
-	// 		"message": "Validation failed",
-	// 		"success": false,
-	// 	})
-	// }
+	if err := c.Validate(updateDTO); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]any{
+			"error":   err.Error(),
+			"message": "Validation failed",
+			"success": false,
+		})
+	}
 
 	updatedPost, err := h.postService.UpdatePost(c.Request().Context(), id, &updateDTO)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to update post",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    updatedPost,
 		"message": "Post updated successfully",
 		"success": true,

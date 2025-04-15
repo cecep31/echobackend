@@ -19,10 +19,10 @@ type ValidationErrors struct {
 
 // ValidationError represents a single validation error
 type ValidationError struct {
-	Field   string      `json:"field"`
-	Message string      `json:"message"`
-	Value   interface{} `json:"value,omitempty"`
-	Tag     string      `json:"tag,omitempty"`
+	Field   string `json:"field"`
+	Message string `json:"message"`
+	Value   any    `json:"value,omitempty"`
+	Tag     string `json:"tag,omitempty"`
 }
 
 func (v ValidationErrors) Error() string {
@@ -37,7 +37,7 @@ func NewValidator() *CustomValidator {
 	return &CustomValidator{validator: v}
 }
 
-func (cv *CustomValidator) Validate(i interface{}) error {
+func (cv *CustomValidator) Validate(i any) error {
 	if err := cv.validator.Struct(i); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			var errors ValidationErrors
@@ -98,7 +98,7 @@ func getMessage(tag string, params ...string) string {
 	}
 }
 
-func sprintf(format string, args ...interface{}) string {
+func sprintf(format string, args ...any) string {
 	// Convert field names from camelCase/PascalCase to user-friendly format
 	if len(args) > 0 {
 		if fieldName, ok := args[0].(string); ok {

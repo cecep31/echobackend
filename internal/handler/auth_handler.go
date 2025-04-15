@@ -24,10 +24,10 @@ type RegisterRequest struct {
 
 // Response represents a standard API response
 type Response struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Errors  interface{} `json:"errors,omitempty"`
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Data    any    `json:"data,omitempty"`
+	Errors  any    `json:"errors,omitempty"`
 }
 
 func NewAuthHandler(authService service.AuthService) *AuthHandler {
@@ -78,7 +78,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	return c.JSON(http.StatusCreated, Response{
 		Success: true,
 		Message: "User registered successfully",
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"id":    user.ID,
 			"email": user.Email,
 		},
@@ -129,9 +129,9 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, Response{
 		Success: true,
 		Message: "Login successful",
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"access_token": token,
-			"user": map[string]interface{}{
+			"user": map[string]any{
 				"id":    user.ID,
 				"email": user.Email,
 			},
