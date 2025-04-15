@@ -60,3 +60,11 @@ type CreatePostDTO struct {
 	Body      string   `json:"body" validate:"required,min=10"`
 	Tags      []string `json:"tags" `
 }
+
+type UpdatePostDTO struct {
+	Title     string   `json:"title"`
+	Photo_url string   `json:"photo_url"`
+	Slug      string   `json:"slug"`
+	Body      string   `json:"body"`
+	Tags      []string `json:"tags"`
+}

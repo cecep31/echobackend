@@ -18,6 +18,7 @@ type PostService interface {
 	DeletePostByID(ctx context.Context, id string) error
 	UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error
 	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
+	UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error)
 }
 
 type postService struct {
@@ -59,6 +60,10 @@ func (s *postService) GetPostBySlugAndUsername(ctx context.Context, slug string,
 
 func (s *postService) DeletePostByID(ctx context.Context, id string) error {
 	return s.postRepo.DeletePostByID(ctx, id)
+}
+
+func (s *postService) UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error) {
+	return s.postRepo.UpdatePost(ctx, id, post)
 }
 
 func (s *postService) GetPostByID(ctx context.Context, id string) (*model.PostResponse, error) {

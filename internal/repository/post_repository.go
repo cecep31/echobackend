@@ -17,6 +17,7 @@ type PostRepository interface {
 	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error)
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error)
 	DeletePostByID(ctx context.Context, id string) error
+	UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error)
 }
 
 type postRepository struct {
@@ -25,6 +26,37 @@ type postRepository struct {
 
 func NewPostRepository(db *bun.DB) PostRepository {
 	return &postRepository{db: db}
+}
+
+func (r *postRepository) UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error) {
+	existingPost := &model.Post{}
+	err := r.db.NewSelect().Model(existingPost).Where("id = ?", id).Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if post.Title != "" {
+		existingPost.Title = post.Title
+	}
+	if post.Body != "" {
+		existingPost.Body = post.Body
+	}
+	if post.Slug != "" {
+		existingPost.Slug = post.Slug
+	}
+	if post.Photo_url != "" {
+		existingPost.Photo_url = post.Photo_url
+	}
+	// Optionally update tags if your logic supports it
+	// if post.Tags != nil {
+	// 	existingPost.Tags = *post.Tags
+	// }
+
+	_, err = r.db.NewUpdate().Model(existingPost).WherePK().Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return existingPost, nil
 }
 
 func (r *postRepository) CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error) {

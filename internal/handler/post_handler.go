@@ -104,7 +104,39 @@ func (h *PostHandler) CreatePost(c echo.Context) error {
 }
 
 func (h *PostHandler) UpdatePost(c echo.Context) error {
-	return nil
+	id := c.Param("id")
+	var updateDTO model.UpdatePostDTO
+	if err := c.Bind(&updateDTO); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"error":   err.Error(),
+			"message": "Invalid request payload",
+			"success": false,
+		})
+	}
+
+	// Optional: validate the DTO if you have a validator
+	// if err := validator.Validate(updateDTO); err != nil {
+	// 	return c.JSON(http.StatusBadRequest, map[string]interface{}{
+	// 		"error":   err.Error(),
+	// 		"message": "Validation failed",
+	// 		"success": false,
+	// 	})
+	// }
+
+	updatedPost, err := h.postService.UpdatePost(c.Request().Context(), id, &updateDTO)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"error":   err.Error(),
+			"message": "Failed to update post",
+			"success": false,
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data":    updatedPost,
+		"message": "Post updated successfully",
+		"success": true,
+	})
 }
 
 func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
