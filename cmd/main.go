@@ -7,15 +7,11 @@ import (
 	"echobackend/internal/routes"
 	"echobackend/pkg/validator"
 	"net/http"
-	"runtime"
 
 	"github.com/labstack/echo/v4"
 )
 
 func main() {
-	// Set GOMAXPROCS to match available CPU cores
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	// load config
 	conf, errconf := config.Load()
 	if errconf != nil {
@@ -40,7 +36,7 @@ func main() {
 	}
 	newroutes.Setup(e)
 
-	e.GET("/", hellworld)
+	e.GET("/", helloWorld)
 
 	// Setup middleware
 	middleware.InitMiddleware(e, conf)
@@ -50,8 +46,9 @@ func main() {
 	e.Logger.Fatal(e.Start(":" + conf.App_Port))
 }
 
-func hellworld(c echo.Context) error {
-	return c.JSON(http.StatusOK, &echo.Map{
+func helloWorld(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Hello, World!",
+		"success": true,
 	})
 }
