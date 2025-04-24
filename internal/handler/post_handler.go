@@ -123,6 +123,20 @@ func (h *PostHandler) UpdatePost(c echo.Context) error {
 		})
 	}
 
+	user := c.Get("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	userID := claims["user_id"].(string)
+
+	// Check if the user is the author of the post
+	err := h.postService.IsAuthor(c.Request().Context(), id, userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"error":   err.Error(),
+			"message": "Failed to check post ownership",
+			"success": false,
+		})
+	}
+
 	updatedPost, err := h.postService.UpdatePost(c.Request().Context(), id, &updateDTO)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{

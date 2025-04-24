@@ -5,6 +5,7 @@ import (
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
 	"echobackend/internal/storage"
+	"errors"
 	"mime/multipart"
 )
 
@@ -19,6 +20,7 @@ type PostService interface {
 	UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error
 	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
 	UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error)
+	IsAuthor(ctx context.Context, id string, userid string) error
 }
 
 type postService struct {
@@ -28,6 +30,17 @@ type postService struct {
 
 func NewPostService(postRepo repository.PostRepository, storageclient *storage.MinioStorage) PostService {
 	return &postService{postRepo: postRepo, miniostorage: storageclient}
+}
+
+func (s *postService) IsAuthor(ctx context.Context, id string, userid string) error {
+	post, err := s.postRepo.GetPostByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if post.CreatedBy != userid {
+		return errors.New("not author")
+	}
+	return nil
 }
 
 func (s *postService) GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.PostResponse, int64, error) {
