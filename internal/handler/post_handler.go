@@ -123,6 +123,7 @@ func (h *PostHandler) UpdatePost(c echo.Context) error {
 		})
 	}
 
+	// Get the user ID from the JWT token
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
 	userID := claims["user_id"].(string)
