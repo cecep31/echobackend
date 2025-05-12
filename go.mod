@@ -12,7 +12,7 @@ require (
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/viper v1.20.1
 	github.com/uptrace/bun v1.2.11
-	go.uber.org/dig v1.18.1
+	go.uber.org/dig v1.18.2
 	golang.org/x/crypto v0.38.0
 	golang.org/x/time v0.11.0
 )
