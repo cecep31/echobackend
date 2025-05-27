@@ -13,7 +13,7 @@ import (
 )
 
 // NewDatabase creates a new database connection using the provided configuration
-func NewDatabase(config *config.Config) *bun.DB {
+func NewDatabase(config *config.Config) *DatabaseWrapper {
 	pgxConfig, err := pgx.ParseConfig(config.Database_URL)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse database config: %w", err))
@@ -42,5 +42,5 @@ func NewDatabase(config *config.Config) *bun.DB {
 	// Register models with Bun ORM
 	RegisterModels(db)
 
-	return db
+	return NewDatabaseWrapper(db)
 }

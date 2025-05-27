@@ -59,7 +59,7 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
 	}
-	
+
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
@@ -131,7 +131,7 @@ func (r *userRepository) SoftDeleteByID(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %w", err)
 	}
-	
+
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)

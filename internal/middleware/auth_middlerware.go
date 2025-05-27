@@ -65,11 +65,25 @@ func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			user := c.Get("user").(*jwt.Token)
-			claims := user.Claims.(jwt.MapClaims)
-			if claims["isSuperadmin"] != "true" {
-				return echo.NewHTTPError(403, "forbidden")
+			userClaims := c.Get("user")
+			if userClaims == nil {
+				return echo.NewHTTPError(401, "unauthorized: missing user context")
 			}
+
+			claims, ok := userClaims.(jwt.MapClaims)
+			if !ok {
+				return echo.NewHTTPError(401, "unauthorized: invalid user context")
+			}
+
+			isSuperadmin, exists := claims["isSuperadmin"]
+			if !exists {
+				return echo.NewHTTPError(403, "forbidden: missing admin privileges")
+			}
+
+			if isSuperadmin != "true" && isSuperadmin != true {
+				return echo.NewHTTPError(403, "forbidden: insufficient privileges")
+			}
+
 			return next(c)
 		}
 	}

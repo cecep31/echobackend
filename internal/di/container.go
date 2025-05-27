@@ -10,6 +10,7 @@ import (
 	"echobackend/internal/storage"
 	"echobackend/pkg/database"
 
+	"github.com/uptrace/bun"
 	"go.uber.org/dig"
 )
 
@@ -19,13 +20,25 @@ var container *dig.Container
 func BuildContainer(configgure *config.Config) *dig.Container {
 	container = dig.New()
 
+	// Provide cleanup manager
+	container.Provide(NewCleanupManager)
+
 	// Provide config
 	container.Provide(func() *config.Config {
 		return configgure
 	})
 
-	// Provide database
-	container.Provide(database.NewDatabase)
+	// Provide database with cleanup registration
+	container.Provide(func(config *config.Config, cleanup *CleanupManager) *database.DatabaseWrapper {
+		db := database.NewDatabase(config)
+		cleanup.Register(db)
+		return db
+	})
+
+	// Provide *bun.DB from the wrapper for repositories
+	container.Provide(func(wrapper *database.DatabaseWrapper) *bun.DB {
+		return wrapper.DB
+	})
 
 	// Provide repositories
 	container.Provide(repository.NewUserRepository)
@@ -66,4 +79,15 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 // GetContainer returns the dig container instance
 func GetContainer() *dig.Container {
 	return container
+}
+
+// GetCleanupManager retrieves the cleanup manager from the container
+func GetCleanupManager() (*CleanupManager, error) {
+	var cleanup *CleanupManager
+	if err := container.Invoke(func(c *CleanupManager) {
+		cleanup = c
+	}); err != nil {
+		return nil, err
+	}
+	return cleanup, nil
 }

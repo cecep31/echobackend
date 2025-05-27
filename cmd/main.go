@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"echobackend/config"
 	"echobackend/internal/di"
 	"echobackend/internal/middleware"
 	"echobackend/internal/routes"
 	"echobackend/pkg/validator"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -41,9 +46,43 @@ func main() {
 	// Setup middleware
 	middleware.InitMiddleware(e, conf)
 
-	// Start server
-	// e.Logger.Printf("Starting server on port %s", conf.App_Port)
-	e.Logger.Fatal(e.Start(":" + conf.App_Port))
+	// Start server in a goroutine
+	go func() {
+		e.Logger.Printf("Starting server on port %s", conf.App_Port)
+		if err := e.Start(":" + conf.App_Port); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatal("shutting down the server")
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	e.Logger.Print("Server is shutting down...")
+
+	// Graceful shutdown with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Shutdown Echo server
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal("Server forced to shutdown:", err)
+	}
+
+	// Cleanup resources
+	cleanup, err := di.GetCleanupManager()
+	if err != nil {
+		e.Logger.Error("Failed to get cleanup manager:", err)
+	} else {
+		if err := cleanup.CleanupWithTimeout(5 * time.Second); err != nil {
+			e.Logger.Error("Cleanup failed:", err)
+		} else {
+			e.Logger.Print("Resources cleaned up successfully")
+		}
+	}
+
+	e.Logger.Print("Server exited")
 }
 
 func helloWorld(c echo.Context) error {
