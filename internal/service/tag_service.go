@@ -8,7 +8,7 @@ import (
 )
 
 type tagService struct {
-	repo repository.TagRepository
+	tagRepo repository.TagRepository
 }
 
 type TagService interface {
@@ -19,33 +19,33 @@ type TagService interface {
 	DeleteTag(ctx context.Context, id uint) error
 }
 
-func NewTagService(repo repository.TagRepository) TagService {
-	return &tagService{repo: repo}
+func NewTagService(tagRepo repository.TagRepository) TagService {
+	return &tagService{tagRepo: tagRepo}
 }
 
 func (s *tagService) CreateTag(ctx context.Context, tag *model.Tag) error {
 	if tag.Name == "" {
 		return errors.New("tag name is required")
 	}
-	return s.repo.Create(ctx, tag)
+	return s.tagRepo.Create(ctx, tag)
 }
 
 func (s *tagService) GetTags(ctx context.Context) ([]model.Tag, error) {
-	return s.repo.FindAll(ctx)
+	return s.tagRepo.FindAll(ctx)
 }
 
 func (s *tagService) GetTagByID(ctx context.Context, id uint) (*model.Tag, error) {
-	return s.repo.FindByID(ctx, id)
+	return s.tagRepo.FindByID(ctx, id)
 }
 
 func (s *tagService) UpdateTag(ctx context.Context, tag *model.Tag) error {
-	return s.repo.Update(ctx, tag)
+	return s.tagRepo.Update(ctx, tag)
 }
 
 func (s *tagService) DeleteTag(ctx context.Context, id uint) error {
-	_, err := s.repo.FindByID(ctx, id)
+	_, err := s.tagRepo.FindByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	return s.repo.Delete(ctx, id)
+	return s.tagRepo.Delete(ctx, id)
 }
