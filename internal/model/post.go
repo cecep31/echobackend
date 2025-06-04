@@ -13,9 +13,9 @@ type Post struct {
 	Photo_url string         `json:"photo_url" gorm:"type:text"`
 	Body      string         `json:"body" gorm:"type:text;not null"` // Changed to type:text for potentially long content
 	Slug      string         `json:"slug" gorm:"uniqueIndex;not null"`
-	CreatedBy string         `json:"created_by" gorm:"type:uuid"`         // Foreign key for User
-	Creator   User           `json:"creator" gorm:"foreignKey:CreatedBy"` // Belongs to User
-	Tags      []Tag          `json:"tags" gorm:"many2many:posts_tags;"`   // Many to many with Tag, posts_tags is the join table
+	CreatedBy string         `json:"created_by" gorm:"type:uuid"`          // Foreign key for User
+	Creator   User           `json:"creator" gorm:"foreignKey:CreatedBy"`  // Belongs to User
+	Tags      []Tag          `json:"tags" gorm:"many2many:posts_to_tags;"` // Many to many with Tag, posts_tags is the join table
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"` // GORM soft delete
