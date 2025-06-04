@@ -10,8 +10,8 @@ import (
 	"echobackend/internal/storage"
 	"echobackend/pkg/database"
 
-	"github.com/uptrace/bun"
 	"go.uber.org/dig"
+	"gorm.io/gorm"
 )
 
 var container *dig.Container
@@ -35,8 +35,8 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 		return db
 	})
 
-	// Provide *bun.DB from the wrapper for repositories
-	container.Provide(func(wrapper *database.DatabaseWrapper) *bun.DB {
+	// Provide *gorm.DB from the wrapper for repositories
+	container.Provide(func(wrapper *database.DatabaseWrapper) *gorm.DB {
 		return wrapper.DB
 	})
 

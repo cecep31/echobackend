@@ -1,23 +1,55 @@
 package model
 
 import (
-	"github.com/uptrace/bun"
+	"time" // For CreatedAt, UpdatedAt if we add gorm.Model or similar
+	// "gorm.io/gorm" // No longer needed if gorm.DeletedAt is not used
 )
 
 type Tag struct {
-	bun.BaseModel `bun:"table:tags,alias:t"`
-	ID            uint   `json:"id" bun:"id,pk"`
-	Name          string `json:"name" bun:"name"`
-	// Posts         []Post `json:"-" bun:"m2m:posts_to_tags,join:Post=Tag"`
+	// gorm.Model // Embed if you want ID, CreatedAt, UpdatedAt, DeletedAt by default
+	ID    uint   `json:"id" gorm:"primaryKey"`
+	Name  string `json:"name" gorm:"uniqueIndex;not null"` // Assuming tag names are unique and not null
+	Posts []Post `json:"-" gorm:"many2many:posts_tags;"`   // Many to many with Post, posts_tags is the join table
+
+	// Optional: Add CreatedAt, UpdatedAt if not embedding gorm.Model
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	// DeletedAt gorm.DeletedAt `json:"-" gorm:"index"` // If soft delete is needed for tags
 }
 
-type PostsToTags struct {
-	bun.BaseModel `bun:"table:posts_to_tags,alias:pt"`
-	ID            string `bun:"id,pk,type:uuid" json:"id"`
-
-	// Post reference
-	PostID string `bun:"post_id,pk,type:uuid"`
-	Post   *Post  `bun:"rel:belongs-to,join:post_id=id"`
-	TagID  uint   `bun:"tag_id,pk"`
-	Tag    *Tag   `bun:"rel:belongs-to,join:tag_id=id"`
+// TableName specifies the table name for GORM
+func (Tag) TableName() string {
+	return "tags"
 }
+
+// TagResponse represents the tag data that can be safely sent to clients
+type TagResponse struct {
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+	// Add other fields if needed in response
+}
+
+// ToResponse converts a Tag model to a TagResponse
+func (t *Tag) ToResponse() *TagResponse {
+	if t == nil {
+		return nil
+	}
+	return &TagResponse{
+		ID:   t.ID,
+		Name: t.Name,
+	}
+}
+
+// PostsToTags struct might not be needed if GORM manages the join table implicitly.
+// If posts_tags has more than just post_id and tag_id (e.g., its own primary key or timestamps),
+// then a struct like this with GORM tags would be necessary to define it as a join table model.
+// For now, assuming GORM's default m2m handling is sufficient.
+// type PostsToTags struct {
+// 	PostID string `gorm:"primaryKey"`
+// 	TagID  uint   `gorm:"primaryKey"`
+// 	// Add other fields if the join table has them, e.g.:
+// 	// CreatedAt time.Time
+// }
+// func (PostsToTags) TableName() string {
+// 	return "posts_tags"
+// }

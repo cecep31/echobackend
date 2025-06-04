@@ -2,10 +2,18 @@ package repository
 
 import (
 	"context"
+	"errors" // For gorm.ErrRecordNotFound checks
+	"fmt"    // For error wrapping
 
 	"echobackend/internal/model"
 
-	"github.com/uptrace/bun"
+	"gorm.io/gorm"
+	// "gorm.io/gorm/clause" // For Preload with conditions if needed - will add if used
+)
+
+// Define common errors or use gorm.ErrRecordNotFound directly
+var (
+	ErrPostNotFound = errors.New("post not found")
 )
 
 type PostRepository interface {
@@ -21,126 +29,192 @@ type PostRepository interface {
 }
 
 type postRepository struct {
-	db *bun.DB
+	db *gorm.DB
 }
 
-func NewPostRepository(db *bun.DB) PostRepository {
+func NewPostRepository(db *gorm.DB) PostRepository {
 	return &postRepository{db: db}
 }
 
-func (r *postRepository) UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error) {
-	existingPost := &model.Post{}
-	err := r.db.NewSelect().Model(existingPost).Where("id = ?", id).Scan(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if post.Title != "" {
-		existingPost.Title = post.Title
-	}
-	if post.Body != "" {
-		existingPost.Body = post.Body
-	}
-	if post.Slug != "" {
-		existingPost.Slug = post.Slug
-	}
-	if post.Photo_url != "" {
-		existingPost.Photo_url = post.Photo_url
-	}
-	// Optionally update tags if your logic supports it
-	// if post.Tags != nil {
-	// 	existingPost.Tags = *post.Tags
+func (r *postRepository) UpdatePost(ctx context.Context, id string, postDTO *model.UpdatePostDTO) (*model.Post, error) {
+	// Check if the post exists first (optional, Updates will return RowsAffected = 0 if not found)
+	// var existingCheck model.Post
+	// if err := r.db.WithContext(ctx).Select("id").First(&existingCheck, "id = ?", id).Error; err != nil {
+	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
+	// 		return nil, ErrPostNotFound
+	// 	}
+	// 	return nil, fmt.Errorf("error checking post existence before update: %w", err)
 	// }
 
-	_, err = r.db.NewUpdate().Model(existingPost).WherePK().Exec(ctx)
-	if err != nil {
-		return nil, err
+	// Create a map for updates to handle partial updates and zero values correctly if needed.
+	// If UpdatePostDTO fields are pointers, checking for nil is good.
+	// If they are value types, GORM's Updates() on a struct will only update non-zero fields by default.
+	// Using a map gives more control.
+	updates := make(map[string]interface{})
+
+	// UpdatePostDTO fields are value types (string), so check for non-empty.
+	if postDTO.Title != "" {
+		updates["title"] = postDTO.Title
 	}
-	return existingPost, nil
+	if postDTO.Body != "" {
+		updates["body"] = postDTO.Body
+	}
+	if postDTO.Slug != "" {
+		updates["slug"] = postDTO.Slug
+	}
+	if postDTO.Photo_url != "" {
+		updates["photo_url"] = postDTO.Photo_url
+	}
+	// Add other updatable fields from DTO to the map in a similar way.
+	// e.g., if postDTO.IsPublished (bool) needs specific handling for update.
+
+	// Handling Tags update is more complex and usually done via Associations.
+	// For now, focusing on simple field updates.
+	// if len(postDTO.Tags) > 0 { /* logic to update tags */ }
+
+	if len(updates) == 0 && len(postDTO.Tags) == 0 { // Check if DTO is effectively empty for updates
+		// No actual fields to update based on DTO content, and no tags to update.
+		// Fetch and return the current post.
+		// For now, let's assume an empty DTO means no operation or an error.
+		// Or, if DTO might only contain tags to update, handle that separately.
+		// We should fetch the post to return it, even if no fields changed.
+		var currentPost model.Post
+		err := r.db.WithContext(ctx).Preload("Creator").Preload("Tags").First(&currentPost, "id = ?", id).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, ErrPostNotFound
+			}
+			return nil, fmt.Errorf("failed to fetch post (no updates provided): %w", err)
+		}
+		return &currentPost, nil
+	}
+
+	result := r.db.WithContext(ctx).Model(&model.Post{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to update post: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return nil, ErrPostNotFound // Post with ID not found
+	}
+
+	// After updating, fetch the post again to get the full model with associations
+	var updatedPost model.Post
+	err := r.db.WithContext(ctx).Preload("Creator").Preload("Tags").First(&updatedPost, "id = ?", id).Error
+	if err != nil {
+		// This case (update succeeded but fetch failed) should be rare but handled.
+		return nil, fmt.Errorf("post updated, but failed to retrieve updated record: %w", err)
+	}
+
+	// TODO: Handle Tags update if postDTO.Tags is provided.
+	// This typically involves using GORM's association mode:
+	// if postDTO.Tags != nil {
+	//   // Convert DTO tags to []model.Tag or list of IDs
+	//   // e.g., r.db.Model(&updatedPost).Association("Tags").Replace(newTags)
+	// }
+
+	return &updatedPost, nil
 }
 
-func (r *postRepository) CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error) {
+func (r *postRepository) CreatePost(ctx context.Context, postDTO *model.CreatePostDTO, creator_id string) (*model.Post, error) {
 	newpost := &model.Post{
-		Title: post.Title,
-		Slug:  post.Slug,
-		Body:  post.Body,
-		// Tags:        post.Tags,
-		CreatedBy: creator_id,
+		Title:     postDTO.Title,
+		Slug:      postDTO.Slug,
+		Body:      postDTO.Body,
+		CreatedBy: creator_id,        // Assuming model.Post has CreatedBy field for user ID
+		Photo_url: postDTO.Photo_url, // Assuming CreatePostDTO and Post model have Photo_url
+		// Tags will be handled if/when model.Post supports it and DTO provides them
 	}
-	_, err := r.db.NewInsert().
-		Model(newpost).
-		Exec(ctx)
 
-	return newpost, err
+	err := r.db.WithContext(ctx).Create(newpost).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to create post: %w", err)
+	}
+
+	// To return the post with potentially preloaded fields (like Creator, Tags),
+	// it's often best to fetch it after creation, especially if ID is auto-generated.
+	// GORM's Create populates the ID in newpost if it's auto-increment or set by BeforeCreate hook.
+	// For now, we return the 'newpost' instance. If relations need to be populated, a subsequent fetch is needed.
+	// Example:
+	// var createdPostWithRelations model.Post
+	// if fetchErr := r.db.WithContext(ctx).Preload("Creator").Preload("Tags").First(&createdPostWithRelations, "id = ?", newpost.ID).Error; fetchErr != nil {
+	//     return newpost, fmt.Errorf("post created (id: %s) but failed to fetch with relations: %w", newpost.ID, fetchErr)
+	// }
+	// return &createdPostWithRelations, nil
+	return newpost, nil // Returning the instance passed to Create. ID should be populated.
 }
 
 func (r *postRepository) GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error) {
 	var posts []*model.Post
 	var count int64
 
-	countInt, err := r.db.NewSelect().
-		Model(&model.Post{}).
-		Join("JOIN users ON users.id = p.created_by").
-		Where("users.username = ?", username).
-		Count(ctx)
+	// Base query for counting and fetching
+	// Assuming Post model has CreatorID field linking to User model's ID,
+	// and User model has Username field.
+	// Table names "posts" and "users" are assumed based on GORM defaults or TableName() methods.
+	query := r.db.WithContext(ctx).Model(&model.Post{}).
+		Joins("JOIN users ON users.id = posts.created_by"). // Ensure 'posts.created_by' is the correct foreign key column name
+		Where("users.username = ?", username)
 
-	count = int64(countInt)
-
+	// Count total records
+	err := query.Count(&count).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to count posts for username %s: %w", username, err)
 	}
 
-	err = r.db.NewSelect().
-		Model(&posts).
-		Join("JOIN users ON users.id = p.created_by").
-		Relation("Creator").
-		Relation("Tags").
+	// Get paginated records
+	// Re-apply Joins or ensure Preload works as expected.
+	// For Preload("Creator"), GORM uses the defined foreign keys.
+	// The explicit Join above is mainly for the WHERE clause on users.username.
+	err = r.db.WithContext(ctx).Model(&model.Post{}).
+		Preload("Creator"). // GORM will fetch Creator based on associations
+		Preload("Tags").
+		Joins("JOIN users ON users.id = posts.created_by"). // Keep join for filtering
 		Where("users.username = ?", username).
+		Order("posts.created_at DESC"). // Assuming 'posts' is the table name for Post model
 		Offset(offset).
 		Limit(limit).
-		Scan(ctx)
+		Find(&posts).Error
 
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to get posts for username %s: %w", username, err)
 	}
 
 	return posts, count, nil
 }
 
 func (r *postRepository) DeletePostByID(ctx context.Context, id string) error {
-	_, err := r.db.NewDelete().
-		Model(&model.Post{}).
-		Where("id = ?", id).
-		Exec(ctx)
-
-	return err
+	// Assumes soft delete if model.Post has gorm.DeletedAt field.
+	// If hard delete is needed, use Unscoped().Delete()
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.Post{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete post: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrPostNotFound // Or specific error
+	}
+	return nil
 }
 
 func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error) {
 	var posts []*model.Post
 	var count int64
 
-	countInt, err := r.db.NewSelect().
-		Model(&model.Post{}).
-		Count(ctx)
-
-	count = int64(countInt)
-
+	// Count total records
+	err := r.db.WithContext(ctx).Model(&model.Post{}).Count(&count).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to count posts: %w", err)
 	}
 
-	err = r.db.NewSelect().
-		Model(&posts).
-		Relation("Creator").
-		Relation("Tags").
-		OrderExpr("created_at DESC").
+	// Get paginated records
+	err = r.db.WithContext(ctx).
+		Preload("Creator").
+		Preload("Tags").
+		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
-		Scan(ctx)
-
+		Find(&posts).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to get posts: %w", err)
 	}
 
 	return posts, count, nil
@@ -148,57 +222,56 @@ func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([
 
 func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error) {
 	var post model.Post
-
-	err := r.db.NewSelect().
-		Model(&post).
-		Relation("Creator", func(q *bun.SelectQuery) *bun.SelectQuery {
-			return q.Where("username = ?", username)
-		}).
-		Relation("Tags").
-		Where("p.slug = ?", slug).
-		Limit(1).
-		Scan(ctx)
+	// We need to find a post with a given slug AND created by a user with the given username.
+	err := r.db.WithContext(ctx).
+		Preload("Creator").                                 // Preload the Creator
+		Preload("Tags").                                    // Preload Tags
+		Joins("JOIN users ON users.id = posts.created_by"). // Join with users table
+		Where("posts.slug = ? AND users.username = ?", slug, username).
+		First(&post).Error // Find the first matching record
 
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPostNotFound // Or a more specific "post with slug/username not found"
+		}
+		return nil, fmt.Errorf("failed to get post by slug '%s' and username '%s': %w", slug, username, err)
 	}
-
+	// The JOIN and WHERE clause should ensure post.Creator.Username matches,
+	// but an explicit check after loading can be added for extra safety if Creator is preloaded.
+	// if post.Creator == nil || post.Creator.Username != username {
+	//  return nil, ErrPostNotFound // Should not happen if JOIN is correct
+	// }
 	return &post, nil
 }
 
 func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Post, error) {
 	var post model.Post
-
-	err := r.db.NewSelect().
-		Model(&post).
-		Relation("Creator").
-		Relation("Tags").
-		Where("p.id = ?", id).
-		Limit(1).
-		Scan(ctx)
+	err := r.db.WithContext(ctx).
+		Preload("Creator").              // Assuming Post model has a Creator field (struct or ID)
+		Preload("Tags").                 // Assuming Post model has a Tags field (slice of Tag)
+		First(&post, "id = ?", id).Error // GORM uses primary key by default if just `id` is passed to First
 
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrPostNotFound
+		}
+		return nil, fmt.Errorf("failed to get post by ID: %w", err)
 	}
-
 	return &post, nil
 }
 
 func (r *postRepository) GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error) {
 	var randomPosts []*model.Post
-
-	err := r.db.NewSelect().
-		Model(&randomPosts).
-		Relation("Creator").
-		Relation("Tags").
-		OrderExpr("RANDOM()").
+	err := r.db.WithContext(ctx).
+		Preload("Creator").
+		Preload("Tags").
+		Order("RANDOM()"). // Works for PostgreSQL and SQLite. For others, might need specific syntax.
 		Limit(limit).
-		Scan(ctx)
+		Find(&randomPosts).Error
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get random posts: %w", err)
 	}
-
 	return randomPosts, nil
 }
 
@@ -206,30 +279,24 @@ func (r *postRepository) GetPostsByCreatedBy(ctx context.Context, createdBy stri
 	var posts []*model.Post
 	var count int64
 
-	countInt, err := r.db.NewSelect().
-		Model(&model.Post{}).
-		Where("created_by = ?", createdBy).
-		Count(ctx)
-
-	count = int64(countInt)
-
+	// Count posts by created_by (user ID)
+	// Assuming model.Post has a 'CreatedBy' field that stores the user ID.
+	err := r.db.WithContext(ctx).Model(&model.Post{}).Where("created_by = ?", createdBy).Count(&count).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to count posts by creator ID %s: %w", createdBy, err)
 	}
 
-	err = r.db.NewSelect().
-		Model(&posts).
-		Relation("Creator").
-		Relation("Tags").
+	// Get paginated records
+	err = r.db.WithContext(ctx).
+		Preload("Creator"). // Preload creator details
+		Preload("Tags").    // Preload tags
 		Where("created_by = ?", createdBy).
-		OrderExpr("created_at DESC").
+		Order("created_at DESC").
 		Offset(offset).
 		Limit(limit).
-		Scan(ctx)
-
+		Find(&posts).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to get posts by creator ID %s: %w", createdBy, err)
 	}
-
 	return posts, count, nil
 }

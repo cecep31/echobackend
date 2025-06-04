@@ -2,13 +2,12 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
 	"echobackend/internal/model"
 
-	"github.com/uptrace/bun"
+	"gorm.io/gorm"
 )
 
 // Errors that can be returned by the repository
@@ -28,10 +27,10 @@ type UserRepository interface {
 }
 
 type userRepository struct {
-	db *bun.DB
+	db *gorm.DB
 }
 
-func NewUserRepository(db *bun.DB) UserRepository {
+func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
@@ -44,41 +43,37 @@ func (r *userRepository) Create(ctx context.Context, user *model.User) error {
 		return ErrUserExists
 	}
 
-	_, err = r.db.NewInsert().
-		Model(user).
-		Exec(ctx)
-	return err
+	result := r.db.WithContext(ctx).Create(user)
+	return result.Error
 }
 
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
-	res, err := r.db.NewUpdate().
-		Model(user).
-		Column("name", "email", "username", "bio", "avatar", "updated_at").
+	// Ensure `UpdatedAt` is set if you have such a field and GORM doesn't handle it automatically
+	// based on your model definition or hooks. GORM typically handles `UpdatedAt` automatically.
+	result := r.db.WithContext(ctx).Model(user).
+		// Select specific columns to update. GORM updates non-zero fields by default.
+		// If you want to update all fields including zero values, use Select("*")
+		// or specify all columns. For partial updates, this is good.
+		Select("Email", "FirstName", "LastName", "Username", "IsSuperAdmin"). // Note: GORM uses struct field names. UpdatedAt is handled by GORM.
 		Where("id = ?", user.ID).
-		Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to update user: %w", err)
-	}
+		Updates(user) // Updates will only update non-zero fields of the user struct unless specified in Select.
+		// If you want to update specific fields to their zero values, use a map:
+		// Updates(map[string]interface{}{"name": user.Name, "email": user.Email, ...})
 
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update user: %w", result.Error)
 	}
-	if rowsAffected == 0 {
-		return ErrUserNotFound
+	if result.RowsAffected == 0 {
+		return ErrUserNotFound // Or handle as a specific case where no update occurred
 	}
 	return nil
 }
 
 func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, error) {
 	var user model.User
-	err := r.db.NewSelect().
-		Model(&user).
-		Where("id = ?", id).
-		Limit(1).
-		Scan(ctx)
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -88,35 +83,26 @@ func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, e
 
 func (r *userRepository) GetUsers(ctx context.Context, offset, limit int) ([]*model.User, int64, error) {
 	var users []*model.User
+	var totalCount int64
 
 	// Count total records
-	totalCount, err := r.db.NewSelect().
-		Model((*model.User)(nil)).
-		Count(ctx)
+	err := r.db.WithContext(ctx).Model((*model.User)(nil)).Count(&totalCount).Error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count users: %w", err)
 	}
-	total := int64(totalCount)
 
 	// Get paginated records
-	err = r.db.NewSelect().
-		Model(&users).
-		Offset(offset).
-		Limit(limit).
-		Scan(ctx)
+	err = r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&users).Error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get users: %w", err)
 	}
 
-	return users, total, nil
+	return users, totalCount, nil
 }
 
 func (r *userRepository) GetUsersByEmail(ctx context.Context, email string) ([]*model.User, error) {
 	var users []*model.User
-	err := r.db.NewSelect().
-		Model(&users).
-		Where("email = ?", email).
-		Scan(ctx)
+	err := r.db.WithContext(ctx).Where("email = ?", email).Find(&users).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get users by email: %w", err)
 	}
@@ -124,27 +110,25 @@ func (r *userRepository) GetUsersByEmail(ctx context.Context, email string) ([]*
 }
 
 func (r *userRepository) SoftDeleteByID(ctx context.Context, id string) error {
-	res, err := r.db.NewDelete().
-		Model(&model.User{}).
-		Where("id = ?", id).
-		Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+	// Assumes model.User has a gorm.DeletedAt field for soft delete
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.User{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to soft delete user: %w", result.Error)
 	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-	if rowsAffected == 0 {
+	if result.RowsAffected == 0 {
 		return ErrUserNotFound
 	}
 	return nil
 }
 
 func (r *userRepository) Exists(ctx context.Context, email string) (bool, error) {
-	count, err := r.db.NewSelect().Model((*model.User)(nil)).Where("email = ?", email).Count(ctx)
+	var count int64
+	err := r.db.WithContext(ctx).Model((*model.User)(nil)).Where("email = ?", email).Count(&count).Error
 	if err != nil {
+		// If the error is record not found, it means no user with that email exists.
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
 		return false, fmt.Errorf("failed to check user existence: %w", err)
 	}
 	return count > 0, nil

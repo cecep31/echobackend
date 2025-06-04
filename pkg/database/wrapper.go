@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/uptrace/bun"
+	"gorm.io/gorm"
 )
 
-// DatabaseWrapper wraps bun.DB with cleanup functionality
+// DatabaseWrapper wraps gorm.DB with cleanup functionality
 type DatabaseWrapper struct {
-	*bun.DB
+	*gorm.DB
 	mu     sync.RWMutex
 	closed bool
 }
 
 // NewDatabaseWrapper creates a new database wrapper
-func NewDatabaseWrapper(db *bun.DB) *DatabaseWrapper {
+func NewDatabaseWrapper(db *gorm.DB) *DatabaseWrapper {
 	return &DatabaseWrapper{
 		DB: db,
 	}
@@ -31,8 +31,12 @@ func (dw *DatabaseWrapper) Close() error {
 		return nil
 	}
 
-	// Close the underlying SQL database
-	if err := dw.DB.Close(); err != nil {
+	// Get the underlying sql.DB and close it
+	sqlDB, err := dw.DB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get underlying sql.DB for closing: %w", err)
+	}
+	if err := sqlDB.Close(); err != nil {
 		return fmt.Errorf("failed to close database: %w", err)
 	}
 
@@ -56,5 +60,10 @@ func (dw *DatabaseWrapper) Ping(ctx context.Context) error {
 		return fmt.Errorf("database connection is closed")
 	}
 
-	return dw.DB.PingContext(ctx)
+	// Get the underlying sql.DB and ping it
+	sqlDB, err := dw.DB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get underlying sql.DB for ping: %w", err)
+	}
+	return sqlDB.PingContext(ctx)
 }

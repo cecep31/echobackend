@@ -1,15 +1,4 @@
 package database
 
-import (
-	"echobackend/internal/model"
-
-	"github.com/uptrace/bun"
-)
-
-// PostToTag represents the join table for the many-to-many relationship
-
-// RegisterModels registers all models with Bun ORM
-func RegisterModels(db *bun.DB) {
-	// Register the join table first
-	db.RegisterModel((*model.PostsToTags)(nil))
-}
+// This file was used for Bun ORM model registration and is no longer needed after migrating to GORM.
+// GORM's AutoMigrate feature (typically called in database setup) handles model registration and schema migration.

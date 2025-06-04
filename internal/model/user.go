@@ -3,26 +3,32 @@ package model
 import (
 	"time"
 
-	"github.com/uptrace/bun"
+	"gorm.io/gorm"
 )
 
 // User represents the user model in the database
 type User struct {
-	bun.BaseModel `bun:"table:users,alias:u"`
-
-	ID           string     `json:"id" bun:"id,pk"`
-	Email        string     `json:"email" bun:"email,unique,notnull"`
-	FirstName    string     `json:"first_name" bun:"first_name,notnull"`
-	LastName     string     `json:"last_name" bun:"last_name,notnull"`
-	Username     string     `json:"username" bun:"username,unique,notnull"`
-	Password     string     `json:"-" bun:"password,notnull"` // "-" means this field won't be included in JSON
-	IsSuperAdmin bool       `json:"is_super_admin" bun:"is_super_admin"`
-	CreatedAt    time.Time  `json:"created_at" bun:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at" bun:"updated_at"`
-	DeletedAt    *time.Time `json:"-" bun:"deleted_at,soft_delete"`
+	// gorm.Model can be embedded for ID, CreatedAt, UpdatedAt, DeletedAt
+	// However, since ID is a string (likely UUID) and other fields are already defined,
+	// we will define them explicitly with GORM tags.
+	ID        string `json:"id" gorm:"type:uuid;primaryKey"` // Assuming UUID, adjust if different
+	Email     string `json:"email" gorm:"uniqueIndex;not null"`
+	FirstName string `json:"first_name" gorm:"not null"`
+	LastName  string `json:"last_name" gorm:"not null"`
+	Username  string `json:"username" gorm:"uniqueIndex;not null"`
+	Password  string `json:"-" gorm:"not null"` // "-" means this field won't be included in JSON responses by default
+	// Bio          string     `json:"bio" gorm:"type:text"` // Example if Bio was needed
+	// Avatar       string     `json:"avatar"`             // Example if Avatar was needed
+	IsSuperAdmin bool           `json:"is_super_admin"`
+	CreatedAt    time.Time      `json:"created_at"`     // GORM handles this automatically
+	UpdatedAt    time.Time      `json:"updated_at"`     // GORM handles this automatically
+	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"` // GORM specific type for soft delete
 }
 
-// No need for TableName with Bun as it's specified in the struct tag
+// TableName specifies the table name for GORM
+func (User) TableName() string {
+	return "users"
+}
 
 // UserResponse represents the user data that can be safely sent to clients
 type UserResponse struct {
@@ -35,7 +41,7 @@ type UserResponse struct {
 	LastName     string     `json:"last_name"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
-	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"` // Keep as *time.Time for response flexibility
 }
 
 // ToResponse converts a User model to a UserResponse
@@ -50,6 +56,15 @@ func (u *User) ToResponse() *UserResponse {
 		Username:     u.Username,
 		CreatedAt:    u.CreatedAt,
 		UpdatedAt:    u.UpdatedAt,
-		DeletedAt:    u.DeletedAt,
+		// Convert gorm.DeletedAt to *time.Time for the response
+		DeletedAt: convertDeletedAtToTime(u.DeletedAt),
 	}
+}
+
+// convertDeletedAtToTime helper function
+func convertDeletedAtToTime(deletedAt gorm.DeletedAt) *time.Time {
+	if deletedAt.Valid {
+		return &deletedAt.Time
+	}
+	return nil
 }
