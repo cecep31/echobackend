@@ -16,8 +16,7 @@ type Workspace struct {
 	CreatedBy   string            `gorm:"type:uuid;not null" json:"created_by"`                                                 // Assuming User UUID
 	Members     []WorkspaceMember `gorm:"foreignKey:WorkspaceID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"members"` // Or OnDelete:CASCADE if members should be deleted with workspace
 
-	// Optional: Define relationship to Creator User
-	// Creator     User              `gorm:"foreignKey:CreatedBy"`
+	Creator User `gorm:"foreignKey:CreatedBy"`
 
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

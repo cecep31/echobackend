@@ -6,47 +6,40 @@ import (
 	"gorm.io/gorm" // Import GORM
 )
 
-// Post represents the post model in the database
 type Post struct {
-	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v7()"` // Assuming uuid_generate_v7() is a DB func or handled by app
+	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v7()"`
 	Title     string         `json:"title" gorm:"not null"`
 	Photo_url string         `json:"photo_url" gorm:"type:text"`
-	Body      string         `json:"body" gorm:"type:text;not null"` // Changed to type:text for potentially long content
+	Body      string         `json:"body" gorm:"type:text;not null"`
 	Slug      string         `json:"slug" gorm:"uniqueIndex;not null"`
-	CreatedBy string         `json:"created_by" gorm:"type:uuid"`          // Foreign key for User
-	Creator   User           `json:"creator" gorm:"foreignKey:CreatedBy"`  // Belongs to User
-	Tags      []Tag          `json:"tags" gorm:"many2many:posts_to_tags;"` // Many to many with Tag, posts_tags is the join table
+	CreatedBy string         `json:"created_by" gorm:"type:uuid"`
+	Creator   User           `json:"creator" gorm:"foreignKey:CreatedBy"`
+	Tags      []Tag          `json:"tags" gorm:"many2many:posts_to_tags;"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"` // GORM soft delete
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
-// TableName specifies the table name for GORM
 func (Post) TableName() string {
 	return "posts"
 }
 
-// PostResponse represents the post data that can be safely sent to clients
 type PostResponse struct {
 	ID        string        `json:"id"`
 	Title     string        `json:"title"`
 	Photo_url string        `json:"photo_url"`
 	Body      string        `json:"body"`
 	Slug      string        `json:"slug"`
-	Creator   *UserResponse `json:"creator,omitempty"` // Made pointer to handle potential nil Creator
-	Tags      []TagResponse `json:"tags,omitempty"`    // Assuming TagResponse exists or will be created
+	Creator   *UserResponse `json:"creator,omitempty"`
+	Tags      []TagResponse `json:"tags,omitempty"`
 	CreatedAt time.Time     `json:"created_at"`
 	UpdatedAt time.Time     `json:"updated_at"`
 	DeletedAt *time.Time    `json:"deleted_at,omitempty"`
 }
 
-// ToResponse converts a Post model to a PostResponse
 func (p *Post) ToResponse() *PostResponse {
 	var creatorResp *UserResponse
-	// Check if Creator object is valid (e.g., ID is not zero value for User's PK type)
-	// This check depends on how User struct is defined and if Creator is always preloaded.
-	// A simple check for non-zero ID (if User ID is string, check for non-empty string)
-	if p.Creator.ID != "" { // Assuming User ID is string and non-empty means valid
+	if p.Creator.ID != "" {
 		creatorResp = p.Creator.ToResponse()
 	}
 
@@ -54,7 +47,7 @@ func (p *Post) ToResponse() *PostResponse {
 	if p.Tags != nil {
 		tagResponses = make([]TagResponse, len(p.Tags))
 		for i, tag := range p.Tags {
-			tagResponses[i] = *tag.ToResponse() // Assuming Tag has a ToResponse method returning *TagResponse
+			tagResponses[i] = *tag.ToResponse()
 		}
 	}
 

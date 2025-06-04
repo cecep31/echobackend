@@ -1,20 +1,16 @@
 package model
 
 import (
-	"time" // For CreatedAt, UpdatedAt if we add gorm.Model or similar
-	// "gorm.io/gorm" // No longer needed if gorm.DeletedAt is not used
+	"time"
 )
 
 type Tag struct {
-	// gorm.Model // Embed if you want ID, CreatedAt, UpdatedAt, DeletedAt by default
 	ID    uint   `json:"id" gorm:"primaryKey"`
-	Name  string `json:"name" gorm:"uniqueIndex;not null"` // Assuming tag names are unique and not null
-	Posts []Post `json:"-" gorm:"many2many:posts_tags;"`   // Many to many with Post, posts_tags is the join table
+	Name  string `json:"name" gorm:"uniqueIndex;not null"`
+	Posts []Post `json:"-" gorm:"many2many:posts_tags;"`
 
-	// Optional: Add CreatedAt, UpdatedAt if not embedding gorm.Model
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-	// DeletedAt gorm.DeletedAt `json:"-" gorm:"index"` // If soft delete is needed for tags
 }
 
 // TableName specifies the table name for GORM
