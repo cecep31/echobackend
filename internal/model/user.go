@@ -11,14 +11,12 @@ type User struct {
 	// gorm.Model can be embedded for ID, CreatedAt, UpdatedAt, DeletedAt
 	// However, since ID is a string (likely UUID) and other fields are already defined,
 	// we will define them explicitly with GORM tags.
-	ID        string `json:"id" gorm:"type:uuid;primaryKey"` // Assuming UUID, adjust if different
-	Email     string `json:"email" gorm:"uniqueIndex;not null"`
-	FirstName string `json:"first_name" gorm:"not null"`
-	LastName  string `json:"last_name" gorm:"not null"`
-	Username  string `json:"username" gorm:"uniqueIndex;not null"`
-	Password  string `json:"-" gorm:"not null"` // "-" means this field won't be included in JSON responses by default
-	// Bio          string     `json:"bio" gorm:"type:text"` // Example if Bio was needed
-	// Avatar       string     `json:"avatar"`             // Example if Avatar was needed
+	ID           string         `json:"id" gorm:"type:uuid;primaryKey"` // Assuming UUID, adjust if different
+	Email        string         `json:"email" gorm:"uniqueIndex;not null"`
+	FirstName    string         `json:"first_name" gorm:"not null"`
+	LastName     string         `json:"last_name" gorm:"not null"`
+	Username     string         `json:"username" gorm:"uniqueIndex;not null"`
+	Password     string         `json:"-" gorm:"not null"`
 	IsSuperAdmin bool           `json:"is_super_admin"`
 	CreatedAt    time.Time      `json:"created_at"`     // GORM handles this automatically
 	UpdatedAt    time.Time      `json:"updated_at"`     // GORM handles this automatically

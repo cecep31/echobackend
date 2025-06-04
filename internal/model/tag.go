@@ -39,17 +39,3 @@ func (t *Tag) ToResponse() *TagResponse {
 		Name: t.Name,
 	}
 }
-
-// PostsToTags struct might not be needed if GORM manages the join table implicitly.
-// If posts_tags has more than just post_id and tag_id (e.g., its own primary key or timestamps),
-// then a struct like this with GORM tags would be necessary to define it as a join table model.
-// For now, assuming GORM's default m2m handling is sufficient.
-// type PostsToTags struct {
-// 	PostID string `gorm:"primaryKey"`
-// 	TagID  uint   `gorm:"primaryKey"`
-// 	// Add other fields if the join table has them, e.g.:
-// 	// CreatedAt time.Time
-// }
-// func (PostsToTags) TableName() string {
-// 	return "posts_tags"
-// }
