@@ -212,7 +212,7 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	limit := c.QueryParam("limit") // Default limit if not provided or invalid
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
-		limitInt = 6 // Default limit if not provided or invalid
+		limitInt = 9 // Default limit if not provided or invalid
 	}
 	posts, err := h.postService.GetPostsRandom(c.Request().Context(), limitInt)
 	if err != nil {
