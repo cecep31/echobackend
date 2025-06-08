@@ -56,7 +56,7 @@ func (r *tagRepository) FindByID(ctx context.Context, id uint) (*model.Tag, erro
 		return nil, errors.New("invalid tag ID")
 	}
 	var tag model.Tag
-	err := r.db.WithContext(ctx).First(&tag, id).Error // GORM finds by primary key if just ID is passed
+	err := r.db.WithContext(ctx).First(&tag, id).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrTagNotFound

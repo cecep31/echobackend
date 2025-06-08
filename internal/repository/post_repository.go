@@ -26,6 +26,11 @@ type PostRepository interface {
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error)
 	DeletePostByID(ctx context.Context, id string) error
 	UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error)
+
+	// Additional functions
+	SearchPosts(ctx context.Context, keyword string, limit int, offset int) ([]*model.Post, int64, error)
+	GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.Post, int64, error)
+	ExistsByID(ctx context.Context, id string) (bool, error)
 }
 
 type postRepository struct {
@@ -299,4 +304,77 @@ func (r *postRepository) GetPostsByCreatedBy(ctx context.Context, createdBy stri
 		return nil, 0, fmt.Errorf("failed to get posts by creator ID %s: %w", createdBy, err)
 	}
 	return posts, count, nil
+}
+
+// SearchPosts allows searching posts by keyword in title or body.
+func (r *postRepository) SearchPosts(ctx context.Context, keyword string, limit int, offset int) ([]*model.Post, int64, error) {
+	var posts []*model.Post
+	var count int64
+	likePattern := "%" + keyword + "%"
+
+	// Count total matching records
+	err := r.db.WithContext(ctx).Model(&model.Post{}).
+		Where("title ILIKE ? OR body ILIKE ?", likePattern, likePattern).
+		Count(&count).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count posts for search: %w", err)
+	}
+
+	// Get paginated records
+	err = r.db.WithContext(ctx).
+		Preload("Creator").
+		Preload("Tags").
+		Where("title ILIKE ? OR body ILIKE ?", likePattern, likePattern).
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&posts).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to search posts: %w", err)
+	}
+	return posts, count, nil
+}
+
+// GetPostsByTag fetches posts with a specific tag name.
+func (r *postRepository) GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.Post, int64, error) {
+	var posts []*model.Post
+	var count int64
+
+	// Join posts and tags tables
+	query := r.db.WithContext(ctx).Model(&model.Post{}).
+		Joins("JOIN post_tags ON post_tags.post_id = posts.id").
+		Joins("JOIN tags ON tags.id = post_tags.tag_id").
+		Where("tags.name = ?", tag)
+
+	// Count total records
+	err := query.Count(&count).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count posts by tag: %w", err)
+	}
+
+	// Get paginated records
+	err = r.db.WithContext(ctx).Model(&model.Post{}).
+		Preload("Creator").
+		Preload("Tags").
+		Joins("JOIN post_tags ON post_tags.post_id = posts.id").
+		Joins("JOIN tags ON tags.id = post_tags.tag_id").
+		Where("tags.name = ?", tag).
+		Order("posts.created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&posts).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get posts by tag: %w", err)
+	}
+	return posts, count, nil
+}
+
+// ExistsByID checks if a post exists by its ID.
+func (r *postRepository) ExistsByID(ctx context.Context, id string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&model.Post{}).Where("id = ?", id).Count(&count).Error
+	if err != nil {
+		return false, fmt.Errorf("failed to check post existence: %w", err)
+	}
+	return count > 0, nil
 }
