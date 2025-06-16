@@ -2,33 +2,33 @@
 
 Echo Backend API is a RESTful API backend service built with the Echo v4 framework and PostgreSQL database. It provides a robust foundation for building scalable and maintainable web applications.
 
-Project structure:
+## Project Structure
 
 ```
 .
 ├── cmd/                    # Main applications for this project
-│   └── main.go            # Application entry point
-├── internal/              # Private application and library code
-│   ├── handler/          # API handlers
-│   ├── middleware/       # Custom middleware
-│   ├── model/            # Database models
-│   ├── repository/       # Data access layer
-│   ├── service/          # Business logic layer
-│   └── utils/            # Utility functions
-├── pkg/                  # Library code that could be used by other projects
-├── config/               # Configuration files
-├── migrations/           # Database migration files
-├── docs/                 # Documentation files
-└── test/                 # Additional test files
+│   └── main.go             # Application entry point
+├── internal/               # Private application and library code
+│   ├── handler/            # API handlers
+│   ├── middleware/         # Custom middleware
+│   ├── model/              # Database models
+│   ├── repository/         # Data access layer
+│   ├── service/            # Business logic layer
+│   └── utils/              # Utility functions
+├── pkg/                    # Library code that could be used by other projects
+├── config/                 # Configuration files
+├── migrations/             # Database migration files
+├── docs/                   # Documentation files
+└── test/                   # Additional test files
 ```
 
-Prerequisites
+## Prerequisites
 
 - Go 1.21 or higher
 - PostgreSQL 14 or higher
 - Docker (optional)
 
-Set up the Echo Backend API by following these steps:
+## Setup Instructions
 
 1. **Clone the repository:**
    ```bash
@@ -60,7 +60,7 @@ Set up the Echo Backend API by following these steps:
    go run cmd/main.go
    ```
 
-Enhance your development experience with these tools and commands:
+## Development Tools
 
 - **Hot Reload:**
   Use `air` for hot reload during development:
@@ -80,7 +80,9 @@ Enhance your development experience with these tools and commands:
   go build -o bin/app cmd/main.go
   ```
 
-Containerize the Echo Backend API with Docker.
+## Docker
+
+Containerize the Echo Backend API with Docker:
 
 ```bash
 # Build the Docker image
@@ -90,7 +92,7 @@ docker build -t echobackend .
 docker run -p 8080:8080 echobackend
 ```
 
-The API provides the following endpoints:
+## API Endpoints
 
 ### Authentication
 
@@ -219,7 +221,7 @@ The API provides the following endpoints:
     }
     ```
 
-Example requests to the API:
+## Example Requests
 
 ### Login
 
@@ -245,7 +247,7 @@ curl -X GET http://localhost:8080/api/users
 curl -X POST http://localhost:8080/api/posts -H "Content-Type: application/json" -d '{"title": "New Post", "content": "This is a new post.", "author": "user"}'
 ```
 
-Contribute to the Echo Backend API by following these steps:
+## Contributing
 
 1. **Fork the repository:**
    - Click the "Fork" button at the top right of the repository page.
