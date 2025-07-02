@@ -18,6 +18,7 @@ type TagRepository interface {
 	Create(ctx context.Context, tag *model.Tag) error
 	FindAll(ctx context.Context) ([]model.Tag, error)
 	FindByID(ctx context.Context, id uint) (*model.Tag, error)
+	FindByName(ctx context.Context, name string) (*model.Tag, error)
 	Update(ctx context.Context, tag *model.Tag) error
 	Delete(ctx context.Context, id uint) error
 }
@@ -62,6 +63,21 @@ func (r *tagRepository) FindByID(ctx context.Context, id uint) (*model.Tag, erro
 			return nil, ErrTagNotFound
 		}
 		return nil, fmt.Errorf("failed to find tag by ID %d: %w", id, err)
+	}
+	return &tag, nil
+}
+
+func (r *tagRepository) FindByName(ctx context.Context, name string) (*model.Tag, error) {
+	if name == "" {
+		return nil, errors.New("tag name cannot be empty")
+	}
+	var tag model.Tag
+	err := r.db.WithContext(ctx).Where("name = ?", name).First(&tag).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrTagNotFound
+		}
+		return nil, fmt.Errorf("failed to find tag by name %s: %w", name, err)
 	}
 	return &tag, nil
 }

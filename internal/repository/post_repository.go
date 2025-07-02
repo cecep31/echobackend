@@ -18,6 +18,7 @@ var (
 
 type PostRepository interface {
 	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
+	CreatePostWithTags(ctx context.Context, post *model.CreatePostDTO, creator_id string, tags []model.Tag) (*model.Post, error)
 	GetPosts(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error)
 	GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error)
 	GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error)
@@ -127,25 +128,38 @@ func (r *postRepository) CreatePost(ctx context.Context, postDTO *model.CreatePo
 		Body:      postDTO.Body,
 		CreatedBy: creator_id,        // Assuming model.Post has CreatedBy field for user ID
 		Photo_url: postDTO.Photo_url, // Assuming CreatePostDTO and Post model have Photo_url
-		// Tags will be handled if/when model.Post supports it and DTO provides them
 	}
 
 	err := r.db.WithContext(ctx).Create(newpost).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to create post: %w", err)
 	}
-
-	// To return the post with potentially preloaded fields (like Creator, Tags),
-	// it's often best to fetch it after creation, especially if ID is auto-generated.
-	// GORM's Create populates the ID in newpost if it's auto-increment or set by BeforeCreate hook.
-	// For now, we return the 'newpost' instance. If relations need to be populated, a subsequent fetch is needed.
-	// Example:
-	// var createdPostWithRelations model.Post
-	// if fetchErr := r.db.WithContext(ctx).Preload("Creator").Preload("Tags").First(&createdPostWithRelations, "id = ?", newpost.ID).Error; fetchErr != nil {
-	//     return newpost, fmt.Errorf("post created (id: %s) but failed to fetch with relations: %w", newpost.ID, fetchErr)
-	// }
-	// return &createdPostWithRelations, nil
 	return newpost, nil // Returning the instance passed to Create. ID should be populated.
+}
+
+func (r *postRepository) CreatePostWithTags(ctx context.Context, postDTO *model.CreatePostDTO, creator_id string, tags []model.Tag) (*model.Post, error) {
+	newpost := &model.Post{
+		Title:     postDTO.Title,
+		Slug:      postDTO.Slug,
+		Body:      postDTO.Body,
+		CreatedBy: creator_id,
+		Photo_url: postDTO.Photo_url,
+		Tags:      tags, // Associate tags with the post
+	}
+
+	// Create the post with associated tags
+	err := r.db.WithContext(ctx).Create(newpost).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to create post with tags: %w", err)
+	}
+	
+	// Load the created post with all associations for return
+	err = r.db.WithContext(ctx).Preload("Creator").Preload("Tags").First(newpost, "id = ?", newpost.ID).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to load created post with associations: %w", err)
+	}
+	
+	return newpost, nil
 }
 
 func (r *postRepository) GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error) {

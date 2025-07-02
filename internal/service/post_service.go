@@ -26,11 +26,12 @@ type PostService interface {
 
 type postService struct {
 	postRepo     repository.PostRepository
+	tagService   TagService
 	miniostorage *storage.MinioStorage
 }
 
-func NewPostService(postRepo repository.PostRepository, storageclient *storage.MinioStorage) PostService {
-	return &postService{postRepo: postRepo, miniostorage: storageclient}
+func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.MinioStorage) PostService {
+	return &postService{postRepo: postRepo, tagService: tagService, miniostorage: storageclient}
 }
 
 func (s *postService) IsAuthor(ctx context.Context, id string, userid string) error {
@@ -60,7 +61,25 @@ func (s *postService) GetPostsByUsername(ctx context.Context, username string, o
 }
 
 func (s *postService) CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error) {
-	return s.postRepo.CreatePost(ctx, post, creator_id)
+	// Handle tags if they exist
+	var tags []model.Tag
+	if len(post.Tags) > 0 {
+		for _, tagName := range post.Tags {
+			if tagName == "" {
+				continue // Skip empty tag names
+			}
+
+			// Try to find existing tag by name
+			tag, err := s.findOrCreateTagByName(ctx, tagName)
+			if err != nil {
+				return nil, err
+			}
+			tags = append(tags, *tag)
+		}
+	}
+
+	// Create the post with tags
+	return s.postRepo.CreatePostWithTags(ctx, post, creator_id, tags)
 }
 
 func (s *postService) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error) {
@@ -157,4 +176,9 @@ func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.File
 	defer src.Close()
 
 	return s.miniostorage.Save(context.Background(), file.Filename, src)
+}
+
+// findOrCreateTagByName finds an existing tag by name or creates a new one
+func (s *postService) findOrCreateTagByName(ctx context.Context, tagName string) (*model.Tag, error) {
+	return s.tagService.FindOrCreateByName(ctx, tagName)
 }
