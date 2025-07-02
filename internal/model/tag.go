@@ -5,10 +5,9 @@ import (
 )
 
 type Tag struct {
-	ID    uint   `json:"id" gorm:"primaryKey"`
-	Name  string `json:"name" gorm:"uniqueIndex;not null"`
-	Posts []Post `json:"-" gorm:"many2many:posts_tags;"`
-
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Name      string    `json:"name" gorm:"uniqueIndex;not null"`
+	Posts     []Post    `json:"-" gorm:"many2many:posts_to_tags;"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

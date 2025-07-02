@@ -80,6 +80,7 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 		posts.POST("", r.postHandler.CreatePost, r.authMiddleware.Auth())
 		posts.GET("/username/:username", r.postHandler.GetPostsByUsername)
 		posts.GET("/u/:username/:slug", r.postHandler.GetPostBySlugAndUsername)
+		posts.GET("/tag/:tag", r.postHandler.GetPostsByTag)
 		posts.GET("", r.postHandler.GetPosts)
 		posts.PUT("/:id", r.postHandler.UpdatePost, r.authMiddleware.Auth())
 		posts.DELETE("/:id", r.postHandler.DeletePost, r.authMiddleware.Auth())

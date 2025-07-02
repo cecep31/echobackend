@@ -16,6 +16,7 @@ type PostService interface {
 	GetPostByID(ctx context.Context, id string) (*model.PostResponse, error)
 	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error)
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
+	GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.PostResponse, int64, error)
 	DeletePostByID(ctx context.Context, id string) error
 	UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error
 	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
@@ -122,6 +123,20 @@ func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*model.P
 
 func (s *postService) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error) {
 	posts, total, err := s.postRepo.GetPostsByCreatedBy(ctx, createdBy, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var postsResponse []*model.PostResponse
+	for _, post := range posts {
+		postsResponse = append(postsResponse, post.ToResponse())
+	}
+
+	return postsResponse, total, nil
+}
+
+func (s *postService) GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.PostResponse, int64, error) {
+	posts, total, err := s.postRepo.GetPostsByTag(ctx, tag, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}

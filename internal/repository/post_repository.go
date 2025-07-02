@@ -342,8 +342,8 @@ func (r *postRepository) GetPostsByTag(ctx context.Context, tag string, limit in
 
 	// Join posts and tags tables
 	query := r.db.WithContext(ctx).Model(&model.Post{}).
-		Joins("JOIN post_tags ON post_tags.post_id = posts.id").
-		Joins("JOIN tags ON tags.id = post_tags.tag_id").
+		Joins("JOIN posts_to_tags ON posts_to_tags.post_id = posts.id").
+		Joins("JOIN tags ON tags.id = posts_to_tags.tag_id").
 		Where("tags.name = ?", tag)
 
 	// Count total records
@@ -356,8 +356,8 @@ func (r *postRepository) GetPostsByTag(ctx context.Context, tag string, limit in
 	err = r.db.WithContext(ctx).Model(&model.Post{}).
 		Preload("Creator").
 		Preload("Tags").
-		Joins("JOIN post_tags ON post_tags.post_id = posts.id").
-		Joins("JOIN tags ON tags.id = post_tags.tag_id").
+		Joins("JOIN posts_to_tags ON posts_to_tags.post_id = posts.id").
+		Joins("JOIN tags ON tags.id = posts_to_tags.tag_id").
 		Where("tags.name = ?", tag).
 		Order("posts.created_at DESC").
 		Limit(limit).

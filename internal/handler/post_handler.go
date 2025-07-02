@@ -317,6 +317,47 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 	})
 }
 
+func (h *PostHandler) GetPostsByTag(c echo.Context) error {
+	tag := c.Param("tag")
+	offset := c.QueryParam("offset")
+	limit := c.QueryParam("limit")
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		offsetInt = 0 // Default offset if not provided or invalid
+	}
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		limitInt = 10 // Default limit if not provided or invalid
+	}
+	posts, total, err := h.postService.GetPostsByTag(c.Request().Context(), tag, limitInt, offsetInt)
+
+	for _, post := range posts {
+		if len(post.Body) > 250 {
+			post.Body = post.Body[:250] + " ..."
+		}
+	}
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]any{
+			"error":   err.Error(),
+			"message": "Failed to get posts by tag",
+			"success": false,
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"success": true,
+		"message": "success retrieving posts by tag",
+		"data":    posts,
+		"metadata": map[string]any{
+			"totalItems": total,
+			"limit":      limitInt,
+			"offset":     offsetInt,
+			"tag":        tag,
+		},
+	})
+}
+
 func (h *PostHandler) UploadImagePosts(c echo.Context) error {
 	file, err := c.FormFile("image")
 	if err != nil {
