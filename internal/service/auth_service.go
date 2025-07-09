@@ -21,16 +21,19 @@ var (
 type AuthService interface {
 	Register(ctx context.Context, email, password string) (*model.User, error)
 	Login(ctx context.Context, email, password string) (string, *model.User, error)
+	CheckUsernameAvailability(ctx context.Context, username string) (bool, error)
 }
 
 type authService struct {
-	authRepo  repository.AuthRepository
+	authRepo repository.AuthRepository
+	userRepo repository.UserRepository
 	jwtSecret []byte
 }
 
-func NewAuthService(repo repository.AuthRepository, config *config.Config) AuthService {
+func NewAuthService(authRepo repository.AuthRepository, userRepo repository.UserRepository, config *config.Config) AuthService {
 	return &authService{
-		authRepo:  repo,
+		authRepo:  authRepo,
+		userRepo:  userRepo,
 		jwtSecret: []byte(config.JWT_SECRET),
 	}
 }
@@ -88,4 +91,15 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 	}
 
 	return tokenString, user, nil
+}
+
+func (s *authService) CheckUsernameAvailability(ctx context.Context, username string) (bool, error) {
+	err := s.userRepo.CheckUserByUsername(ctx, username)
+	if err == repository.ErrUserExists {
+		return false, nil // Username is taken
+	}
+	if err != nil {
+		return false, err // Database error
+	}
+	return true, nil // Username is available
 }

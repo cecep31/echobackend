@@ -97,6 +97,7 @@ func (r *Routes) setupAuthRoutes(v1 *echo.Group) {
 	{
 		auth.POST("/register", r.authHandler.Register)
 		auth.POST("/login", r.authHandler.Login, echomidleware.RateLimiter(echomidleware.NewRateLimiterMemoryStoreWithConfig(confratelimit)))
+		auth.POST("/check-username", r.authHandler.CheckUsername)
 	}
 }
 

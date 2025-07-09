@@ -22,6 +22,10 @@ type RegisterRequest struct {
 	Password string `json:"password" validate:"required,min=6"`
 }
 
+type CheckUsernameRequest struct {
+	Username string `json:"username" validate:"required,min=3,max=30"`
+}
+
 // Response represents a standard API response
 type Response struct {
 	Success bool   `json:"success"`
@@ -135,6 +139,50 @@ func (h *AuthHandler) Login(c echo.Context) error {
 				"id":    user.ID,
 				"email": user.Email,
 			},
+		},
+	})
+}
+
+func (h *AuthHandler) CheckUsername(c echo.Context) error {
+	var req CheckUsernameRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, Response{
+			Success: false,
+			Message: "Invalid request format",
+			Errors:  []string{err.Error()},
+		})
+	}
+
+	if err := c.Validate(req); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, Response{
+				Success: false,
+				Message: "Validation failed",
+				Errors:  validationErrors.Errors,
+			})
+		}
+		return c.JSON(http.StatusBadRequest, Response{
+			Success: false,
+			Message: "Validation failed",
+			Errors:  []string{err.Error()},
+		})
+	}
+
+	isAvailable, err := h.authService.CheckUsernameAvailability(c.Request().Context(), req.Username)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Response{
+			Success: false,
+			Message: "Failed to check username availability",
+			Errors:  []string{"Internal server error"},
+		})
+	}
+
+	return c.JSON(http.StatusOK, Response{
+		Success: true,
+		Message: "Username availability checked",
+		Data: map[string]any{
+			"username":  req.Username,
+			"available": isAvailable,
 		},
 	})
 }

@@ -26,6 +26,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *model.User) error
 	SoftDeleteByID(ctx context.Context, id string) error
 	Exists(ctx context.Context, email string) (bool, error)
+	CheckUserByUsername(ctx context.Context, username string) error
 }
 
 type userRepository struct {
@@ -34,6 +35,20 @@ type userRepository struct {
 
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
+}
+
+func (r *userRepository) CheckUserByUsername(ctx context.Context, username string) error {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&model.User{}).
+		Where("username = ?", username).
+		Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return ErrUserExists
+	}
+	return nil
 }
 
 func (r *userRepository) Create(ctx context.Context, user *model.User) error {
