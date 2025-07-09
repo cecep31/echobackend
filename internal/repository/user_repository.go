@@ -38,14 +38,16 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 func (r *userRepository) CheckUserByUsername(ctx context.Context, username string) error {
-	var count int64
+	var exists bool
 	err := r.db.WithContext(ctx).Model(&model.User{}).
+		Select("1").
 		Where("username = ?", username).
-		Count(&count).Error
+		Limit(1).
+		Scan(&exists).Error
 	if err != nil {
 		return err
 	}
-	if count > 0 {
+	if exists {
 		return ErrUserExists
 	}
 	return nil
