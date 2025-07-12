@@ -19,6 +19,7 @@ type LoginRequest struct {
 
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
+	Username string `json:"username" validate:"required,min=3,max=30"`
 	Password string `json:"password" validate:"required,min=6"`
 }
 
@@ -63,12 +64,12 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		})
 	}
 
-	user, err := h.authService.Register(c.Request().Context(), req.Email, req.Password)
+	user, err := h.authService.Register(c.Request().Context(), req.Email, req.Username, req.Password)
 	if err == service.ErrUserExists {
 		return c.JSON(http.StatusConflict, Response{
 			Success: false,
 			Message: "Registration failed",
-			Errors:  []string{"Email already registered"},
+			Errors:  []string{"Email or username already exists"},
 		})
 	}
 	if err != nil {
@@ -83,8 +84,9 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		Success: true,
 		Message: "User registered successfully",
 		Data: map[string]any{
-			"id":    user.ID,
-			"email": user.Email,
+			"id":       user.ID,
+			"email":    user.Email,
+			"username": user.Username,
 		},
 	})
 }
@@ -136,8 +138,9 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		Data: map[string]any{
 			"access_token": token,
 			"user": map[string]any{
-				"id":    user.ID,
-				"email": user.Email,
+				"id":       user.ID,
+				"email":    user.Email,
+				"username": user.Username,
 			},
 		},
 	})

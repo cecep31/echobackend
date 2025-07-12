@@ -19,7 +19,7 @@ var (
 )
 
 type AuthService interface {
-	Register(ctx context.Context, email, password string) (*model.User, error)
+	Register(ctx context.Context, email, username, password string) (*model.User, error)
 	Login(ctx context.Context, email, password string) (string, *model.User, error)
 	CheckUsernameAvailability(ctx context.Context, username string) (bool, error)
 }
@@ -39,10 +39,19 @@ func NewAuthService(authRepo repository.AuthRepository, userRepo repository.User
 }
 
 // should be error not hanlde yet
-func (s *authService) Register(ctx context.Context, email, password string) (*model.User, error) {
+func (s *authService) Register(ctx context.Context, email, username, password string) (*model.User, error) {
 	_, err := s.authRepo.FindUserByEmail(ctx, email)
 	if err == nil {
 		return nil, ErrUserExists
+	}
+
+	// Check if username is already taken
+	err = s.userRepo.CheckUserByUsername(ctx, username)
+	if err == repository.ErrUserExists {
+		return nil, ErrUserExists
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	hashedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -52,6 +61,7 @@ func (s *authService) Register(ctx context.Context, email, password string) (*mo
 
 	newUser := &model.User{
 		Email:    email,
+		Username: username,
 		Password: string(hashedPasswordBytes),
 	}
 
