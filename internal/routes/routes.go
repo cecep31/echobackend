@@ -23,6 +23,7 @@ type Routes struct {
 	tagHandler       *handler.TagHandler
 	pageHandler      *handler.PageHandler
 	workspaceHandler *handler.WorkspaceHandler
+	commentHandler   *handler.CommentHandler
 }
 
 func NewRoutes(
@@ -34,6 +35,7 @@ func NewRoutes(
 	tagHandler *handler.TagHandler,
 	pageHandler *handler.PageHandler,
 	workspaceHandler *handler.WorkspaceHandler,
+	commentHandler *handler.CommentHandler,
 ) *Routes {
 	return &Routes{
 		config:           config,
@@ -44,6 +46,7 @@ func NewRoutes(
 		tagHandler:       tagHandler,
 		pageHandler:      pageHandler,
 		workspaceHandler: workspaceHandler,
+		commentHandler:   commentHandler,
 	}
 }
 
@@ -88,6 +91,12 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 		posts.GET("/:id", r.postHandler.GetPost)
 		posts.GET("/mine", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
 		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
+		
+		// Comment routes
+		posts.GET("/:id/comments", r.commentHandler.GetCommentsByPostID)
+		posts.POST("/:id/comments", r.commentHandler.CreateComment, r.authMiddleware.Auth())
+		posts.PUT("/:id/comments/:comment_id", r.commentHandler.UpdateComment, r.authMiddleware.Auth())
+		posts.DELETE("/:id/comments/:comment_id", r.commentHandler.DeleteComment, r.authMiddleware.Auth())
 	}
 }
 
