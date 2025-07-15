@@ -25,8 +25,8 @@ type AuthService interface {
 }
 
 type authService struct {
-	authRepo repository.AuthRepository
-	userRepo repository.UserRepository
+	authRepo  repository.AuthRepository
+	userRepo  repository.UserRepository
 	jwtSecret []byte
 }
 
@@ -88,6 +88,7 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 	// Generate JWT token
 	claims := jwt.MapClaims{
 		"user_id":      user.ID,
+		"username":     user.Username,
 		"email":        user.Email,
 		"isSuperAdmin": user.IsSuperAdmin,
 		"iat":          time.Now().Unix(),
