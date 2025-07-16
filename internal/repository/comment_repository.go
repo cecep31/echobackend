@@ -9,7 +9,7 @@ import (
 
 type CommentRepository interface {
 	CreateComment(ctx context.Context, comment *model.PostComment) error
-	GetCommentsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostComment, int64, error)
+	GetCommentsByPostID(ctx context.Context, postID string) ([]*model.PostComment, error)
 	GetCommentByID(ctx context.Context, id string) (*model.PostComment, error)
 	UpdateComment(ctx context.Context, comment *model.PostComment) error
 	DeleteComment(ctx context.Context, id string) error
@@ -29,27 +29,19 @@ func (r *commentRepository) CreateComment(ctx context.Context, comment *model.Po
 	return r.db.WithContext(ctx).Create(comment).Error
 }
 
-func (r *commentRepository) GetCommentsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostComment, int64, error) {
+func (r *commentRepository) GetCommentsByPostID(ctx context.Context, postID string) ([]*model.PostComment, error) {
 	var comments []*model.PostComment
-	var total int64
 
-	// Count total comments for the post
-	if err := r.db.WithContext(ctx).Model(&model.PostComment{}).Where("post_id = ?", postID).Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	// Get comments with creator information
+	// Get all comments with creator information
 	if err := r.db.WithContext(ctx).
 		Preload("Creator").
 		Where("post_id = ?", postID).
 		Order("created_at DESC").
-		Limit(limit).
-		Offset(offset).
 		Find(&comments).Error; err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	return comments, total, nil
+	return comments, nil
 }
 
 func (r *commentRepository) GetCommentByID(ctx context.Context, id string) (*model.PostComment, error) {

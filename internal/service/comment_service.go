@@ -9,7 +9,7 @@ import (
 
 type CommentService interface {
 	CreateComment(ctx context.Context, postID string, dto *model.CreatePostCommentDTO, createdBy string) (*model.PostComment, error)
-	GetCommentsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostCommentResponse, int64, error)
+	GetCommentsByPostID(ctx context.Context, postID string) ([]*model.PostCommentResponse, error)
 	GetCommentByID(ctx context.Context, id string) (*model.PostCommentResponse, error)
 	UpdateComment(ctx context.Context, id string, content string, userID string) (*model.PostComment, error)
 	DeleteComment(ctx context.Context, id string, userID string) error
@@ -48,16 +48,16 @@ func (s *commentService) CreateComment(ctx context.Context, postID string, dto *
 	return comment, nil
 }
 
-func (s *commentService) GetCommentsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostCommentResponse, int64, error) {
+func (s *commentService) GetCommentsByPostID(ctx context.Context, postID string) ([]*model.PostCommentResponse, error) {
 	// Verify post exists
 	_, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
-		return nil, 0, errors.New("post not found")
+		return nil, errors.New("post not found")
 	}
 
-	comments, total, err := s.commentRepo.GetCommentsByPostID(ctx, postID, limit, offset)
+	comments, err := s.commentRepo.GetCommentsByPostID(ctx, postID)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	responses := make([]*model.PostCommentResponse, len(comments))
@@ -65,7 +65,7 @@ func (s *commentService) GetCommentsByPostID(ctx context.Context, postID string,
 		responses[i] = comment.ToResponse()
 	}
 
-	return responses, total, nil
+	return responses, nil
 }
 
 func (s *commentService) GetCommentByID(ctx context.Context, id string) (*model.PostCommentResponse, error) {

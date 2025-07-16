@@ -5,7 +5,6 @@ import (
 	"echobackend/internal/service"
 	"echobackend/pkg/validator"
 	"net/http"
-	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -81,47 +80,23 @@ func (h *CommentHandler) GetCommentsByPostID(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   "Post ID is required",
 			"success": false,
+			"message": "Post ID is required",
 		})
 	}
 
-	// Parse pagination parameters
-	limitStr := c.QueryParam("limit")
-	offsetStr := c.QueryParam("offset")
-
-	limit := 20 // default limit
-	offset := 0 // default offset
-
-	if limitStr != "" {
-		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-			if limit > 100 { // max limit
-				limit = 100
-			}
-		}
-	}
-
-	if offsetStr != "" {
-		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
-			offset = parsedOffset
-		}
-	}
-
-	comments, total, err := h.commentService.GetCommentsByPostID(c.Request().Context(), postID, limit, offset)
+	comments, err := h.commentService.GetCommentsByPostID(c.Request().Context(), postID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"success": false,
+			"message": "Comments fetched failed",
 		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{
-		"data": map[string]any{
-			"comments": comments,
-			"total":    total,
-			"limit":    limit,
-			"offset":   offset,
-		},
+		"data":    comments,
 		"success": true,
+		"message": "Comments fetched successfully",
 	})
 }
 
