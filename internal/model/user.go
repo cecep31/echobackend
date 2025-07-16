@@ -16,6 +16,7 @@ type User struct {
 	FirstName    string         `json:"first_name" gorm:"not null"`
 	LastName     string         `json:"last_name" gorm:"not null"`
 	Username     string         `json:"username" gorm:"uniqueIndex;not null"`
+	Image        string         `json:"image"`
 	Password     string         `json:"-" gorm:"not null"`
 	IsSuperAdmin bool           `json:"is_super_admin"`
 	CreatedAt    time.Time      `json:"created_at"`     // GORM handles this automatically
@@ -34,6 +35,7 @@ type UserResponse struct {
 	Email        string     `json:"email"`
 	Name         string     `json:"name"`
 	Username     string     `json:"username"`
+	Image        string     `json:"image"`
 	IsSuperAdmin bool       `json:"is_super_admin"`
 	FirstName    string     `json:"first_name"`
 	LastName     string     `json:"last_name"`
@@ -48,10 +50,11 @@ func (u *User) ToResponse() *UserResponse {
 		ID:           u.ID,
 		Email:        u.Email,
 		Name:         u.FirstName + " " + u.LastName,
+		Username:     u.Username,
+		Image:        u.Image,
+		IsSuperAdmin: u.IsSuperAdmin,
 		FirstName:    u.FirstName,
 		LastName:     u.LastName,
-		IsSuperAdmin: u.IsSuperAdmin,
-		Username:     u.Username,
 		CreatedAt:    u.CreatedAt,
 		UpdatedAt:    u.UpdatedAt,
 		// Convert gorm.DeletedAt to *time.Time for the response
