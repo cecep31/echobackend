@@ -71,6 +71,7 @@ func (r *Routes) setupV1Routes(v1 *echo.Group) {
 func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 	users := v1.Group("/users", r.authMiddleware.Auth())
 	{
+		users.GET("/me", r.userHandler.GetMe)
 		users.GET("/:id", r.userHandler.GetByID)
 		users.GET("", r.userHandler.GetUsers, r.authMiddleware.AuthAdmin())
 		users.DELETE("/:id", r.userHandler.DeleteUser, r.authMiddleware.AuthAdmin())

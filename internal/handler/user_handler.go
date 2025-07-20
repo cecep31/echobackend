@@ -55,3 +55,33 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 
 	return response.Success(c, "Successfully deleted user", nil)
 }
+
+// GetMe returns the current authenticated user's information
+func (h *UserHandler) GetMe(c echo.Context) error {
+	userClaims := c.Get("user")
+	if userClaims == nil {
+		return response.InternalServerError(c, "User context not found", nil)
+	}
+
+	claims, ok := userClaims.(map[string]interface{})
+	if !ok {
+		return response.InternalServerError(c, "Invalid user context", nil)
+	}
+
+	userID, exists := claims["user_id"]
+	if !exists {
+		return response.InternalServerError(c, "User ID not found in token", nil)
+	}
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		return response.InternalServerError(c, "Invalid user ID format", nil)
+	}
+
+	userResponse, err := h.userService.GetByID(c.Request().Context(), userIDStr)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to retrieve user", err)
+	}
+
+	return response.Success(c, "Successfully retrieved current user", userResponse)
+}
