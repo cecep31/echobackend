@@ -3,6 +3,7 @@ package handler
 import (
 	"echobackend/internal/model"
 	"echobackend/internal/service"
+	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
 	"net/http"
 
@@ -24,33 +25,24 @@ func NewCommentHandler(commentService service.CommentService) *CommentHandler {
 func (h *CommentHandler) CreateComment(c echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   "Post ID is required",
-			"success": false,
-		})
+		return response.BadRequest(c, "Post ID is required", nil)
 	}
 
 	var dto model.CreatePostCommentDTO
 	if err := c.Bind(&dto); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   "Invalid request payload",
-			"success": false,
-		})
+		return response.BadRequest(c, "Invalid request payload", err)
 	}
 
 	if err := c.Validate(dto); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, map[string]any{
-				"success": false,
-				"message": "Validation failed",
-				"errors":  validationErrors.Errors,
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
+				Success: false,
+				Message: "Validation failed",
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
 			})
 		}
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false,
-			"message": "Validation failed",
-			"errors":  []string{err.Error()},
-		})
+		return response.ValidationError(c, "Validation failed", err)
 	}
 
 	// Get user ID from JWT token
@@ -60,77 +52,49 @@ func (h *CommentHandler) CreateComment(c echo.Context) error {
 
 	comment, err := h.commentService.CreateComment(c.Request().Context(), postID, &dto, userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to create comment", err)
 	}
 
-	return c.JSON(http.StatusCreated, map[string]any{
-		"data":    comment,
-		"success": true,
-		"message": "Comment created successfully",
-	})
+	return response.Created(c, "Comment created successfully", comment)
 }
 
 // GetCommentsByPostID handles getting all comments for a specific post
 func (h *CommentHandler) GetCommentsByPostID(c echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   "Post ID is required",
-			"success": false,
-			"message": "Post ID is required",
-		})
+		return response.BadRequest(c, "Post ID is required", nil)
 	}
 
 	comments, err := h.commentService.GetCommentsByPostID(c.Request().Context(), postID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"success": false,
-			"message": "Comments fetched failed",
-		})
+		return response.InternalServerError(c, "Comments fetched failed", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"data":    comments,
-		"success": true,
-		"message": "Comments fetched successfully",
-	})
+	return response.Success(c, "Comments fetched successfully", comments)
 }
 
 // UpdateComment handles updating a comment
 func (h *CommentHandler) UpdateComment(c echo.Context) error {
 	commentID := c.Param("comment_id")
 	if commentID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   "Comment ID is required",
-			"success": false,
-		})
+		return response.BadRequest(c, "Comment ID is required", nil)
 	}
 
 	var dto model.CreatePostCommentDTO
 	if err := c.Bind(&dto); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   "Invalid request payload",
-			"success": false,
-		})
+		return response.BadRequest(c, "Invalid request payload", err)
 	}
 
 	if err := c.Validate(dto); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, map[string]any{
-				"success": false,
-				"message": "Validation failed",
-				"errors":  validationErrors.Errors,
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
+				Success: false,
+				Message: "Validation failed",
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
 			})
 		}
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false,
-			"message": "Validation failed",
-			"errors":  []string{err.Error()},
-		})
+		return response.ValidationError(c, "Validation failed", err)
 	}
 
 	// Get user ID from JWT token
@@ -140,27 +104,17 @@ func (h *CommentHandler) UpdateComment(c echo.Context) error {
 
 	comment, err := h.commentService.UpdateComment(c.Request().Context(), commentID, dto.Content, userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to update comment", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"data":    comment,
-		"success": true,
-		"message": "Comment updated successfully",
-	})
+	return response.Success(c, "Comment updated successfully", comment)
 }
 
 // DeleteComment handles deleting a comment
 func (h *CommentHandler) DeleteComment(c echo.Context) error {
 	commentID := c.Param("comment_id")
 	if commentID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   "Comment ID is required",
-			"success": false,
-		})
+		return response.BadRequest(c, "Comment ID is required", nil)
 	}
 
 	// Get user ID from JWT token
@@ -169,14 +123,8 @@ func (h *CommentHandler) DeleteComment(c echo.Context) error {
 	userID := claims["user_id"].(string)
 
 	if err := h.commentService.DeleteComment(c.Request().Context(), commentID, userID); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to delete comment", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"success": true,
-		"message": "Comment deleted successfully",
-	})
+	return response.Success(c, "Comment deleted successfully", nil)
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"echobackend/internal/service"
+	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
 	"net/http"
 
@@ -27,13 +28,7 @@ type CheckUsernameRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=30"`
 }
 
-// Response represents a standard API response
-type Response struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Data    any    `json:"data,omitempty"`
-	Errors  any    `json:"errors,omitempty"`
-}
+
 
 func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
@@ -42,48 +37,69 @@ func NewAuthHandler(authService service.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(c echo.Context) error {
 	var req RegisterRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, Response{
-			Success: false,
-			Message: "Invalid request format",
-			Errors:  []string{err.Error()},
-		})
+		return response.BadRequest(c, "Invalid request format", err)
 	}
 
 	if err := c.Validate(req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, Response{
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
 				Success: false,
 				Message: "Validation failed",
-				Errors:  validationErrors.Errors,
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
 			})
 		}
-		return c.JSON(http.StatusBadRequest, Response{
-			Success: false,
-			Message: "Validation failed",
-			Errors:  []string{err.Error()},
-		})
+		return response.ValidationError(c, "Validation failed", err)
 	}
 
 	user, err := h.authService.Register(c.Request().Context(), req.Email, req.Username, req.Password)
 	if err == service.ErrUserExists {
-		return c.JSON(http.StatusConflict, Response{
+		return c.JSON(http.StatusConflict, response.APIResponse{
 			Success: false,
 			Message: "Registration failed",
-			Errors:  []string{"Email or username already exists"},
+			Error:   "Email or username already exists",
 		})
 	}
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{
-			Success: false,
-			Message: "Registration failed",
-			Errors:  []string{"Failed to register user"},
-		})
+		return response.InternalServerError(c, "Registration failed", err)
 	}
 
-	return c.JSON(http.StatusCreated, Response{
-		Success: true,
-		Message: "User registered successfully",
-		Data: map[string]any{
+	return response.Created(c, "User registered successfully", map[string]any{
+		"id":       user.ID,
+		"email":    user.Email,
+		"username": user.Username,
+	})
+}
+
+func (h *AuthHandler) Login(c echo.Context) error {
+	var loginReq LoginRequest
+	if err := c.Bind(&loginReq); err != nil {
+		return response.BadRequest(c, "Invalid request format", err)
+	}
+
+	if err := c.Validate(loginReq); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
+				Success: false,
+				Message: "Validation failed",
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
+			})
+		}
+		return response.ValidationError(c, "Validation failed", err)
+	}
+
+	token, user, err := h.authService.Login(c.Request().Context(), loginReq.Email, loginReq.Password)
+	if err == service.ErrInvalidCredentials {
+		return response.Unauthorized(c, "Invalid email or password")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "Login failed", err)
+	}
+
+	return response.Success(c, "Login successful", map[string]any{
+		"access_token": token,
+		"user": map[string]any{
 			"id":       user.ID,
 			"email":    user.Email,
 			"username": user.Username,
@@ -91,101 +107,31 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	})
 }
 
-func (h *AuthHandler) Login(c echo.Context) error {
-	var loginReq LoginRequest
-	if err := c.Bind(&loginReq); err != nil {
-		return c.JSON(http.StatusBadRequest, Response{
-			Success: false,
-			Message: "Invalid request format",
-			Errors:  []string{err.Error()},
-		})
-	}
-
-	if err := c.Validate(loginReq); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, Response{
-				Success: false,
-				Message: "Validation failed",
-				Errors:  validationErrors.Errors,
-			})
-		}
-		return c.JSON(http.StatusBadRequest, Response{
-			Success: false,
-			Message: "Validation failed",
-			Errors:  []string{err.Error()},
-		})
-	}
-
-	token, user, err := h.authService.Login(c.Request().Context(), loginReq.Email, loginReq.Password)
-	if err == service.ErrInvalidCredentials {
-		return c.JSON(http.StatusUnauthorized, Response{
-			Success: false,
-			Message: "Login failed",
-			Errors:  []string{"Invalid email or password"},
-		})
-	}
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{
-			Success: false,
-			Message: "Login failed",
-			Errors:  []string{"Failed to process login"},
-		})
-	}
-
-	return c.JSON(http.StatusOK, Response{
-		Success: true,
-		Message: "Login successful",
-		Data: map[string]any{
-			"access_token": token,
-			"user": map[string]any{
-				"id":       user.ID,
-				"email":    user.Email,
-				"username": user.Username,
-			},
-		},
-	})
-}
-
 func (h *AuthHandler) CheckUsername(c echo.Context) error {
 	var req CheckUsernameRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, Response{
-			Success: false,
-			Message: "Invalid request format",
-			Errors:  []string{err.Error()},
-		})
+		return response.BadRequest(c, "Invalid request format", err)
 	}
 
 	if err := c.Validate(req); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, Response{
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
 				Success: false,
 				Message: "Validation failed",
-				Errors:  validationErrors.Errors,
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
 			})
 		}
-		return c.JSON(http.StatusBadRequest, Response{
-			Success: false,
-			Message: "Validation failed",
-			Errors:  []string{err.Error()},
-		})
+		return response.ValidationError(c, "Validation failed", err)
 	}
 
 	isAvailable, err := h.authService.CheckUsernameAvailability(c.Request().Context(), req.Username)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Response{
-			Success: false,
-			Message: "Failed to check username availability",
-			Errors:  []string{"Internal server error"},
-		})
+		return response.InternalServerError(c, "Failed to check username availability", err)
 	}
 
-	return c.JSON(http.StatusOK, Response{
-		Success: true,
-		Message: "Username availability checked",
-		Data: map[string]any{
-			"username":  req.Username,
-			"available": isAvailable,
-		},
+	return response.Success(c, "Username availability checked", map[string]any{
+		"username":  req.Username,
+		"available": isAvailable,
 	})
 }

@@ -3,6 +3,7 @@ package handler
 import (
 	"echobackend/internal/model"
 	"echobackend/internal/service"
+	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
 	"net/http"
 	"strconv"
@@ -33,11 +34,7 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	}
 	posts, total, err := h.postService.GetPosts(c.Request().Context(), limitInt, offsetInt)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to get posts",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
 	for _, post := range posts {
@@ -46,40 +43,35 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"data":    posts,
-		"message": "Successfully retrieved posts",
-		"success": true,
-		"metadata": map[string]any{
-			"totalItems": total,
-			"limit":      limitInt,
-			"offset":     offsetInt,
-		},
-	})
+	meta := response.PaginationMeta{
+		TotalItems: int(total),
+		Offset:     offsetInt,
+		Limit:      limitInt,
+		TotalPages: int(total)/limitInt + 1,
+	}
+	if int(total)%limitInt == 0 {
+		meta.TotalPages = int(total) / limitInt
+	}
+
+	return response.SuccessWithMeta(c, "Successfully retrieved posts", posts, meta)
 }
 
 func (h *PostHandler) CreatePost(c echo.Context) error {
 	var postReq model.CreatePostDTO
 	if err := c.Bind(&postReq); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false,
-			"message": "Failed to create post",
-		})
+		return response.BadRequest(c, "Failed to create post", err)
 	}
 
 	if err := c.Validate(postReq); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, Response{
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
 				Success: false,
 				Message: "Validation failed",
-				Errors:  validationErrors.Errors,
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
 			})
 		}
-		return c.JSON(http.StatusBadRequest, Response{
-			Success: false,
-			Message: "Validation failed",
-			Errors:  []string{err.Error()},
-		})
+		return response.ValidationError(c, "Validation failed", err)
 	}
 
 	claims := c.Get("user").(jwt.MapClaims)
@@ -88,18 +80,10 @@ func (h *PostHandler) CreatePost(c echo.Context) error {
 	newpost, err := h.postService.CreatePost(c.Request().Context(), &postReq, userID)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to create post",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to create post", err)
 	}
-	return c.JSON(http.StatusCreated, map[string]any{
-		"data": map[string]any{
-			"id": newpost.ID,
-		},
-		"message": "Successfully created post",
-		"success": true,
+	return response.Created(c, "Successfully created post", map[string]any{
+		"id": newpost.ID,
 	})
 }
 
@@ -107,20 +91,19 @@ func (h *PostHandler) UpdatePost(c echo.Context) error {
 	id := c.Param("id")
 	var updateDTO model.UpdatePostDTO
 	if err := c.Bind(&updateDTO); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   err.Error(),
-			"message": "Invalid request payload",
-			"success": false,
-		})
+		return response.BadRequest(c, "Failed to update post", err)
 	}
 
-	// Optional: validate the DTO if you have a validator
 	if err := c.Validate(updateDTO); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"error":   err.Error(),
-			"message": "Validation failed",
-			"success": false,
-		})
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
+				Success: false,
+				Message: "Validation failed",
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
+			})
+		}
+		return response.ValidationError(c, "Validation failed", err)
 	}
 
 	// Get the user ID from the JWT token
@@ -131,27 +114,15 @@ func (h *PostHandler) UpdatePost(c echo.Context) error {
 	// Check if the user is the author of the post
 	err := h.postService.IsAuthor(c.Request().Context(), id, userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to check post ownership",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to check post ownership", err)
 	}
 
 	updatedPost, err := h.postService.UpdatePost(c.Request().Context(), id, &updateDTO)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to update post",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to update post", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"data":    updatedPost,
-		"message": "Post updated successfully",
-		"success": true,
-	})
+	return response.Success(c, "Post updated successfully", updatedPost)
 }
 
 func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
@@ -159,53 +130,30 @@ func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 	username := c.Param("username")
 	post, err := h.postService.GetPostBySlugAndUsername(c.Request().Context(), slug, username)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to get post",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to get post", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"data":    post,
-		"message": "Successfully retrieved post",
-		"success": true,
-	})
+	return response.Success(c, "Successfully retrieved post", post)
 }
 
 func (h *PostHandler) GetPost(c echo.Context) error {
 	id := c.Param("id")
 	post, err := h.postService.GetPostByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to get post",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to get post", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"data":    post,
-		"message": "Successfully retrieved post",
-		"success": true,
-	})
+	return response.Success(c, "Successfully retrieved post", post)
 }
 
 func (h *PostHandler) DeletePost(c echo.Context) error {
 	id := c.Param("id")
 	err := h.postService.DeletePostByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to delete post",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to delete post", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"message": "Successfully deleted post",
-		"success": true,
-	})
+	return response.Success(c, "Successfully deleted post", nil)
 }
 
 func (h *PostHandler) GetPostsRandom(c echo.Context) error {
@@ -216,11 +164,7 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	}
 	posts, err := h.postService.GetPostsRandom(c.Request().Context(), limitInt)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to get posts",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
 	for _, post := range posts {
@@ -229,11 +173,7 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"data":    posts,
-		"message": "Successfully retrieved posts",
-		"success": true,
-	})
+	return response.Success(c, "Successfully retrieved posts", posts)
 }
 
 func (h *PostHandler) GetMyPosts(c echo.Context) error {
@@ -258,23 +198,20 @@ func (h *PostHandler) GetMyPosts(c echo.Context) error {
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to get posts",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"success": true,
-		"message": "success retrieving posts",
-		"data":    posts,
-		"metadata": map[string]any{
-			"totalItems": total,
-			"limit":      limitInt,
-			"offset":     offsetInt,
-		},
-	})
+	meta := response.PaginationMeta{
+		TotalItems: int(total),
+		Offset:     offsetInt,
+		Limit:      limitInt,
+		TotalPages: int(total)/limitInt + 1,
+	}
+	if int(total)%limitInt == 0 {
+		meta.TotalPages = int(total) / limitInt
+	}
+
+	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
 }
 
 func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
@@ -298,23 +235,20 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to get posts",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"success": true,
-		"message": "success retrieving posts",
-		"data":    posts,
-		"metadata": map[string]any{
-			"totalItems": total,
-			"limit":      limitInt,
-			"offset":     offsetInt,
-		},
-	})
+	meta := response.PaginationMeta{
+		TotalItems: int(total),
+		Offset:     offsetInt,
+		Limit:      limitInt,
+		TotalPages: int(total)/limitInt + 1,
+	}
+	if int(total)%limitInt == 0 {
+		meta.TotalPages = int(total) / limitInt
+	}
+
+	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
 }
 
 func (h *PostHandler) GetPostsByTag(c echo.Context) error {
@@ -338,58 +272,34 @@ func (h *PostHandler) GetPostsByTag(c echo.Context) error {
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to get posts by tag",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to get posts by tag", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"success": true,
-		"message": "success retrieving posts by tag",
-		"data":    posts,
-		"metadata": map[string]any{
-			"totalItems": total,
-			"limit":      limitInt,
-			"offset":     offsetInt,
-			"tag":        tag,
-		},
-	})
+	meta := response.PaginationMeta{
+		TotalItems: int(total),
+		Offset:     offsetInt,
+		Limit:      limitInt,
+		TotalPages: int(total)/limitInt + 1,
+	}
+	if int(total)%limitInt == 0 {
+		meta.TotalPages = int(total) / limitInt
+	}
+
+	return response.SuccessWithMeta(c, "success retrieving posts by tag", posts, meta)
 }
 
 func (h *PostHandler) UploadImagePosts(c echo.Context) error {
 	file, err := c.FormFile("image")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false,
-			"message": "Failed to upload image",
-			"data":    nil,
-			"error":   err.Error(),
-		})
+		return response.BadRequest(c, "Failed to upload image", err)
 	}
 
 	if file == nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{
-			"success": false,
-			"message": "No file uploaded",
-			"data":    nil,
-			"error":   nil,
-		})
+		return response.BadRequest(c, "No file uploaded", nil)
 	}
 
 	if err := h.postService.UploadImagePosts(c.Request().Context(), file); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"success": false,
-			"message": "Failed to upload image",
-			"data":    nil,
-			"error":   err.Error(),
-		})
+		return response.InternalServerError(c, "Failed to upload image", err)
 	}
-	return c.JSON(http.StatusOK, map[string]any{
-		"success": true,
-		"message": "success uploading image",
-		"data":    nil,
-		"error":   nil,
-	})
+	return response.Success(c, "success uploading image", nil)
 }

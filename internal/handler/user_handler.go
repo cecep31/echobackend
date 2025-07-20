@@ -2,7 +2,7 @@ package handler
 
 import (
 	"echobackend/internal/service"
-	"net/http"
+	"echobackend/pkg/response"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -21,18 +21,10 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 
 	userResponse, err := h.userService.GetByID(c.Request().Context(), userID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to retrieve user",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to retrieve user", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"data":    userResponse,
-		"message": "Successfully retrieved user",
-		"success": true,
-	})
+	return response.Success(c, "Successfully retrieved user", userResponse)
 }
 
 func (h *UserHandler) GetUsers(c echo.Context) error {
@@ -46,22 +38,11 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 	}
 	users, total, err := h.userService.GetUsers(c.Request().Context(), offset, limit)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"data":    nil,
-			"error":   err.Error(),
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to retrieve users", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"messsage": "Success",
-		"success":  true,
-		"data":     users,
-		"metadata": map[string]any{
-			"totalItems": total,
-		},
-		"error": nil,
-	})
+	meta := response.CalculatePaginationMeta(total, offset, limit)
+	return response.SuccessWithMeta(c, "Successfully retrieved users", users, meta)
 }
 
 // delete user
@@ -69,15 +50,8 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 	id := c.Param("id")
 	err := h.userService.Delete(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{
-			"error":   err.Error(),
-			"message": "Failed to delete user",
-			"success": false,
-		})
+		return response.InternalServerError(c, "Failed to delete user", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
-		"message": "Successfully deleted user",
-		"success": true,
-	})
+	return response.Success(c, "Successfully deleted user", nil)
 }

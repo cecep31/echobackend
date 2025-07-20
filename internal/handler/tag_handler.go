@@ -3,7 +3,7 @@ package handler
 import (
 	"echobackend/internal/model"
 	"echobackend/internal/service"
-	"net/http"
+	"echobackend/pkg/response"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -20,67 +20,67 @@ func NewTagHandler(service service.TagService) *TagHandler {
 func (h *TagHandler) CreateTag(c echo.Context) error {
 	tag := new(model.Tag)
 	if err := c.Bind(tag); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid request payload"})
+		return response.BadRequest(c, "Invalid request payload", err)
 	}
 
 	if err := h.service.CreateTag(c.Request().Context(), tag); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return response.InternalServerError(c, "Failed to create tag", err)
 	}
 
-	return c.JSON(http.StatusCreated, map[string]any{"data": tag})
+	return response.Created(c, "Tag created successfully", tag)
 }
 
 func (h *TagHandler) GetTags(c echo.Context) error {
 	tags, err := h.service.GetTags(c.Request().Context())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return response.InternalServerError(c, "Failed to get tags", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{"data": tags})
+	return response.Success(c, "Successfully retrieved tags", tags)
 }
 
 func (h *TagHandler) GetTagByID(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid tag ID"})
+		return response.BadRequest(c, "Invalid tag ID", err)
 	}
 
 	tag, err := h.service.GetTagByID(c.Request().Context(), uint(id))
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]any{"error": err.Error()})
+		return response.NotFound(c, "Tag not found", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{"data": tag})
+	return response.Success(c, "Successfully retrieved tag", tag)
 }
 
 func (h *TagHandler) UpdateTag(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid tag ID"})
+		return response.BadRequest(c, "Invalid tag ID", err)
 	}
 
 	tag := new(model.Tag)
 	if err := c.Bind(tag); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid request payload"})
+		return response.BadRequest(c, "Invalid request payload", err)
 	}
 	tag.ID = uint(id)
 
 	if err := h.service.UpdateTag(c.Request().Context(), tag); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return response.InternalServerError(c, "Failed to update tag", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{"message": "Tag updated successfully", "success": true, "data": tag})
+	return response.Success(c, "Tag updated successfully", tag)
 }
 
 func (h *TagHandler) DeleteTag(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]any{"error": "Invalid tag ID"})
+		return response.BadRequest(c, "Invalid tag ID", err)
 	}
 
 	if err := h.service.DeleteTag(c.Request().Context(), uint(id)); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return response.InternalServerError(c, "Failed to delete tag", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{"message": "Tag deleted successfully", "success": true})
+	return response.Success(c, "Tag deleted successfully", nil)
 }
