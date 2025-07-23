@@ -13,8 +13,10 @@ type Post struct {
 	Body      string         `json:"body" gorm:"type:text;not null"`
 	Slug      string         `json:"slug" gorm:"uniqueIndex;not null"`
 	CreatedBy string         `json:"created_by" gorm:"type:uuid"`
+	ViewCount int64          `json:"view_count" gorm:"default:0"`
 	Creator   User           `json:"creator" gorm:"foreignKey:CreatedBy"`
 	Tags      []Tag          `json:"tags" gorm:"many2many:posts_to_tags;"`
+	Views     []PostView     `json:"views,omitempty" gorm:"foreignKey:PostID"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
@@ -30,6 +32,7 @@ type PostResponse struct {
 	Photo_url string        `json:"photo_url"`
 	Body      string        `json:"body"`
 	Slug      string        `json:"slug"`
+	ViewCount int64         `json:"view_count"`
 	Creator   *UserResponse `json:"creator,omitempty"`
 	Tags      []TagResponse `json:"tags,omitempty"`
 	CreatedAt time.Time     `json:"created_at"`
@@ -62,6 +65,7 @@ func (p *Post) ToResponse() *PostResponse {
 		Photo_url: p.Photo_url,
 		Body:      p.Body,
 		Slug:      p.Slug,
+		ViewCount: p.ViewCount,
 		Creator:   creatorResp,
 		Tags:      tagResponses,
 		CreatedAt: p.CreatedAt,

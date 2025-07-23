@@ -48,6 +48,8 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 	container.Provide(repository.NewPageRepository)
 	container.Provide(repository.NewWorkspaceRepository)
 	container.Provide(repository.NewCommentRepository)
+	container.Provide(repository.NewPostViewRepository)
+	container.Provide(repository.NewUserFollowRepository)
 
 	// Provide services
 	container.Provide(service.NewUserService)
@@ -57,6 +59,8 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 	container.Provide(service.NewPageService)
 	container.Provide(service.NewWorkspaceService)
 	container.Provide(service.NewCommentService)
+	container.Provide(service.NewPostViewService)
+	container.Provide(service.NewUserFollowService)
 
 	// Provide storage
 	container.Provide(storage.NewMinioStorage)
@@ -72,6 +76,8 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 	container.Provide(handler.NewPageHandler)
 	container.Provide(handler.NewWorkspaceHandler)
 	container.Provide(handler.NewCommentHandler)
+	container.Provide(handler.NewPostViewHandler)
+	container.Provide(handler.NewUserFollowHandler)
 
 	// Provide routes
 	container.Provide(routes.NewRoutes)

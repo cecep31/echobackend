@@ -15,15 +15,17 @@ import (
 )
 
 type Routes struct {
-	config           *config.Config
-	userHandler      *handler.UserHandler
-	postHandler      *handler.PostHandler
-	authHandler      *handler.AuthHandler
-	authMiddleware   *middleware.AuthMiddleware
-	tagHandler       *handler.TagHandler
-	pageHandler      *handler.PageHandler
-	workspaceHandler *handler.WorkspaceHandler
-	commentHandler   *handler.CommentHandler
+	config             *config.Config
+	userHandler        *handler.UserHandler
+	postHandler        *handler.PostHandler
+	authHandler        *handler.AuthHandler
+	authMiddleware     *middleware.AuthMiddleware
+	tagHandler         *handler.TagHandler
+	pageHandler        *handler.PageHandler
+	workspaceHandler   *handler.WorkspaceHandler
+	commentHandler     *handler.CommentHandler
+	postViewHandler    *handler.PostViewHandler
+	userFollowHandler  *handler.UserFollowHandler
 }
 
 func NewRoutes(
@@ -36,17 +38,21 @@ func NewRoutes(
 	pageHandler *handler.PageHandler,
 	workspaceHandler *handler.WorkspaceHandler,
 	commentHandler *handler.CommentHandler,
+	postViewHandler *handler.PostViewHandler,
+	userFollowHandler *handler.UserFollowHandler,
 ) *Routes {
 	return &Routes{
-		config:           config,
-		userHandler:      userHandler,
-		postHandler:      postHandler,
-		authHandler:      authHandler,
-		authMiddleware:   authMiddleware,
-		tagHandler:       tagHandler,
-		pageHandler:      pageHandler,
-		workspaceHandler: workspaceHandler,
-		commentHandler:   commentHandler,
+		config:            config,
+		userHandler:       userHandler,
+		postHandler:       postHandler,
+		authHandler:       authHandler,
+		authMiddleware:    authMiddleware,
+		tagHandler:        tagHandler,
+		pageHandler:       pageHandler,
+		workspaceHandler:  workspaceHandler,
+		commentHandler:    commentHandler,
+		postViewHandler:   postViewHandler,
+		userFollowHandler: userFollowHandler,
 	}
 }
 
@@ -69,12 +75,29 @@ func (r *Routes) setupV1Routes(v1 *echo.Group) {
 }
 
 func (r *Routes) setupUserRoutes(v1 *echo.Group) {
-	users := v1.Group("/users", r.authMiddleware.Auth())
+	users := v1.Group("/users")
 	{
-		users.GET("/me", r.userHandler.GetMe)
+		// Public routes
 		users.GET("/:id", r.userHandler.GetByID)
-		users.GET("", r.userHandler.GetUsers, r.authMiddleware.AuthAdmin())
-		users.DELETE("/:id", r.userHandler.DeleteUser, r.authMiddleware.AuthAdmin())
+		
+		// Authenticated routes
+		authUsers := users.Group("", r.authMiddleware.Auth())
+		{
+			authUsers.GET("/me", r.userHandler.GetMe)
+			authUsers.GET("", r.userHandler.GetUsers, r.authMiddleware.AuthAdmin())
+			authUsers.DELETE("/:id", r.userHandler.DeleteUser, r.authMiddleware.AuthAdmin())
+			
+			// Follow routes
+			authUsers.POST("/follow", r.userFollowHandler.FollowUser)
+			authUsers.DELETE("/:id/follow", r.userFollowHandler.UnfollowUser)
+			authUsers.GET("/:id/follow-status", r.userFollowHandler.CheckFollowStatus)
+			authUsers.GET("/:id/mutual-follows", r.userFollowHandler.GetMutualFollows)
+		}
+		
+		// Follow-related public routes
+		users.GET("/:id/followers", r.userFollowHandler.GetFollowers)
+		users.GET("/:id/following", r.userFollowHandler.GetFollowing)
+		users.GET("/:id/follow-stats", r.userFollowHandler.GetFollowStats)
 	}
 }
 
@@ -98,6 +121,12 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 		posts.POST("/:id/comments", r.commentHandler.CreateComment, r.authMiddleware.Auth())
 		posts.PUT("/:id/comments/:comment_id", r.commentHandler.UpdateComment, r.authMiddleware.Auth())
 		posts.DELETE("/:id/comments/:comment_id", r.commentHandler.DeleteComment, r.authMiddleware.Auth())
+		
+		// View routes
+		posts.POST("/:id/view", r.postViewHandler.RecordView) // Can be called by anonymous users
+		posts.GET("/:id/views", r.postViewHandler.GetPostViews, r.authMiddleware.Auth())
+		posts.GET("/:id/view-stats", r.postViewHandler.GetPostViewStats)
+		posts.GET("/:id/viewed", r.postViewHandler.CheckUserViewed, r.authMiddleware.Auth())
 	}
 }
 
