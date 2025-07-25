@@ -51,26 +51,5 @@ func NewDatabase(config *config.Config) *DatabaseWrapper {
 		panic(fmt.Errorf("failed to ping database: %w", err))
 	}
 
-	// AutoMigrate models (GORM way of registering/updating schema)
-	// User has requested to remove AutoMigrate. Schema migrations should be handled externally.
-	// All known models have been updated for GORM.
-	// err = db.AutoMigrate(
-	// 	&model.User{},
-	// 	&model.Post{},
-	// 	&model.Tag{},
-	// 	&model.Page{},
-	// 	&model.Block{},
-	// 	&model.Workspace{},
-	// 	&model.WorkspaceMember{},
-	// 	&model.Comment{},
-	// )
-	// if err != nil {
-	// 	panic(fmt.Errorf("failed to auto migrate models: %w", err))
-	// }
-
-	// Note: GORM's AutoMigrate creates tables, missing foreign keys, constraints, columns and indexes.
-	// It will NOT delete unused columns to protect your data.
-	// For more complex migrations (e.g., renaming columns, changing types with data loss), a dedicated migration tool is recommended.
-
 	return NewDatabaseWrapper(db)
 }
