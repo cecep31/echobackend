@@ -2,53 +2,55 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
-	"github.com/spf13/viper"
+	"github.com/subosito/gotenv"
 )
 
 type Config struct {
-	App_Port string `mapstructure:"PORT"`
+	App_Port string
 	// JWT configuration
-	JWT_SECRET string `mapstructure:"JWT_SECRET"`
+	JWT_SECRET string
 	// Database configuration
-	Database_URL    string        `mapstructure:"DATABASE_URL"`
-	MaxOpenConns    int           `mapstructure:"MAX_OPEN_CONNS"`
-	MaxIdleConns    int           `mapstructure:"MAX_IDLE_CONNS"`
-	ConnMaxLifetime time.Duration `mapstructure:"CONN_MAX_LIFETIME"`
+	Database_URL    string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
 	// Rate limiter configuration
-	RATE_LIMITER_MAX int `mapstructure:"RATE_LIMITER_MAX"`
-	RATE_LIMITER_TTL int `mapstructure:"RATE_LIMITER_TTL"`
+	RATE_LIMITER_MAX int
+	RATE_LIMITER_TTL int
 	// Minio configuration
-	MINIO_ENDPOINT   string `mapstructure:"MINIO_ENDPOINT"`
-	MINIO_ACCESS_KEY string `mapstructure:"MINIO_ACCESS_KEY"`
-	MINIO_SECRET_KEY string `mapstructure:"MINIO_SECRET_KEY"`
-	MINIO_BUCKET     string `mapstructure:"MINIO_BUCKET"`
-	MINIO_USE_SSL    bool   `mapstructure:"MINIO_USE_SSL"`
+	MINIO_ENDPOINT   string
+	MINIO_ACCESS_KEY string
+	MINIO_SECRET_KEY string
+	MINIO_BUCKET     string
+	MINIO_USE_SSL    bool
 	// Debug mode
-	DEBUG bool `mapstructure:"DEBUG"`
+	DEBUG bool
 }
 
 // Load reads configuration from environment variables with defaults
 func Load() (*Config, error) {
-	config := &Config{}
+	// Load .env file
+	gotenv.Load()
 
-	setDefaults()
-
-	viper.SetConfigName(".env")
-	viper.SetConfigType("env")
-	viper.AddConfigPath(".")
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("error reading config file: %w", err)
-		}
-	}
-
-	viper.AutomaticEnv()
-
-	if err := viper.Unmarshal(config); err != nil {
-		return nil, fmt.Errorf("error unmarshaling config: %w", err)
+	config := &Config{
+		App_Port:         getEnv("PORT", "8080"),
+		JWT_SECRET:       getEnv("JWT_SECRET", "your-secret-key"),
+		Database_URL:     getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"),
+		MaxOpenConns:     getEnvAsInt("MAX_OPEN_CONNS", 30),
+		MaxIdleConns:     getEnvAsInt("MAX_IDLE_CONNS", 2),
+		ConnMaxLifetime:  getEnvAsDuration("CONN_MAX_LIFETIME", 30*time.Minute),
+		RATE_LIMITER_MAX: getEnvAsInt("RATE_LIMITER_MAX", 0),
+		RATE_LIMITER_TTL: getEnvAsInt("RATE_LIMITER_TTL", 60),
+		MINIO_ENDPOINT:   getEnv("MINIO_ENDPOINT", "localhost:9000"),
+		MINIO_ACCESS_KEY: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
+		MINIO_SECRET_KEY: getEnv("MINIO_SECRET_KEY", "minioadmin"),
+		MINIO_BUCKET:     getEnv("MINIO_BUCKET", "minio-bucket"),
+		MINIO_USE_SSL:    getEnvAsBool("MINIO_USE_SSL", false),
+		DEBUG:            getEnvAsBool("DEBUG", false),
 	}
 
 	if err := config.validate(); err != nil {
@@ -58,21 +60,42 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
-func setDefaults() {
-	viper.SetDefault("PORT", "8080")
-	viper.SetDefault("JWT_SECRET", "your-secret-key")
-	viper.SetDefault("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable")
-	viper.SetDefault("MAX_OPEN_CONNS", 30)
-	viper.SetDefault("MAX_IDLE_CONNS", 2)
-	viper.SetDefault("CONN_MAX_LIFETIME", 30*time.Minute)
-	viper.SetDefault("RATE_LIMITER_MAX", 0)
-	viper.SetDefault("RATE_LIMITER_TTL", 60)
-	viper.SetDefault("MINIO_ENDPOINT", "localhost:9000")
-	viper.SetDefault("MINIO_ACCESS_KEY", "minioadmin")
-	viper.SetDefault("MINIO_SECRET_KEY", "minioadmin")
-	viper.SetDefault("MINIO_BUCKET", "minio-bucket")
-	viper.SetDefault("MINIO_USE_SSL", false)
-	viper.SetDefault("DEBUG", false)
+// Helper function to get environment variable with default value
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
+
+// Helper function to get environment variable as integer with default value
+func getEnvAsInt(key string, defaultValue int) int {
+	if valueStr, exists := os.LookupEnv(key); exists {
+		if value, err := strconv.Atoi(valueStr); err == nil {
+			return value
+		}
+	}
+	return defaultValue
+}
+
+// Helper function to get environment variable as boolean with default value
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if valueStr, exists := os.LookupEnv(key); exists {
+		if value, err := strconv.ParseBool(valueStr); err == nil {
+			return value
+		}
+	}
+	return defaultValue
+}
+
+// Helper function to get environment variable as duration with default value
+func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
+	if valueStr, exists := os.LookupEnv(key); exists {
+		if value, err := time.ParseDuration(valueStr); err == nil {
+			return value
+		}
+	}
+	return defaultValue
 }
 
 func (c *Config) validate() error {
