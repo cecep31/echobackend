@@ -1,13 +1,14 @@
-# Echo Backend API Documentation
+# Backend API Documentation
 
 ## Overview
 
-This is a comprehensive REST API built with Go Echo framework for a blog/content management system. The API provides endpoints for user management, authentication, posts, comments, tags, workspaces, and more.
+This is a comprehensive REST API for a blog/content management system. The API provides endpoints for user management, authentication, posts, comments, tags, workspaces, and more.
 
 ## Base URL
 
 ```
-http://localhost:8080/v1
+http://echo.pilput.me/v1
+http://nest.pilput.me/v1
 ```
 
 ## Authentication
@@ -920,6 +921,170 @@ Available endpoints:
 - `/v1/debug/pprof/allocs` - Memory allocations
 - `/v1/debug/pprof/block` - Block profile
 - `/v1/debug/pprof/mutex` - Mutex profile
+
+---
+
+## WebSocket Gateway
+
+### Connection
+
+**WebSocket** `wss://nest.pilput.me/ws/posts`
+
+Connect to the WebSocket gateway for real-time post interactions. Requires authentication via JWT token and a post ID.
+
+**Connection Parameters:**
+- `token` (query): JWT authentication token
+- `post_id` (query): ID of the post to connect to
+
+**Example Connection URL:**
+```
+wss://nest.pilput.me/ws/posts?token=your-jwt-token&post_id=post-uuid
+```
+
+### Authentication
+
+WebSocket connections require a valid JWT token passed as a query parameter. The token is verified upon connection.
+
+### Events
+
+#### Client to Server Events
+
+**`sendComment`**
+Send a new comment to a post.
+
+**Payload:**
+```json
+{
+  "content": "Comment content here..."
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": "comment-uuid",
+      "content": "Comment content",
+      "created_at": "2023-01-01T00:00:00Z",
+      "creator": {
+        "id": "user-uuid",
+        "username": "commenter",
+        "email": "commenter@example.com",
+        "first_name": "Commenter",
+        "last_name": "User"
+      }
+    }
+  ]
+}
+```
+
+**`typing`**
+Send typing indicator status.
+
+**Payload:**
+```json
+{
+  "postId": "post-uuid",
+  "isTyping": true
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success"
+}
+```
+
+**`markAsRead`**
+Mark a comment as read.
+
+**Payload:**
+```json
+{
+  "commentId": "comment-uuid"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success"
+}
+```
+
+**`getAllComments`**
+Request all comments for the post.
+
+**Response:**
+```json
+{
+  "status": "success"
+}
+```
+
+#### Server to Client Events
+
+**`newComment`**
+Broadcast when new comments are available or updated.
+
+**Payload:**
+```json
+[
+  {
+    "id": "comment-uuid",
+    "content": "Comment content",
+    "created_at": "2023-01-01T00:00:00Z",
+    "creator": {
+      "id": "user-uuid",
+      "username": "commenter",
+      "email": "commenter@example.com",
+      "first_name": "Commenter",
+      "last_name": "User"
+    }
+  }
+]
+```
+
+**`userTyping`**
+Broadcast when a user starts or stops typing.
+
+**Payload:**
+```json
+{
+  "userId": "user-uuid",
+  "isTyping": true
+}
+```
+
+**`error`**
+Sent when an error occurs during connection or processing.
+
+**Payload:**
+```json
+{
+  "status": "error",
+  "message": "Error description"
+}
+```
+
+### WebSocket Connection Lifecycle
+
+1. **Connection**: Client connects with token and post_id parameters
+2. **Authentication**: Server verifies JWT token
+3. **Initialization**: Server loads initial comments and sends them via `newComment` event
+4. **Real-time Interaction**: Client and server exchange events for comments and typing indicators
+5. **Disconnection**: Client or server terminates connection
+
+### Error Handling
+
+WebSocket errors are sent via the `error` event. Common errors include:
+- Invalid or missing authentication token
+- Invalid post ID
+- Unauthorized access
+- Connection timeout
 
 ---
 
