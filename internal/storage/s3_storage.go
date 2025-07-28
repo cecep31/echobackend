@@ -25,9 +25,9 @@ func NewMinioStorage(config *config.Config) *MinioStorage {
 		MaxConnsPerHost:       100,
 	}
 
-	client, err := minio.New(config.MINIO_ENDPOINT, &minio.Options{
-		Creds:     credentials.NewStaticV4(config.MINIO_ACCESS_KEY, config.MINIO_SECRET_KEY, ""),
-		Secure:    config.MINIO_USE_SSL,
+	client, err := minio.New(config.Minio.Endpoint, &minio.Options{
+		Creds:     credentials.NewStaticV4(config.Minio.AccessKey, config.Minio.SecretKey, ""),
+		Secure:    config.Minio.UseSSL,
 		Transport: transport,
 	})
 	if err != nil {
@@ -38,16 +38,16 @@ func NewMinioStorage(config *config.Config) *MinioStorage {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	exists, err := client.BucketExists(ctx, config.MINIO_BUCKET)
+	exists, err := client.BucketExists(ctx, config.Minio.Bucket)
 	if err != nil {
 		panic(err)
 	}
 
 	if !exists {
-		err = client.MakeBucket(ctx, config.MINIO_BUCKET, minio.MakeBucketOptions{})
+		err = client.MakeBucket(ctx, config.Minio.Bucket, minio.MakeBucketOptions{})
 		if err != nil {
 			// Check if another process created the bucket before us
-			exists, errCheck := client.BucketExists(ctx, config.MINIO_BUCKET)
+			exists, errCheck := client.BucketExists(ctx, config.Minio.Bucket)
 			if errCheck != nil || !exists {
 				panic(err)
 			}
@@ -56,7 +56,7 @@ func NewMinioStorage(config *config.Config) *MinioStorage {
 
 	return &MinioStorage{
 		client: client,
-		bucket: config.MINIO_BUCKET,
+		bucket: config.Minio.Bucket,
 	}
 }
 
@@ -79,21 +79,21 @@ func (s *MinioStorage) Save(ctx context.Context, path string, file io.Reader) er
 func (s *MinioStorage) Get(ctx context.Context, path string) (io.ReadCloser, error) {
 	// Add timeout to context
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	
+
 	obj, err := s.client.GetObject(ctx, s.bucket, path, minio.GetObjectOptions{})
 	if err != nil {
 		cancel() // Cancel context on error
 		return nil, err
 	}
-	
+
 	// Validate object exists by reading a header
 	_, err = obj.Stat()
 	if err != nil {
-		cancel() // Cancel context on error
+		cancel()    // Cancel context on error
 		obj.Close() // Close on error
 		return nil, err
 	}
-	
+
 	// Return a wrapper that will cancel the context when closed
 	return &readCloserWithCancel{obj, cancel}, nil
 }
@@ -102,7 +102,7 @@ func (s *MinioStorage) Delete(ctx context.Context, path string) error {
 	// Add timeout to context
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	
+
 	return s.client.RemoveObject(ctx, s.bucket, path, minio.RemoveObjectOptions{})
 }
 

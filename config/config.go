@@ -9,6 +9,14 @@ import (
 	"github.com/subosito/gotenv"
 )
 
+type MinioConfig struct {
+	Endpoint  string
+	AccessKey string
+	SecretKey string
+	Bucket    string
+	UseSSL    bool
+}
+
 type Config struct {
 	App_Port string
 	// JWT configuration
@@ -22,11 +30,7 @@ type Config struct {
 	RATE_LIMITER_MAX int
 	RATE_LIMITER_TTL int
 	// Minio configuration
-	MINIO_ENDPOINT   string
-	MINIO_ACCESS_KEY string
-	MINIO_SECRET_KEY string
-	MINIO_BUCKET     string
-	MINIO_USE_SSL    bool
+	Minio MinioConfig
 	// Debug mode
 	DEBUG bool
 }
@@ -45,12 +49,14 @@ func Load() (*Config, error) {
 		ConnMaxLifetime:  getEnvAsDuration("CONN_MAX_LIFETIME", 30*time.Minute),
 		RATE_LIMITER_MAX: getEnvAsInt("RATE_LIMITER_MAX", 0),
 		RATE_LIMITER_TTL: getEnvAsInt("RATE_LIMITER_TTL", 60),
-		MINIO_ENDPOINT:   getEnv("MINIO_ENDPOINT", "localhost:9000"),
-		MINIO_ACCESS_KEY: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
-		MINIO_SECRET_KEY: getEnv("MINIO_SECRET_KEY", "minioadmin"),
-		MINIO_BUCKET:     getEnv("MINIO_BUCKET", "minio-bucket"),
-		MINIO_USE_SSL:    getEnvAsBool("MINIO_USE_SSL", false),
-		DEBUG:            getEnvAsBool("DEBUG", false),
+		Minio: MinioConfig{
+			Endpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
+			AccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
+			SecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
+			Bucket:    getEnv("MINIO_BUCKET", "minio-bucket"),
+			UseSSL:    getEnvAsBool("MINIO_USE_SSL", false),
+		},
+		DEBUG: getEnvAsBool("DEBUG", false),
 	}
 
 	if err := config.validate(); err != nil {
