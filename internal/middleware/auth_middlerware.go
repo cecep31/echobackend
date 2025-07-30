@@ -31,10 +31,11 @@ func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 				return echo.NewHTTPError(401, "missing authorization header")
 			}
 
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-			if tokenString == authHeader {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
 				return echo.NewHTTPError(401, "invalid token format")
 			}
+			tokenString := parts[1]
 
 			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -75,7 +76,7 @@ func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 				return echo.NewHTTPError(401, "unauthorized: invalid user context")
 			}
 
-			isSuperadmin, exists := claims["isSuperadmin"]
+			isSuperadmin, exists := claims["isSuperAdmin"]
 			if !exists {
 				return echo.NewHTTPError(403, "forbidden: missing admin privileges")
 			}

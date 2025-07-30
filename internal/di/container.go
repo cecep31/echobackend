@@ -40,47 +40,58 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 		return wrapper.DB
 	})
 
-	// Provide repositories
-	container.Provide(repository.NewUserRepository)
-	container.Provide(repository.NewPostRepository)
-	container.Provide(repository.NewAuthRepository)
-	container.Provide(repository.NewTagRepository)
-	container.Provide(repository.NewPageRepository)
-	container.Provide(repository.NewWorkspaceRepository)
-	container.Provide(repository.NewCommentRepository)
-	container.Provide(repository.NewPostViewRepository)
-	container.Provide(repository.NewUserFollowRepository)
+	// Register repositories
+	repositories := []interface{}{
+		repository.NewUserRepository,
+		repository.NewPostRepository,
+		repository.NewAuthRepository,
+		repository.NewTagRepository,
+		repository.NewPageRepository,
+		repository.NewWorkspaceRepository,
+		repository.NewCommentRepository,
+		repository.NewPostViewRepository,
+		repository.NewUserFollowRepository,
+	}
+	for _, repo := range repositories {
+		container.Provide(repo)
+	}
 
-	// Provide services
-	container.Provide(service.NewUserService)
-	container.Provide(service.NewPostService)
-	container.Provide(service.NewAuthService)
-	container.Provide(service.NewTagService)
-	container.Provide(service.NewPageService)
-	container.Provide(service.NewWorkspaceService)
-	container.Provide(service.NewCommentService)
-	container.Provide(service.NewPostViewService)
-	container.Provide(service.NewUserFollowService)
+	// Register services
+	services := []interface{}{
+		service.NewUserService,
+		service.NewPostService,
+		service.NewAuthService,
+		service.NewTagService,
+		service.NewPageService,
+		service.NewWorkspaceService,
+		service.NewCommentService,
+		service.NewPostViewService,
+		service.NewUserFollowService,
+	}
+	for _, svc := range services {
+		container.Provide(svc)
+	}
 
-	// Provide storage
+	// Register infrastructure
 	container.Provide(storage.NewMinioStorage)
-
-	// Provide middleware
 	container.Provide(middleware.NewAuthMiddleware)
-
-	// Provide handlers
-	container.Provide(handler.NewUserHandler)
-	container.Provide(handler.NewPostHandler)
-	container.Provide(handler.NewAuthHandler)
-	container.Provide(handler.NewTagHandler)
-	container.Provide(handler.NewPageHandler)
-	container.Provide(handler.NewWorkspaceHandler)
-	container.Provide(handler.NewCommentHandler)
-	container.Provide(handler.NewPostViewHandler)
-	container.Provide(handler.NewUserFollowHandler)
-
-	// Provide routes
 	container.Provide(routes.NewRoutes)
+
+	// Register handlers
+	handlers := []interface{}{
+		handler.NewUserHandler,
+		handler.NewPostHandler,
+		handler.NewAuthHandler,
+		handler.NewTagHandler,
+		handler.NewPageHandler,
+		handler.NewWorkspaceHandler,
+		handler.NewCommentHandler,
+		handler.NewPostViewHandler,
+		handler.NewUserFollowHandler,
+	}
+	for _, hdl := range handlers {
+		container.Provide(hdl)
+	}
 
 	return container
 }
