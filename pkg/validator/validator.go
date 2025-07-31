@@ -8,6 +8,15 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+var messages = map[string]string{
+	"required": "%s is required",
+	"email":    "%s must be a valid email address",
+	"min":      "%s must be at least %s characters long",
+	"max":      "%s must not exceed %s characters",
+	"oneof":    "%s must be one of [%s]",
+	"default":  "%s failed validation for tag %s",
+}
+
 type CustomValidator struct {
 	validator *validator.Validate
 }
@@ -40,14 +49,16 @@ func NewValidator() *CustomValidator {
 func (cv *CustomValidator) Validate(i any) error {
 	if err := cv.validator.Struct(i); err != nil {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			var errors ValidationErrors
-			for _, e := range validationErrors {
-				errors.Errors = append(errors.Errors, ValidationError{
+			errors := ValidationErrors{
+				Errors: make([]ValidationError, len(validationErrors)),
+			}
+			for i, e := range validationErrors {
+				errors.Errors[i] = ValidationError{
 					Field:   e.Field(),
 					Message: getErrorMessage(e),
 					Value:   e.Value(),
 					Tag:     e.Tag(),
-				})
+				}
 			}
 			return errors
 		}
@@ -57,55 +68,21 @@ func (cv *CustomValidator) Validate(i any) error {
 }
 
 func getErrorMessage(e validator.FieldError) string {
+	fieldName := toReadableFieldName(e.Field())
 	switch e.Tag() {
 	case "required":
-		return getMessage("required", e.Field())
+		return fmt.Sprintf(messages["required"], fieldName)
 	case "email":
-		return getMessage("email", e.Field())
+		return fmt.Sprintf(messages["email"], fieldName)
 	case "min":
-		return getMessage("min", e.Field(), e.Param())
+		return fmt.Sprintf(messages["min"], fieldName, e.Param())
 	case "max":
-		return getMessage("max", e.Field(), e.Param())
+		return fmt.Sprintf(messages["max"], fieldName, e.Param())
 	case "oneof":
-		return getMessage("oneof", e.Field(), e.Param())
+		return fmt.Sprintf(messages["oneof"], fieldName, e.Param())
 	default:
-		return getMessage("default", e.Field(), e.Tag())
+		return fmt.Sprintf(messages["default"], fieldName, e.Tag())
 	}
-}
-
-func getMessage(tag string, params ...string) string {
-	messages := map[string]string{
-		"required": "%s is required",
-		"email":    "%s must be a valid email address",
-		"min":      "%s must be at least %s characters long",
-		"max":      "%s must not exceed %s characters",
-		"oneof":    "%s must be one of [%s]",
-		"default":  "%s failed validation for tag %s",
-	}
-
-	msg, ok := messages[tag]
-	if !ok {
-		msg = messages["default"]
-	}
-
-	switch len(params) {
-	case 1:
-		return sprintf(msg, params[0])
-	case 2:
-		return sprintf(msg, params[0], params[1])
-	default:
-		return sprintf(messages["default"], params[0], "unknown")
-	}
-}
-
-func sprintf(format string, args ...any) string {
-	// Convert field names from camelCase/PascalCase to user-friendly format
-	if len(args) > 0 {
-		if fieldName, ok := args[0].(string); ok {
-			args[0] = toReadableFieldName(fieldName)
-		}
-	}
-	return fmt.Sprintf(format, args...)
 }
 
 func toReadableFieldName(field string) string {
