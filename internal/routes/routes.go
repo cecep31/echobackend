@@ -15,17 +15,17 @@ import (
 )
 
 type Routes struct {
-	config             *config.Config
-	userHandler        *handler.UserHandler
-	postHandler        *handler.PostHandler
-	authHandler        *handler.AuthHandler
-	authMiddleware     *middleware.AuthMiddleware
-	tagHandler         *handler.TagHandler
-	pageHandler        *handler.PageHandler
-	workspaceHandler   *handler.WorkspaceHandler
-	commentHandler     *handler.CommentHandler
-	postViewHandler    *handler.PostViewHandler
-	userFollowHandler  *handler.UserFollowHandler
+	config            *config.Config
+	userHandler       *handler.UserHandler
+	postHandler       *handler.PostHandler
+	authHandler       *handler.AuthHandler
+	authMiddleware    *middleware.AuthMiddleware
+	tagHandler        *handler.TagHandler
+	pageHandler       *handler.PageHandler
+	workspaceHandler  *handler.WorkspaceHandler
+	commentHandler    *handler.CommentHandler
+	postViewHandler   *handler.PostViewHandler
+	userFollowHandler *handler.UserFollowHandler
 }
 
 func NewRoutes(
@@ -79,21 +79,21 @@ func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 	{
 		// Public routes
 		users.GET("/:id", r.userHandler.GetByID)
-		
+
 		// Authenticated routes
 		authUsers := users.Group("", r.authMiddleware.Auth())
 		{
 			authUsers.GET("/me", r.userHandler.GetMe)
 			authUsers.GET("", r.userHandler.GetUsers, r.authMiddleware.AuthAdmin())
 			authUsers.DELETE("/:id", r.userHandler.DeleteUser, r.authMiddleware.AuthAdmin())
-			
+
 			// Follow routes
 			authUsers.POST("/follow", r.userFollowHandler.FollowUser)
 			authUsers.DELETE("/:id/follow", r.userFollowHandler.UnfollowUser)
 			authUsers.GET("/:id/follow-status", r.userFollowHandler.CheckFollowStatus)
 			authUsers.GET("/:id/mutual-follows", r.userFollowHandler.GetMutualFollows)
 		}
-		
+
 		// Follow-related public routes
 		users.GET("/:id/followers", r.userFollowHandler.GetFollowers)
 		users.GET("/:id/following", r.userFollowHandler.GetFollowing)
@@ -121,9 +121,9 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 		posts.POST("/:id/comments", r.commentHandler.CreateComment, r.authMiddleware.Auth())
 		posts.PUT("/:id/comments/:comment_id", r.commentHandler.UpdateComment, r.authMiddleware.Auth())
 		posts.DELETE("/:id/comments/:comment_id", r.commentHandler.DeleteComment, r.authMiddleware.Auth())
-		
+
 		// View routes
-		posts.POST("/:id/view", r.postViewHandler.RecordView) // Can be called by anonymous users
+		posts.POST("/:id/view", r.postViewHandler.RecordView, r.authMiddleware.Auth()) // Only authenticated users
 		posts.GET("/:id/views", r.postViewHandler.GetPostViews, r.authMiddleware.Auth())
 		posts.GET("/:id/view-stats", r.postViewHandler.GetPostViewStats)
 		posts.GET("/:id/viewed", r.postViewHandler.CheckUserViewed, r.authMiddleware.Auth())
