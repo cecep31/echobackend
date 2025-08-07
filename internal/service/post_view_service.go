@@ -8,7 +8,7 @@ import (
 )
 
 type PostViewService interface {
-	RecordView(ctx context.Context, postID, userID, ipAddress, userAgent string) error
+	RecordView(ctx context.Context, postID, userID string) error
 	GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostView, int64, error)
 	GetViewStats(ctx context.Context, postID string) (*model.PostViewStats, error)
 	HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error)
@@ -29,7 +29,7 @@ func NewPostViewService(
 	}
 }
 
-func (s *postViewService) RecordView(ctx context.Context, postID, userID, ipAddress, userAgent string) error {
+func (s *postViewService) RecordView(ctx context.Context, postID, userID string) error {
 	// Check if post exists
 	_, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
@@ -51,8 +51,6 @@ func (s *postViewService) RecordView(ctx context.Context, postID, userID, ipAddr
 	// Create view record
 	view := &model.PostView{
 		PostID:    postID,
-		IPAddress: ipAddress,
-		UserAgent: userAgent,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

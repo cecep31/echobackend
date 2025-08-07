@@ -204,12 +204,8 @@ func (h *PostHandler) recordPostView(c echo.Context, postID string) {
 		}
 	}
 
-	// Get IP address and user agent
-	ipAddress := c.RealIP()
-	userAgent := c.Request().UserAgent()
-
 	// Record the view (ignore errors to not affect main response)
-	_ = h.postViewService.RecordView(c.Request().Context(), postID, userID, ipAddress, userAgent)
+	_ = h.postViewService.RecordView(c.Request().Context(), postID, userID)
 }
 
 func (h *PostHandler) GetMyPosts(c echo.Context) error {
