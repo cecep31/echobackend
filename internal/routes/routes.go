@@ -25,6 +25,7 @@ type Routes struct {
 	workspaceHandler  *handler.WorkspaceHandler
 	commentHandler    *handler.CommentHandler
 	postViewHandler   *handler.PostViewHandler
+	postLikeHandler   *handler.PostLikeHandler
 	userFollowHandler *handler.UserFollowHandler
 }
 
@@ -39,6 +40,7 @@ func NewRoutes(
 	workspaceHandler *handler.WorkspaceHandler,
 	commentHandler *handler.CommentHandler,
 	postViewHandler *handler.PostViewHandler,
+	postLikeHandler *handler.PostLikeHandler,
 	userFollowHandler *handler.UserFollowHandler,
 ) *Routes {
 	return &Routes{
@@ -52,6 +54,7 @@ func NewRoutes(
 		workspaceHandler:  workspaceHandler,
 		commentHandler:    commentHandler,
 		postViewHandler:   postViewHandler,
+		postLikeHandler:   postLikeHandler,
 		userFollowHandler: userFollowHandler,
 	}
 }
@@ -127,6 +130,13 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 		posts.GET("/:id/views", r.postViewHandler.GetPostViews, r.authMiddleware.Auth())
 		posts.GET("/:id/view-stats", r.postViewHandler.GetPostViewStats)
 		posts.GET("/:id/viewed", r.postViewHandler.CheckUserViewed, r.authMiddleware.Auth())
+
+		// Like routes
+		posts.POST("/:id/like", r.postLikeHandler.LikePost, r.authMiddleware.Auth())
+		posts.DELETE("/:id/like", r.postLikeHandler.UnlikePost, r.authMiddleware.Auth())
+		posts.GET("/:id/likes", r.postLikeHandler.GetPostLikes)
+		posts.GET("/:id/like-stats", r.postLikeHandler.GetPostLikeStats)
+		posts.GET("/:id/liked", r.postLikeHandler.CheckUserLiked, r.authMiddleware.Auth())
 	}
 }
 

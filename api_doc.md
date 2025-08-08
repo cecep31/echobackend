@@ -700,6 +700,142 @@ Check if current user has viewed a specific post.
 
 ---
 
+## Post Like Endpoints
+
+### Like Post
+
+**POST** `/v1/posts/{id}/like`
+
+🔒 **Authentication Required**
+
+Like a post. Users can only like a post once.
+
+**Parameters:**
+- `id` (path): Post ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Post liked successfully",
+  "data": null
+}
+```
+
+**Error Responses:**
+- `400`: User has already liked this post
+- `401`: Authentication required
+- `404`: Post not found
+
+### Unlike Post
+
+**DELETE** `/v1/posts/{id}/like`
+
+🔒 **Authentication Required**
+
+Remove a like from a post.
+
+**Parameters:**
+- `id` (path): Post ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Post unliked successfully",
+  "data": null
+}
+```
+
+**Error Responses:**
+- `400`: User has not liked this post
+- `401`: Authentication required
+- `404`: Post not found
+
+### Get Post Likes
+
+**GET** `/v1/posts/{id}/likes`
+
+Get users who liked a specific post with pagination.
+
+**Parameters:**
+- `id` (path): Post ID
+- `limit` (query, optional): Number of results per page (default: 10)
+- `offset` (query, optional): Number of results to skip (default: 0)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Post likes retrieved successfully",
+  "data": {
+    "likes": [
+      {
+        "id": "uuid",
+        "post_id": "uuid",
+        "user_id": "uuid",
+        "user": {
+          "id": "uuid",
+          "username": "username",
+          "email": "user@example.com"
+        },
+        "created_at": "2023-01-01T00:00:00Z"
+      }
+    ],
+    "total": 25,
+    "limit": 10,
+    "offset": 0
+  }
+}
+```
+
+### Get Post Like Statistics
+
+**GET** `/v1/posts/{id}/like-stats`
+
+Get like statistics for a post.
+
+**Parameters:**
+- `id` (path): Post ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Like stats retrieved successfully",
+  "data": {
+    "post_id": "uuid",
+    "total_likes": 42
+  }
+}
+```
+
+### Check if User Liked Post
+
+**GET** `/v1/posts/{id}/liked`
+
+🔒 **Authentication Required**
+
+Check if current user has liked a specific post.
+
+**Parameters:**
+- `id` (path): Post ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Like status retrieved successfully",
+  "data": {
+    "has_liked": true,
+    "post_id": "uuid",
+    "user_id": "uuid"
+  }
+}
+```
+
+---
+
 ## Tag Endpoints
 
 ### Create Tag
@@ -1180,6 +1316,7 @@ Certain endpoints have rate limiting applied:
   "body": "Post content",
   "slug": "post-slug",
   "view_count": 0,
+  "like_count": 0,
   "creator": {
     "id": "uuid",
     "username": "author",
@@ -1203,6 +1340,24 @@ Certain endpoints have rate limiting applied:
   "name": "tag-name",
   "description": "Tag description",
   "created_at": "2023-01-01T00:00:00Z"
+}
+```
+
+### PostLike Model
+```json
+{
+  "id": "uuid",
+  "post_id": "uuid",
+  "user_id": "uuid",
+  "user": {
+    "id": "uuid",
+    "username": "username",
+    "email": "user@example.com",
+    "name": "User Name"
+  },
+  "created_at": "2023-01-01T00:00:00Z",
+  "updated_at": "2023-01-01T00:00:00Z",
+  "deleted_at": null
 }
 ```
 

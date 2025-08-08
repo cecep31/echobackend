@@ -50,6 +50,7 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 		repository.NewWorkspaceRepository,
 		repository.NewCommentRepository,
 		repository.NewPostViewRepository,
+		repository.NewPostLikeRepository,
 		repository.NewUserFollowRepository,
 	}
 	for _, repo := range repositories {
@@ -66,6 +67,7 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 		service.NewWorkspaceService,
 		service.NewCommentService,
 		service.NewPostViewService,
+		service.NewPostLikeService,
 		service.NewUserFollowService,
 	}
 	for _, svc := range services {
@@ -87,6 +89,7 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 		handler.NewWorkspaceHandler,
 		handler.NewCommentHandler,
 		handler.NewPostViewHandler,
+		handler.NewPostLikeHandler,
 		handler.NewUserFollowHandler,
 	}
 	for _, hdl := range handlers {
