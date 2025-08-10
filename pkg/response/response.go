@@ -8,11 +8,11 @@ import (
 
 // APIResponse represents the standard API response format
 type APIResponse struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
-	Meta    interface{} `json:"meta,omitempty"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
+	Error   string `json:"error,omitempty"`
+	Meta    any    `json:"meta,omitempty"`
 }
 
 // PaginationMeta represents pagination metadata
@@ -24,7 +24,7 @@ type PaginationMeta struct {
 }
 
 // Success sends a successful response
-func Success(c echo.Context, message string, data interface{}) error {
+func Success(c echo.Context, message string, data any) error {
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
 		Message: message,
@@ -33,7 +33,7 @@ func Success(c echo.Context, message string, data interface{}) error {
 }
 
 // SuccessWithMeta sends a successful response with metadata
-func SuccessWithMeta(c echo.Context, message string, data interface{}, meta interface{}) error {
+func SuccessWithMeta(c echo.Context, message string, data any, meta any) error {
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
 		Message: message,
@@ -43,7 +43,7 @@ func SuccessWithMeta(c echo.Context, message string, data interface{}, meta inte
 }
 
 // Created sends a created response
-func Created(c echo.Context, message string, data interface{}) error {
+func Created(c echo.Context, message string, data any) error {
 	return c.JSON(http.StatusCreated, APIResponse{
 		Success: true,
 		Message: message,

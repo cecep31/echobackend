@@ -125,10 +125,10 @@ func (h *PostLikeHandler) GetPostLikes(c echo.Context) error {
 		likeResponses[i] = like.ToResponse()
 	}
 
-	responseData := map[string]interface{}{
-		"likes": likeResponses,
-		"total": total,
-		"limit": limit,
+	responseData := map[string]any{
+		"likes":  likeResponses,
+		"total":  total,
+		"limit":  limit,
 		"offset": offset,
 	}
 
