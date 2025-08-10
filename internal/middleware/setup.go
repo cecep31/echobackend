@@ -23,7 +23,7 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 	e.Server.IdleTimeout = 60 * time.Second
 
 	// Add body limit middleware to prevent memory exhaustion
-	e.Use(middleware.BodyLimit("2M")) // Limit request body to 2MB
+	e.Use(middleware.BodyLimit("10M")) // Limit request body to 2MB
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,

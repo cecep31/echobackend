@@ -41,7 +41,7 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 	})
 
 	// Register repositories
-	repositories := []interface{}{
+	repositories := []any{
 		repository.NewUserRepository,
 		repository.NewPostRepository,
 		repository.NewAuthRepository,
@@ -58,7 +58,7 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 	}
 
 	// Register services
-	services := []interface{}{
+	services := []any{
 		service.NewUserService,
 		service.NewPostService,
 		service.NewAuthService,
@@ -80,7 +80,7 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 	container.Provide(routes.NewRoutes)
 
 	// Register handlers
-	handlers := []interface{}{
+	handlers := []any{
 		handler.NewUserHandler,
 		handler.NewPostHandler,
 		handler.NewAuthHandler,

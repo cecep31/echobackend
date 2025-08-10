@@ -76,12 +76,12 @@ func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 				return echo.NewHTTPError(401, "unauthorized: invalid user context")
 			}
 
-			isSuperadmin, exists := claims["isSuperAdmin"]
+			isSuperAdmin, exists := claims["isSuperAdmin"]
 			if !exists {
 				return echo.NewHTTPError(403, "forbidden: missing admin privileges")
 			}
 
-			if isSuperadmin != "true" && isSuperadmin != true {
+			if isSuperAdmin != "true" && isSuperAdmin != true {
 				return echo.NewHTTPError(403, "forbidden: insufficient privileges")
 			}
 
