@@ -4,6 +4,7 @@ import (
 	"context"
 	"echobackend/config"
 	"io"
+	"log"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -23,7 +24,8 @@ func NewS3Storage(cfg *config.Config) *S3Storage {
 		awsconfig.WithRegion("ap-southeast-1"), // You might want to make this configurable
 	)
 	if err != nil {
-		panic(err)
+		log.Printf("Failed to load AWS config: %v", err)
+		return nil
 	}
 
 	client := s3.NewFromConfig(awsConfig)
@@ -31,29 +33,6 @@ func NewS3Storage(cfg *config.Config) *S3Storage {
 	s3Client := &S3Storage{
 		client: client,
 		bucket: cfg.S3.Bucket,
-	}
-
-	// Create bucket if it doesn't exist
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err = client.HeadBucket(ctx, &s3.HeadBucketInput{
-		Bucket: aws.String(cfg.S3.Bucket),
-	})
-	if err != nil {
-		// Bucket doesn't exist, create it
-		_, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(cfg.S3.Bucket),
-		})
-		if err != nil {
-			// Check if another process created the bucket before us
-			_, errCheck := client.HeadBucket(ctx, &s3.HeadBucketInput{
-				Bucket: aws.String(cfg.S3.Bucket),
-			})
-			if errCheck != nil {
-				panic(err)
-			}
-		}
 	}
 
 	return s3Client
