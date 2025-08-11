@@ -25,13 +25,13 @@ type PostService interface {
 }
 
 type postService struct {
-	postRepo     repository.PostRepository
-	tagService   TagService
-	miniostorage *storage.MinioStorage
+	postRepo   repository.PostRepository
+	tagService TagService
+	s3storage  *storage.S3Storage
 }
 
-func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.MinioStorage) PostService {
-	return &postService{postRepo: postRepo, tagService: tagService, miniostorage: storageclient}
+func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage) PostService {
+	return &postService{postRepo: postRepo, tagService: tagService, s3storage: storageclient}
 }
 
 func (s *postService) IsAuthor(ctx context.Context, id string, userid string) error {
@@ -232,7 +232,7 @@ func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.File
 	defer src.Close()
 
 	// Use the passed context instead of context.Background() to respect cancellation/timeout
-	return s.miniostorage.Save(ctx, file.Filename, src)
+	return s.s3storage.Save(ctx, file.Filename, src)
 }
 
 // findOrCreateTagByName finds an existing tag by name or creates a new one

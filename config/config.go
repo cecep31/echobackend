@@ -9,7 +9,7 @@ import (
 	"github.com/subosito/gotenv"
 )
 
-type MinioConfig struct {
+type S3Config struct {
 	Endpoint  string
 	AccessKey string
 	SecretKey string
@@ -29,8 +29,8 @@ type Config struct {
 	// Rate limiter configuration
 	RATE_LIMITER_MAX int
 	RATE_LIMITER_TTL int
-	// Minio configuration
-	Minio MinioConfig
+	// S3 configuration
+	S3 S3Config
 	// Debug mode
 	DEBUG bool
 }
@@ -49,7 +49,7 @@ func Load() (*Config, error) {
 		ConnMaxLifetime:  getEnvAsDuration("CONN_MAX_LIFETIME", 30*time.Minute),
 		RATE_LIMITER_MAX: getEnvAsInt("RATE_LIMITER_MAX", 0),
 		RATE_LIMITER_TTL: getEnvAsInt("RATE_LIMITER_TTL", 60),
-		Minio: MinioConfig{
+		S3: S3Config{
 			Endpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
 			AccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
 			SecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),

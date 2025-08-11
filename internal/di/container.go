@@ -75,7 +75,7 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 	}
 
 	// Register infrastructure
-	container.Provide(storage.NewMinioStorage)
+	container.Provide(storage.NewS3Storage)
 	container.Provide(middleware.NewAuthMiddleware)
 	container.Provide(routes.NewRoutes)
 
