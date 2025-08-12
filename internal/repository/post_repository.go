@@ -152,13 +152,13 @@ func (r *postRepository) CreatePostWithTags(ctx context.Context, postDTO *model.
 	if err != nil {
 		return nil, fmt.Errorf("failed to create post with tags: %w", err)
 	}
-	
+
 	// Load the created post with all associations for return
 	err = r.db.WithContext(ctx).Preload("Creator").Preload("Tags").First(newpost, "id = ?", newpost.ID).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to load created post with associations: %w", err)
 	}
-	
+
 	return newpost, nil
 }
 

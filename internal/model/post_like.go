@@ -8,11 +8,11 @@ import (
 
 // PostLike represents a like record for a post
 type PostLike struct {
-	ID     string `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v7()"`
-	PostID string `json:"post_id" gorm:"type:uuid;not null;index"`
-	UserID string `json:"user_id" gorm:"type:uuid;not null;index"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v7()"`
+	PostID    string         `json:"post_id" gorm:"type:uuid;not null;index"`
+	UserID    string         `json:"user_id" gorm:"type:uuid;not null;index"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships

@@ -7,8 +7,8 @@ import (
 	"echobackend/internal/repository"
 	"echobackend/internal/routes"
 	"echobackend/internal/service"
-	"echobackend/internal/storage"
 	"echobackend/pkg/database"
+	"echobackend/pkg/storage"
 
 	"go.uber.org/dig"
 	"gorm.io/gorm"

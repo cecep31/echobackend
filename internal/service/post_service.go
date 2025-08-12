@@ -4,7 +4,7 @@ import (
 	"context"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
-	"echobackend/internal/storage"
+	"echobackend/pkg/storage"
 	"errors"
 	"mime/multipart"
 )

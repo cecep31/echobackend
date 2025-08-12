@@ -18,7 +18,7 @@ type WorkspaceService interface {
 	GetByUserID(ctx context.Context, userID string) ([]*model.Workspace, error)
 	Update(ctx context.Context, workspace *model.Workspace) error
 	Delete(ctx context.Context, id string) error
-	
+
 	// Workspace member operations
 	AddMember(ctx context.Context, workspaceID string, userID string, role string) error
 	GetMembers(ctx context.Context, workspaceID string) ([]*model.WorkspaceMember, error)
@@ -47,7 +47,7 @@ func (s *workspaceService) GetByID(ctx context.Context, id string) (*model.Works
 	if err != nil {
 		return nil, fmt.Errorf("invalid workspace ID: %w", err)
 	}
-	
+
 	return s.workspaceRepo.GetByID(ctx, workspaceID)
 }
 
@@ -72,7 +72,7 @@ func (s *workspaceService) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("invalid workspace ID: %w", err)
 	}
-	
+
 	return s.workspaceRepo.SoftDelete(ctx, workspaceID)
 }
 
@@ -82,13 +82,13 @@ func (s *workspaceService) AddMember(ctx context.Context, workspaceID string, us
 	if err != nil {
 		return fmt.Errorf("invalid workspace ID: %w", err)
 	}
-	
+
 	member := &model.WorkspaceMember{
 		WorkspaceID: wsID,
 		UserID:      userID,
 		Role:        role,
 	}
-	
+
 	return s.workspaceRepo.AddMember(ctx, member)
 }
 
@@ -98,7 +98,7 @@ func (s *workspaceService) GetMembers(ctx context.Context, workspaceID string) (
 	if err != nil {
 		return nil, fmt.Errorf("invalid workspace ID: %w", err)
 	}
-	
+
 	return s.workspaceRepo.GetMembers(ctx, wsID)
 }
 
@@ -108,7 +108,7 @@ func (s *workspaceService) UpdateMemberRole(ctx context.Context, workspaceID str
 	if err != nil {
 		return fmt.Errorf("invalid workspace ID: %w", err)
 	}
-	
+
 	return s.workspaceRepo.UpdateMemberRole(ctx, wsID, userID, role)
 }
 
@@ -118,7 +118,7 @@ func (s *workspaceService) RemoveMember(ctx context.Context, workspaceID string,
 	if err != nil {
 		return fmt.Errorf("invalid workspace ID: %w", err)
 	}
-	
+
 	return s.workspaceRepo.RemoveMember(ctx, wsID, userID)
 }
 
@@ -128,6 +128,6 @@ func (s *workspaceService) CheckMembership(ctx context.Context, workspaceID stri
 	if err != nil {
 		return false, "", fmt.Errorf("invalid workspace ID: %w", err)
 	}
-	
+
 	return s.workspaceRepo.IsMember(ctx, wsID, userID)
 }

@@ -28,8 +28,6 @@ type CheckUsernameRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=30"`
 }
 
-
-
 func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }

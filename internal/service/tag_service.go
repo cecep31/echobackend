@@ -52,23 +52,23 @@ func (s *tagService) FindOrCreateByName(ctx context.Context, name string) (*mode
 	if name == "" {
 		return nil, errors.New("tag name cannot be empty")
 	}
-	
+
 	// Try to find existing tag
 	tag, err := s.tagRepo.FindByName(ctx, name)
 	if err == nil {
 		return tag, nil
 	}
-	
+
 	// If tag doesn't exist, create a new one
 	newTag := &model.Tag{
 		Name: name,
 	}
-	
+
 	err = s.tagRepo.Create(ctx, newTag)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return newTag, nil
 }
 

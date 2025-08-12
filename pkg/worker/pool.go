@@ -21,17 +21,17 @@ type Pool struct {
 // NewPool creates a new worker pool with the specified number of workers
 func NewPool(size int) *Pool {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	pool := &Pool{
 		tasks:     make(chan Task, size*10), // Buffer tasks to avoid blocking
 		ctx:       ctx,
 		cancel:    cancel,
 		semaphore: make(chan struct{}, size),
 	}
-	
+
 	// Start the dispatcher
 	go pool.dispatcher()
-	
+
 	return pool
 }
 
@@ -45,7 +45,7 @@ func (p *Pool) dispatcher() {
 			if !ok {
 				return
 			}
-			
+
 			// Acquire semaphore slot
 			select {
 			case <-p.ctx.Done():
@@ -56,16 +56,16 @@ func (p *Pool) dispatcher() {
 				go func(t Task) {
 					defer p.wg.Done()
 					defer func() { <-p.semaphore }() // Release semaphore slot
-					
+
 					// Execute the task with timeout
 					taskCtx, cancel := context.WithTimeout(p.ctx, 30*time.Second)
 					defer cancel()
-					
+
 					done := make(chan error, 1)
 					go func() {
 						done <- t()
 					}()
-					
+
 					select {
 					case <-taskCtx.Done():
 						// Task timed out or pool was shut down
@@ -92,23 +92,23 @@ func (p *Pool) Submit(task Task) {
 
 // Shutdown gracefully shuts down the pool, waiting for all tasks to complete
 func (p *Pool) Shutdown() {
-	p.cancel() // Signal all workers to stop
+	p.cancel()     // Signal all workers to stop
 	close(p.tasks) // Stop accepting new tasks
-	p.wg.Wait() // Wait for all workers to finish
+	p.wg.Wait()    // Wait for all workers to finish
 }
 
 // ShutdownWithTimeout attempts to gracefully shut down the pool within the timeout
 func (p *Pool) ShutdownWithTimeout(timeout time.Duration) bool {
-	p.cancel() // Signal all workers to stop
+	p.cancel()     // Signal all workers to stop
 	close(p.tasks) // Stop accepting new tasks
-	
+
 	// Wait with timeout
 	c := make(chan struct{})
 	go func() {
 		defer close(c)
 		p.wg.Wait()
 	}()
-	
+
 	select {
 	case <-c:
 		return true // Completed successfully
