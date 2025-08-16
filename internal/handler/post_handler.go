@@ -137,9 +137,6 @@ func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 		return response.InternalServerError(c, "Failed to get post", err)
 	}
 
-	// Record view for this post
-	h.recordPostView(c, post.ID)
-
 	return response.Success(c, "Successfully retrieved post", post)
 }
 
@@ -149,9 +146,6 @@ func (h *PostHandler) GetPost(c echo.Context) error {
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get post", err)
 	}
-
-	// Record view for this post
-	h.recordPostView(c, post.ID)
 
 	return response.Success(c, "Successfully retrieved post", post)
 }
@@ -188,24 +182,6 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	}
 
 	return response.Success(c, "Successfully retrieved posts", posts)
-}
-
-// recordPostView is a helper method to record post views
-func (h *PostHandler) recordPostView(c echo.Context, postID string) {
-	// Get user ID from JWT if authenticated
-	var userID string
-	if userClaims := c.Get("user"); userClaims != nil {
-		if claims, ok := userClaims.(jwt.MapClaims); ok {
-			if uid, exists := claims["user_id"]; exists {
-				if uidStr, ok := uid.(string); ok {
-					userID = uidStr
-				}
-			}
-		}
-	}
-
-	// Record the view (ignore errors to not affect main response)
-	_ = h.postViewService.RecordView(c.Request().Context(), postID, userID)
 }
 
 func (h *PostHandler) GetMyPosts(c echo.Context) error {
