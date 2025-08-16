@@ -36,6 +36,7 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	if err != nil {
 		offsetInt = 0 // Default offset if not provided or invalid
 	}
+
 	posts, total, err := h.postService.GetPosts(c.Request().Context(), limitInt, offsetInt)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get posts", err)
