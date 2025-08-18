@@ -45,6 +45,7 @@ func BuildContainer(configgure *config.Config) *dig.Container {
 		repository.NewUserRepository,
 		repository.NewPostRepository,
 		repository.NewAuthRepository,
+		repository.NewSessionRepository,
 		repository.NewTagRepository,
 		repository.NewPageRepository,
 		repository.NewWorkspaceRepository,

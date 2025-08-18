@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"time"
 
+	"crypto/rand"
+	"encoding/base64"
+
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,21 +23,23 @@ var (
 
 type AuthService interface {
 	Register(ctx context.Context, email, username, password string) (*model.User, error)
-	Login(ctx context.Context, email, password string) (string, *model.User, error)
+	Login(ctx context.Context, email, password string) (string, string, *model.User, error)
 	CheckUsernameAvailability(ctx context.Context, username string) (bool, error)
 }
 
 type authService struct {
-	authRepo  repository.AuthRepository
-	userRepo  repository.UserRepository
-	jwtSecret []byte
+	authRepo    repository.AuthRepository
+	userRepo    repository.UserRepository
+	sessionRepo repository.SessionRepository
+	jwtSecret   []byte
 }
 
-func NewAuthService(authRepo repository.AuthRepository, userRepo repository.UserRepository, config *config.Config) AuthService {
+func NewAuthService(authRepo repository.AuthRepository, userRepo repository.UserRepository, sessionRepo repository.SessionRepository, config *config.Config) AuthService {
 	return &authService{
-		authRepo:  authRepo,
-		userRepo:  userRepo,
-		jwtSecret: []byte(config.JWT_SECRET),
+		authRepo:    authRepo,
+		userRepo:    userRepo,
+		sessionRepo: sessionRepo,
+		jwtSecret:   []byte(config.JWT_SECRET),
 	}
 }
 
@@ -72,17 +77,17 @@ func (s *authService) Register(ctx context.Context, email, username, password st
 	return newUser, nil
 }
 
-func (s *authService) Login(ctx context.Context, email, password string) (string, *model.User, error) {
+func (s *authService) Login(ctx context.Context, email, password string) (string, string, *model.User, error) {
 
 	user, err := s.authRepo.FindUserByEmail(ctx, email)
 	if err != nil {
 		fmt.Println("email not found")
 		fmt.Println(err)
-		return "", nil, ErrInvalidCredentials
+		return "", "", nil, ErrInvalidCredentials
 	}
 
 	if compareErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); compareErr != nil {
-		return "", nil, ErrInvalidCredentials
+		return "", "", nil, ErrInvalidCredentials
 	}
 
 	// Generate JWT token
@@ -98,10 +103,26 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 
 	tokenString, err := token.SignedString(s.jwtSecret)
 	if err != nil {
-		return "", nil, err
+		return "", "", nil, err
 	}
 
-	return tokenString, user, nil
+	// Generate secure refresh token
+	refreshBytes := make([]byte, 64)
+	if _, err := rand.Read(refreshBytes); err != nil {
+		return "", "", nil, err
+	}
+	refreshToken := "pl_" + base64.RawURLEncoding.EncodeToString(refreshBytes)
+
+	// Persist session
+	sess := &model.Session{
+		RefreshToken: refreshToken,
+		UserID:       user.ID,
+	}
+	if err := s.sessionRepo.CreateSession(ctx, sess); err != nil {
+		return "", "", nil, err
+	}
+
+	return tokenString, refreshToken, user, nil
 }
 
 func (s *authService) CheckUsernameAvailability(ctx context.Context, username string) (bool, error) {

@@ -87,7 +87,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return response.ValidationError(c, "Validation failed", err)
 	}
 
-	token, user, err := h.authService.Login(c.Request().Context(), loginReq.Email, loginReq.Password)
+	token, refreshToken, user, err := h.authService.Login(c.Request().Context(), loginReq.Email, loginReq.Password)
 	if err == service.ErrInvalidCredentials {
 		return response.Unauthorized(c, "Invalid email or password")
 	}
@@ -96,7 +96,8 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	}
 
 	return response.Success(c, "Login successful", map[string]any{
-		"access_token": token,
+		"access_token":  token,
+		"refresh_token": refreshToken,
 		"user": map[string]any{
 			"id":       user.ID,
 			"email":    user.Email,
