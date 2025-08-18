@@ -92,7 +92,7 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 		"email":        user.Email,
 		"isSuperAdmin": user.IsSuperAdmin,
 		"iat":          time.Now().Unix(),
-		"exp":          time.Now().Add(time.Hour * 48).Unix(), // Token expires after 48 hours
+		"exp":          time.Now().Add(6 * time.Hour).Unix(), // Token expires after 6 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
