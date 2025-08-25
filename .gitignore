@@ -1,17 +1,24 @@
 # Environment variables
 .env
 
-# Ignore Go mod files
-go.mod
-go.sum
-
-# Ignore Go build files
+# Binaries for programs and plugins
 *.exe
 *.exe~
-*.test
-*_test.go
-_build/
-vendor/
-tmp
+*.dll
+*.so
+*.dylib
 
-bin/*
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when run with the -o option
+*.out
+
+# Dependency directories (remove if you use vendoring)
+vendor/
+
+# Go workspace file
+go.work
+
+# Temporary files
+tmp/
