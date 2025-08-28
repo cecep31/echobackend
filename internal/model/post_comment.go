@@ -11,7 +11,7 @@ import (
 type PostComment struct {
 	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()" json:"id"`
 	PostID    string    `gorm:"type:uuid;not null;index" json:"post_id"` // Foreign key to Post
-	Content   string    `gorm:"type:text;not null" json:"content"`
+	Text      string    `gorm:"type:text;not null" json:"text"`
 	CreatedBy string    `gorm:"type:uuid;not null" json:"created_by"` // User UUID
 
 	// Relationships
@@ -30,7 +30,7 @@ func (PostComment) TableName() string {
 type PostCommentResponse struct {
 	ID        uuid.UUID     `json:"id"`
 	PostID    string        `json:"post_id"`
-	Content   string        `json:"content"`
+	Text      string        `json:"text"`
 	Creator   *UserResponse `json:"creator,omitempty"`
 	CreatedAt time.Time     `json:"created_at"`
 	UpdatedAt time.Time     `json:"updated_at"`
@@ -45,7 +45,7 @@ func (pc *PostComment) ToResponse() *PostCommentResponse {
 	return &PostCommentResponse{
 		ID:        pc.ID,
 		PostID:    pc.PostID,
-		Content:   pc.Content,
+		Text:      pc.Text,
 		Creator:   creatorResp,
 		CreatedAt: pc.CreatedAt,
 		UpdatedAt: pc.UpdatedAt,
@@ -53,5 +53,5 @@ func (pc *PostComment) ToResponse() *PostCommentResponse {
 }
 
 type CreatePostCommentDTO struct {
-	Content string `json:"content" validate:"required,min=1,max=1000"`
+	Text string `json:"text" validate:"required,min=1,max=1000"`
 }

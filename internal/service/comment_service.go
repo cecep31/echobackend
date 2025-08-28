@@ -37,7 +37,7 @@ func (s *commentService) CreateComment(ctx context.Context, postID string, dto *
 
 	comment := &model.PostComment{
 		PostID:    postID,
-		Content:   dto.Content,
+		Text:      dto.Text,
 		CreatedBy: createdBy,
 	}
 
@@ -76,7 +76,7 @@ func (s *commentService) GetCommentByID(ctx context.Context, id string) (*model.
 	return comment.ToResponse(), nil
 }
 
-func (s *commentService) UpdateComment(ctx context.Context, id string, content string, userID string) (*model.PostComment, error) {
+func (s *commentService) UpdateComment(ctx context.Context, id string, text string, userID string) (*model.PostComment, error) {
 	comment, err := s.commentRepo.GetCommentByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (s *commentService) UpdateComment(ctx context.Context, id string, content s
 		return nil, errors.New("not authorized to update this comment")
 	}
 
-	comment.Content = content
+	comment.Text = text
 	if err := s.commentRepo.UpdateComment(ctx, comment); err != nil {
 		return nil, err
 	}

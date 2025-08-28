@@ -588,7 +588,7 @@ Retrieve all comments for a specific post.
   "data": [
     {
       "id": "uuid",
-      "content": "Comment content",
+      "text": "Comment text",
       "author": {
         "id": "uuid",
         "username": "commenter",
@@ -615,7 +615,7 @@ Create a new comment on a post.
 **Request Body:**
 ```json
 {
-  "content": "Comment content here..."
+  "text": "Comment text here..."
 }
 ```
 
@@ -626,7 +626,7 @@ Create a new comment on a post.
   "message": "Comment created successfully",
   "data": {
     "id": "uuid",
-    "content": "Comment content",
+    "text": "Comment text",
     "created_at": "2023-01-01T00:00:00Z"
   }
 }
@@ -647,7 +647,7 @@ Update an existing comment. Only the comment author can update.
 **Request Body:**
 ```json
 {
-  "content": "Updated comment content..."
+  "text": "Updated comment text..."
 }
 ```
 
@@ -1090,30 +1090,20 @@ Send a new comment to a post.
 
 **Payload:**
 ```json
-{
-  "content": "Comment content here..."
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "data": [
-    {
-      "id": "comment-uuid",
-      "content": "Comment content",
-      "created_at": "2023-01-01T00:00:00Z",
-      "creator": {
-        "id": "user-uuid",
-        "username": "commenter",
-        "email": "commenter@example.com",
-        "first_name": "Commenter",
-        "last_name": "User"
-      }
+[
+  {
+    "id": "comment-uuid",
+    "text": "Comment text",
+    "created_at": "2023-01-01T00:00:00Z",
+    "creator": {
+      "id": "user-uuid",
+      "username": "commenter",
+      "email": "commenter@example.com",
+      "first_name": "Commenter",
+      "last_name": "User"
     }
-  ]
-}
+  }
+]
 ```
 
 **`typing`**
@@ -1171,7 +1161,7 @@ Broadcast when new comments are available or updated.
 [
   {
     "id": "comment-uuid",
-    "content": "Comment content",
+    "text": "Comment text",
     "created_at": "2023-01-01T00:00:00Z",
     "creator": {
       "id": "user-uuid",

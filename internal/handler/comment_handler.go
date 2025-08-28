@@ -102,7 +102,7 @@ func (h *CommentHandler) UpdateComment(c echo.Context) error {
 	claims := user.Claims.(jwt.MapClaims)
 	userID := claims["user_id"].(string)
 
-	comment, err := h.commentService.UpdateComment(c.Request().Context(), commentID, dto.Content, userID)
+	comment, err := h.commentService.UpdateComment(c.Request().Context(), commentID, dto.Text, userID)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to update comment", err)
 	}
