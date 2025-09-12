@@ -167,9 +167,9 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	if err != nil {
 		limitInt = 9 // Default limit if not provided or invalid
 	}
-	// Ensure limit doesn't exceed 50
-	if limitInt > 50 {
-		limitInt = 50
+	// Ensure limit doesn't exceed 20
+	if limitInt > 20 {
+		limitInt = 20 // Limit to 20
 	}
 	posts, err := h.postService.GetPostsRandom(c.Request().Context(), limitInt)
 	if err != nil {
