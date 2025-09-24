@@ -92,12 +92,12 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 
 	// Generate JWT token
 	claims := jwt.MapClaims{
-		"user_id":      user.ID,
-		"username":     user.Username,
-		"email":        user.Email,
-		"isSuperAdmin": user.IsSuperAdmin,
-		"iat":          time.Now().Unix(),
-		"exp":          time.Now().Add(6 * time.Hour).Unix(), // Token expires after 6 hours
+		"user_id":        user.ID,
+		"username":       user.Username,
+		"email":          user.Email,
+		"is_super_admin": user.IsSuperAdmin,
+		"iat":            time.Now().Unix(),
+		"exp":            time.Now().Add(6 * time.Hour).Unix(), // Token expires after 6 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
