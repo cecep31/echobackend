@@ -71,8 +71,9 @@ func (r *postRepository) UpdatePost(ctx context.Context, id string, postDTO *mod
 	if postDTO.Photo_url != "" {
 		updates["photo_url"] = postDTO.Photo_url
 	}
-	// Add other updatable fields from DTO to the map in a similar way.
-	// e.g., if postDTO.IsPublished (bool) needs specific handling for update.
+	if postDTO.Published != nil {
+		updates["published"] = *postDTO.Published
+	}
 
 	// Handling Tags update is more complex and usually done via Associations.
 	// For now, focusing on simple field updates.
@@ -128,6 +129,7 @@ func (r *postRepository) CreatePost(ctx context.Context, postDTO *model.CreatePo
 		Body:      postDTO.Body,
 		CreatedBy: creator_id,        // Assuming model.Post has CreatedBy field for user ID
 		Photo_url: postDTO.Photo_url, // Assuming CreatePostDTO and Post model have Photo_url
+		Published: postDTO.Published,
 	}
 
 	err := r.db.WithContext(ctx).Create(newpost).Error
@@ -144,6 +146,7 @@ func (r *postRepository) CreatePostWithTags(ctx context.Context, postDTO *model.
 		Body:      postDTO.Body,
 		CreatedBy: creator_id,
 		Photo_url: postDTO.Photo_url,
+		Published: postDTO.Published,
 		Tags:      tags, // Associate tags with the post
 	}
 
@@ -218,16 +221,17 @@ func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([
 	var posts []*model.Post
 	var count int64
 
-	// Count total records
-	err := r.db.WithContext(ctx).Model(&model.Post{}).Count(&count).Error
+	// Count total published records
+	err := r.db.WithContext(ctx).Model(&model.Post{}).Where("published = ?", true).Count(&count).Error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count posts: %w", err)
 	}
 
-	// Get paginated records
+	// Get paginated published records
 	err = r.db.WithContext(ctx).
 		Preload("Creator").
 		Preload("Tags").
+		Where("published = ?", true).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
@@ -284,6 +288,7 @@ func (r *postRepository) GetPostsRandom(ctx context.Context, limit int) ([]*mode
 	err := r.db.WithContext(ctx).
 		Preload("Creator").
 		Preload("Tags").
+		Where("published = ?", true).
 		Order("RANDOM()"). // Works for PostgreSQL and SQLite. For others, might need specific syntax.
 		Limit(limit).
 		Find(&randomPosts).Error
@@ -328,7 +333,7 @@ func (r *postRepository) SearchPosts(ctx context.Context, keyword string, limit 
 
 	// Count total matching records
 	err := r.db.WithContext(ctx).Model(&model.Post{}).
-		Where("title ILIKE ? OR body ILIKE ?", likePattern, likePattern).
+		Where("(title ILIKE ? OR body ILIKE ?) AND published = ?", likePattern, likePattern, true).
 		Count(&count).Error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count posts for search: %w", err)
@@ -338,7 +343,7 @@ func (r *postRepository) SearchPosts(ctx context.Context, keyword string, limit 
 	err = r.db.WithContext(ctx).
 		Preload("Creator").
 		Preload("Tags").
-		Where("title ILIKE ? OR body ILIKE ?", likePattern, likePattern).
+		Where("(title ILIKE ? OR body ILIKE ?) AND published = ?", likePattern, likePattern, true).
 		Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
@@ -358,7 +363,7 @@ func (r *postRepository) GetPostsByTag(ctx context.Context, tag string, limit in
 	query := r.db.WithContext(ctx).Model(&model.Post{}).
 		Joins("JOIN posts_to_tags ON posts_to_tags.post_id = posts.id").
 		Joins("JOIN tags ON tags.id = posts_to_tags.tag_id").
-		Where("tags.name = ?", tag)
+		Where("tags.name = ? AND posts.published = ?", tag, true)
 
 	// Count total records
 	err := query.Count(&count).Error
@@ -372,7 +377,7 @@ func (r *postRepository) GetPostsByTag(ctx context.Context, tag string, limit in
 		Preload("Tags").
 		Joins("JOIN posts_to_tags ON posts_to_tags.post_id = posts.id").
 		Joins("JOIN tags ON tags.id = posts_to_tags.tag_id").
-		Where("tags.name = ?", tag).
+		Where("tags.name = ? AND posts.published = ?", tag, true).
 		Order("posts.created_at DESC").
 		Limit(limit).
 		Offset(offset).

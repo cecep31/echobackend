@@ -15,6 +15,7 @@ type Post struct {
 	CreatedBy string         `json:"created_by" gorm:"type:uuid"`
 	ViewCount int64          `json:"view_count" gorm:"default:0"`
 	LikeCount int64          `json:"like_count" gorm:"default:0"`
+	Published bool           `json:"published" gorm:"default:false"`
 	Creator   User           `json:"creator" gorm:"foreignKey:CreatedBy"`
 	Tags      []Tag          `json:"tags" gorm:"many2many:posts_to_tags;"`
 	Views     []PostView     `json:"views,omitempty" gorm:"foreignKey:PostID"`
@@ -36,6 +37,7 @@ type PostResponse struct {
 	Slug      string        `json:"slug"`
 	ViewCount int64         `json:"view_count"`
 	LikeCount int64         `json:"like_count"`
+	Published bool          `json:"published"`
 	Creator   *UserResponse `json:"creator,omitempty"`
 	Tags      []TagResponse `json:"tags,omitempty"`
 	CreatedAt time.Time     `json:"created_at"`
@@ -70,6 +72,7 @@ func (p *Post) ToResponse() *PostResponse {
 		Slug:      p.Slug,
 		ViewCount: p.ViewCount,
 		LikeCount: p.LikeCount,
+		Published: p.Published,
 		Creator:   creatorResp,
 		Tags:      tagResponses,
 		CreatedAt: p.CreatedAt,
@@ -83,6 +86,7 @@ type CreatePostDTO struct {
 	Photo_url string   `json:"photo_url"`
 	Slug      string   `json:"slug" validate:"required,min=7"`
 	Body      string   `json:"body" validate:"required,min=10"`
+	Published bool     `json:"published"`
 	Tags      []string `json:"tags" `
 }
 
@@ -91,5 +95,6 @@ type UpdatePostDTO struct {
 	Photo_url string   `json:"photo_url"`
 	Slug      string   `json:"slug"`
 	Body      string   `json:"body"`
+	Published *bool    `json:"published"`
 	Tags      []string `json:"tags"`
 }
