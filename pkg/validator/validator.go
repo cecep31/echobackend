@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -98,4 +99,40 @@ func toReadableFieldName(field string) string {
 		}
 	}
 	return result.String()
+}
+
+// IsValidUUID validates if a string is a valid UUID v7 format
+func IsValidUUID(uuid string) bool {
+	if uuid == "" {
+		return false
+	}
+	// UUID v7 pattern: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	pattern := `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`
+	matched, _ := regexp.MatchString(pattern, uuid)
+	return matched
+}
+
+// ValidatePagination validates pagination parameters
+func ValidatePagination(limit, offset int) error {
+	if limit <= 0 {
+		return fmt.Errorf("limit must be greater than 0")
+	}
+	if limit > 100 {
+		return fmt.Errorf("limit must not exceed 100")
+	}
+	if offset < 0 {
+		return fmt.Errorf("offset must be non-negative")
+	}
+	return nil
+}
+
+// ValidatePostLikeInput validates input for post like operations
+func ValidatePostLikeInput(postID, userID string) error {
+	if !IsValidUUID(postID) {
+		return fmt.Errorf("invalid post ID format")
+	}
+	if !IsValidUUID(userID) {
+		return fmt.Errorf("invalid user ID format")
+	}
+	return nil
 }

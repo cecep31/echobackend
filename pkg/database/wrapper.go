@@ -67,3 +67,15 @@ func (dw *DatabaseWrapper) Ping(ctx context.Context) error {
 	}
 	return sqlDB.PingContext(ctx)
 }
+
+// WithTransaction executes a function within a database transaction
+func (dw *DatabaseWrapper) WithTransaction(ctx context.Context, fn func(*gorm.DB) error) error {
+	dw.mu.RLock()
+	if dw.closed {
+		dw.mu.RUnlock()
+		return fmt.Errorf("database connection is closed")
+	}
+	dw.mu.RUnlock()
+
+	return dw.DB.WithContext(ctx).Transaction(fn)
+}
