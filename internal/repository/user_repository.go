@@ -104,6 +104,14 @@ func (r *userRepository) GetUsers(ctx context.Context, offset, limit int) ([]*mo
 	var users []*model.User
 	var totalCount int64
 
+	// Validate parameters
+	if offset < 0 {
+		return nil, 0, fmt.Errorf("offset cannot be negative")
+	}
+	if limit <= 0 || limit > 100 { // cap at 100 to prevent excessive resource usage
+		return nil, 0, fmt.Errorf("limit must be between 1 and 100")
+	}
+
 	// Count total records
 	err := r.db.WithContext(ctx).Model((*model.User)(nil)).Count(&totalCount).Error
 	if err != nil {

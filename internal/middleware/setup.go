@@ -23,7 +23,17 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 	e.Server.IdleTimeout = 60 * time.Second
 
 	// Add body limit middleware to prevent memory exhaustion
-	e.Use(middleware.BodyLimit("10M")) // Limit request body to 2MB
+	e.Use(middleware.BodyLimit("10M")) // Limit request body to 10MB
+
+	// Add security headers
+	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
+		XSSProtection:         "1; mode=block",
+		ContentTypeNosniff:    "nosniff",
+		XFrameOptions:         "SAMEORIGIN",
+		HSTSMaxAge:            3600,
+		ContentSecurityPolicy: "default-src 'self'",
+		ReferrerPolicy:        "strict-origin-when-cross-origin",
+	}))
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
@@ -43,8 +53,15 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		},
 	}))
 
+	// Enhanced rate limiting with custom store and configuration
 	if config.RATE_LIMITER_MAX > 0 {
-		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(config.RATE_LIMITER_MAX))))
+		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(
+			// Use the correct RateLimiterMemoryStoreConfig
+			middleware.RateLimiterMemoryStoreConfig{
+				Rate:  rate.Limit(config.RATE_LIMITER_MAX),
+				Burst: config.RATE_LIMITER_MAX * 2,
+			},
+		)))
 	}
 
 	e.Use(middleware.RequestID())

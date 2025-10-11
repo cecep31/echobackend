@@ -4,6 +4,7 @@ import (
 	"context"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
+	"fmt"
 )
 
 type UserService interface {
@@ -31,11 +32,14 @@ func (s *userService) GetByID(ctx context.Context, id string) (*model.UserRespon
 func (s *userService) GetUsers(ctx context.Context, offset int, limit int) ([]*model.UserResponse, int64, error) {
 	users, total, err := s.userRepo.GetUsers(ctx, offset, limit)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("failed to retrieve users from repository: %w", err)
 	}
 
 	var userResponses []*model.UserResponse
 	for _, user := range users {
+		if user == nil {
+			continue // Skip nil users if any
+		}
 		userResponses = append(userResponses, user.ToResponse())
 	}
 

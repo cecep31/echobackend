@@ -3,7 +3,7 @@ package handler
 import (
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"strconv"
+	"echobackend/pkg/validator"
 
 	"github.com/labstack/echo/v4"
 )
@@ -45,14 +45,12 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 }
 
 func (h *UserHandler) GetUsers(c echo.Context) error {
-	offset, err := strconv.Atoi(c.QueryParam("offset"))
+	// Validate and sanitize pagination parameters
+	limit, offset, err := validator.ValidatePaginationWithDefaults(c.QueryParam("limit"), c.QueryParam("offset"))
 	if err != nil {
-		offset = 0
+		return response.BadRequest(c, "Invalid pagination parameters", err)
 	}
-	limit, err := strconv.Atoi(c.QueryParam("limit"))
-	if err != nil {
-		limit = 10
-	}
+
 	users, total, err := h.userService.GetUsers(c.Request().Context(), offset, limit)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve users", err)

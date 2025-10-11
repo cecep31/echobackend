@@ -3,6 +3,7 @@ package validator
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -135,4 +136,42 @@ func ValidatePostLikeInput(postID, userID string) error {
 		return fmt.Errorf("invalid user ID format")
 	}
 	return nil
+}
+
+// ValidatePaginationWithDefaults validates pagination parameters and applies defaults
+func ValidatePaginationWithDefaults(limitParam, offsetParam string) (int, int, error) {
+	limit := 10 // default
+	if limitParam != "" {
+		parsedLimit, err := strconv.Atoi(limitParam)
+		if err != nil {
+			return 0, 0, fmt.Errorf("invalid limit parameter: %w", err)
+		}
+		limit = parsedLimit
+	}
+	
+	offset := 0 // default
+	if offsetParam != "" {
+		parsedOffset, err := strconv.Atoi(offsetParam)
+		if err != nil {
+			return 0, 0, fmt.Errorf("invalid offset parameter: %w", err)
+		}
+		offset = parsedOffset
+	}
+	
+	if err := ValidatePagination(limit, offset); err != nil {
+		return 0, 0, err
+	}
+	
+	return limit, offset, nil
+}
+
+// SanitizeString removes potentially dangerous characters from input
+func SanitizeString(input string) string {
+	// Remove potentially dangerous characters
+	re := regexp.MustCompile(`<script[^>]*>.*?</script>`)
+	sanitized := re.ReplaceAllString(input, "")
+	
+	// Additional sanitization as needed
+	sanitized = strings.TrimSpace(sanitized)
+	return sanitized
 }
