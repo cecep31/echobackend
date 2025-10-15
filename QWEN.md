@@ -40,7 +40,9 @@ Echo Backend API is a REST API for a blog/content management system built with G
 │   └── middleware/         # Custom middleware
 ├── pkg/                    # Shared packages
 │   ├── database/           # Database connection & wrapper
+│   ├── response/           # HTTP response utilities
 │   ├── storage/            # S3 storage interface
+│   ├── utils/              # Utility functions
 │   ├── validator/          # Custom validation
 │   └── ...                 # Other shared utilities
 ├── config/                 # Configuration management

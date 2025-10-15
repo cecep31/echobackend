@@ -105,8 +105,6 @@ echobackend/
 │   │   └── security.go           # Security utilities
 │   ├── validator/                # Custom validator
 │   │   └── validator.go          # Validator implementation
-│   └── worker/                   # Worker pool
-│       └── pool.go
 ├── migrations/                   # Database migrations
 ├── test/                         # Test files
 └── scripts/                      # Utility scripts
