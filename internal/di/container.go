@@ -14,99 +14,174 @@ import (
 	"gorm.io/gorm"
 )
 
-var container *dig.Container
+// Container holds the dependency injection container.
+// It's recommended to use a struct to hold the container to avoid global variables.
+type Container struct {
+	*dig.Container
+}
 
-// BuildContainer initializes the dependency injection container
-func BuildContainer(configgure *config.Config) *dig.Container {
-	container = dig.New()
+// NewContainer creates a new dependency injection container and registers all the dependencies.
+func NewContainer(cfg *config.Config) (*Container, error) {
+	container := &Container{dig.New()}
+
+	if err := container.Provide(func() *config.Config { return cfg }); err != nil {
+		return nil, err
+	}
+
+	if err := container.registerDatabase(); err != nil {
+		return nil, err
+	}
+
+	if err := container.registerRepositories(); err != nil {
+		return nil, err
+	}
+
+	if err := container.registerServices(); err != nil {
+		return nil, err
+	}
+
+	if err := container.registerHandlers(); err != nil {
+		return nil, err
+	}
+
+	if err := container.registerRoutes(); err != nil {
+		return nil, err
+	}
 
 	// Provide cleanup manager
-	container.Provide(NewCleanupManager)
+	if err := container.Provide(NewCleanupManager); err != nil {
+		return nil, err
+	}
 
-	// Provide config
-	container.Provide(func() *config.Config {
-		return configgure
-	})
+	// Provide storage
+	if err := container.Provide(storage.NewS3Storage); err != nil {
+		return nil, err
+	}
 
-	// Provide database with cleanup registration
-	container.Provide(func(config *config.Config, cleanup *CleanupManager) *database.DatabaseWrapper {
+	return container, nil
+}
+
+func (c *Container) registerDatabase() error {
+	if err := c.Provide(func(config *config.Config, cleanup *CleanupManager) *database.DatabaseWrapper {
 		db := database.NewDatabase(config)
 		cleanup.Register(db)
 		return db
-	})
+	}); err != nil {
+		return err
+	}
 
-	// Provide *gorm.DB from the wrapper for repositories
-	container.Provide(func(wrapper *database.DatabaseWrapper) *gorm.DB {
+	return c.Provide(func(wrapper *database.DatabaseWrapper) *gorm.DB {
 		return wrapper.DB
 	})
-
-	// Register repositories
-	repositories := []any{
-		repository.NewUserRepository,
-		repository.NewPostRepository,
-		repository.NewAuthRepository,
-		repository.NewSessionRepository,
-		repository.NewTagRepository,
-		repository.NewPageRepository,
-		repository.NewWorkspaceRepository,
-		repository.NewCommentRepository,
-		repository.NewPostViewRepository,
-		repository.NewPostLikeRepository,
-		repository.NewUserFollowRepository,
-	}
-	for _, repo := range repositories {
-		container.Provide(repo)
-	}
-
-	// Register services
-	services := []any{
-		service.NewUserService,
-		service.NewPostService,
-		service.NewAuthService,
-		service.NewTagService,
-		service.NewPageService,
-		service.NewWorkspaceService,
-		service.NewCommentService,
-		service.NewPostViewService,
-		service.NewPostLikeService,
-		service.NewUserFollowService,
-	}
-	for _, svc := range services {
-		container.Provide(svc)
-	}
-
-	// Register infrastructure
-	container.Provide(storage.NewS3Storage)
-	container.Provide(middleware.NewAuthMiddleware)
-	container.Provide(routes.NewRoutes)
-
-	// Register handlers
-	handlers := []any{
-		handler.NewUserHandler,
-		handler.NewPostHandler,
-		handler.NewAuthHandler,
-		handler.NewTagHandler,
-		handler.NewPageHandler,
-		handler.NewWorkspaceHandler,
-		handler.NewCommentHandler,
-		handler.NewPostViewHandler,
-		handler.NewPostLikeHandler,
-		handler.NewUserFollowHandler,
-	}
-	for _, hdl := range handlers {
-		container.Provide(hdl)
-	}
-
-	return container
 }
 
-// GetContainer returns the dig container instance
-func GetContainer() *dig.Container {
-	return container
+func (c *Container) registerRepositories() error {
+	if err := c.Provide(repository.NewUserRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewPostRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewAuthRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewSessionRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewTagRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewPageRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewWorkspaceRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewCommentRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewPostViewRepository); err != nil {
+		return err
+	}
+	if err := c.Provide(repository.NewPostLikeRepository); err != nil {
+		return err
+	}
+	return c.Provide(repository.NewUserFollowRepository)
 }
 
-// GetCleanupManager retrieves the cleanup manager from the container
-func GetCleanupManager() (*CleanupManager, error) {
+func (c *Container) registerServices() error {
+	if err := c.Provide(service.NewUserService); err != nil {
+		return err
+	}
+	if err := c.Provide(service.NewPostService); err != nil {
+		return err
+	}
+	if err := c.Provide(service.NewAuthService); err != nil {
+		return err
+	}
+	if err := c.Provide(service.NewTagService); err != nil {
+		return err
+	}
+	if err := c.Provide(service.NewPageService); err != nil {
+		return err
+	}
+	if err := c.Provide(service.NewWorkspaceService); err != nil {
+		return err
+	}
+	if err := c.Provide(service.NewCommentService); err != nil {
+		return err
+	}
+	if err := c.Provide(service.NewPostViewService); err != nil {
+		return err
+	}
+	if err := c.Provide(service.NewPostLikeService); err != nil {
+		return err
+	}
+	return c.Provide(service.NewUserFollowService)
+}
+
+func (c *Container) registerHandlers() error {
+	if err := c.Provide(handler.NewUserHandler); err != nil {
+		return err
+	}
+	if err := c.Provide(handler.NewPostHandler); err != nil {
+		return err
+	}
+	if err := c.Provide(handler.NewAuthHandler); err != nil {
+		return err
+	}
+	if err := c.Provide(handler.NewTagHandler); err != nil {
+		return err
+	}
+	if err := c.Provide(handler.NewPageHandler); err != nil {
+		return err
+	}
+	if err := c.Provide(handler.NewWorkspaceHandler); err != nil {
+		return err
+	}
+	if err := c.Provide(handler.NewCommentHandler); err != nil {
+		return err
+	}
+	if err := c.Provide(handler.NewPostViewHandler); err != nil {
+		return err
+	}
+	if err := c.Provide(handler.NewPostLikeHandler); err != nil {
+		return err
+	}
+	return c.Provide(handler.NewUserFollowHandler)
+}
+
+func (c *Container) registerRoutes() error {
+	if err := c.Provide(middleware.NewAuthMiddleware); err != nil {
+		return err
+	}
+	return c.Provide(routes.NewRoutes)
+}
+
+// GetCleanupManager retrieves the cleanup manager from the container.
+// This function is kept for convenience, but it's recommended to pass the container
+// instance around instead of using this function.
+func GetCleanupManager(container *Container) (*CleanupManager, error) {
 	var cleanup *CleanupManager
 	if err := container.Invoke(func(c *CleanupManager) {
 		cleanup = c

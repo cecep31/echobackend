@@ -24,7 +24,10 @@ func main() {
 	}
 
 	// Initialize dependency container
-	container := di.BuildContainer(conf)
+	container, err := di.NewContainer(conf)
+	if err != nil {
+		panic(err)
+	}
 
 	// Initialize Echo
 	e := echo.New()
@@ -71,7 +74,7 @@ func main() {
 	}
 
 	// Cleanup resources
-	cleanup, err := di.GetCleanupManager()
+	cleanup, err := di.GetCleanupManager(container)
 	if err != nil {
 		e.Logger.Error("Failed to get cleanup manager:", err)
 	} else {

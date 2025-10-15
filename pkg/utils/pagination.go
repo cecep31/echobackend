@@ -7,13 +7,13 @@ import (
 
 // Pagination represents pagination parameters and metadata
 type Pagination struct {
-	Page       int `json:"page"`
-	Limit      int `json:"limit"`
+	Page       int   `json:"page"`
+	Limit      int   `json:"limit"`
 	TotalItems int64 `json:"total_items"`
-	TotalPages int `json:"total_pages"`
-	Offset     int `json:"offset"`
-	HasNext    bool `json:"has_next"`
-	HasPrev    bool `json:"has_prev"`
+	TotalPages int   `json:"total_pages"`
+	Offset     int   `json:"offset"`
+	HasNext    bool  `json:"has_next"`
+	HasPrev    bool  `json:"has_prev"`
 }
 
 // NewPagination creates a new pagination object

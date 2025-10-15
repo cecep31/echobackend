@@ -1,75 +1,18 @@
-# Binaries for programs and plugins
-*.exe
-*.exe~
-
-# Test binary, built with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when run with the -o option
-*.out
-
-# Dependency directories (remove if you use vendoring)
-vendor/
-
-# Go workspace file
-go.work
-
-# Temporary files and directories
-tmp/
-temp/
-
-# Environment variables
-.env
-
-# Build output directory
-bin/
-
-# Documentation files (if not needed in the image)
-*.md
-
-# Log files
-*.log
-
-# Editor files
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Test directories
-test/
-
-# Scripts directory (if not needed in the image)
-scripts/
-
-# Git metadata
 .git
 .gitignore
-
-# Dockerfile (if not needed in the image, though usually it's needed for the build)
-# Dockerfile
-
-# Air configuration for live reloading (if not needed in the image)
-.air.toml
-
-# Fly.io configuration (if not needed in the image)
-fly.toml
-
-# GolangCI Lint configuration (if not needed in the image)
-.golangci.yml
-
-# Example environment file
-.env.example
-
-# Makefile (if not needed in the image)
-Makefile
-
-# README (if not needed in the image)
+.dockerignore
 README.md
-
-# API documentation (if not needed in the image)
+GEMINI.md
+CLAUDE.md
+QWEN.md
 api_doc.md
-
-# Go module files (these are usually needed for the build)
-# go.mod
-# go.sum
+Makefile
+.air.toml
+.golangci.yml
+.env.example
+fly.toml
+/bin
+/tmp
+/test
+/scripts
+migrations

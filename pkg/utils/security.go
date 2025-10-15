@@ -10,21 +10,21 @@ func SanitizeInput(input string) string {
 	// Remove potentially dangerous characters/sequences
 	re := regexp.MustCompile(`<script[^>]*>.*?</script>`)
 	sanitized := re.ReplaceAllString(input, "")
-	
+
 	// Remove other potentially dangerous patterns
 	re = regexp.MustCompile(`(?i)<iframe[^>]*>.*?</iframe>`)
 	sanitized = re.ReplaceAllString(sanitized, "")
-	
+
 	re = regexp.MustCompile(`(?i)<object[^>]*>.*?</object>`)
 	sanitized = re.ReplaceAllString(sanitized, "")
-	
+
 	re = regexp.MustCompile(`(?i)<embed[^>]*>.*?</embed>`)
 	sanitized = re.ReplaceAllString(sanitized, "")
-	
+
 	// Remove JavaScript event handlers and other potentially dangerous attributes
 	re = regexp.MustCompile(`(?i)(on\w+\s*=)`)
 	sanitized = re.ReplaceAllString(sanitized, "")
-	
+
 	// Additional sanitization as needed
 	sanitized = strings.TrimSpace(sanitized)
 	return sanitized
@@ -52,7 +52,7 @@ func IsValidPassword(password string) bool {
 // SanitizeForSQL sanitizes input for SQL queries
 func SanitizeForSQL(input string) string {
 	// Escape SQL special characters
-	input = strings.ReplaceAll(input, "'", "''") // Escape single quotes
+	input = strings.ReplaceAll(input, "'", "''")    // Escape single quotes
 	input = strings.ReplaceAll(input, "\\", "\\\\") // Escape backslashes
 	return input
 }

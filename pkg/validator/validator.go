@@ -148,7 +148,7 @@ func ValidatePaginationWithDefaults(limitParam, offsetParam string) (int, int, e
 		}
 		limit = parsedLimit
 	}
-	
+
 	offset := 0 // default
 	if offsetParam != "" {
 		parsedOffset, err := strconv.Atoi(offsetParam)
@@ -157,11 +157,11 @@ func ValidatePaginationWithDefaults(limitParam, offsetParam string) (int, int, e
 		}
 		offset = parsedOffset
 	}
-	
+
 	if err := ValidatePagination(limit, offset); err != nil {
 		return 0, 0, err
 	}
-	
+
 	return limit, offset, nil
 }
 
@@ -170,7 +170,7 @@ func SanitizeString(input string) string {
 	// Remove potentially dangerous characters
 	re := regexp.MustCompile(`<script[^>]*>.*?</script>`)
 	sanitized := re.ReplaceAllString(input, "")
-	
+
 	// Additional sanitization as needed
 	sanitized = strings.TrimSpace(sanitized)
 	return sanitized
