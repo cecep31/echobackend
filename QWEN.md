@@ -6,7 +6,7 @@ Echo Backend API is a REST API for a blog/content management system built with G
 
 ### Key Technologies & Architecture
 
-- **Go 1.24.0** with modern dependency management
+- **Go 1.25.0** with modern dependency management
 - **Echo v4 framework** for HTTP routing
 - **PostgreSQL** database with GORM ORM
 - **JWT authentication** for secure API access
