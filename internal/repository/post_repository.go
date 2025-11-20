@@ -124,12 +124,12 @@ func (r *postRepository) UpdatePost(ctx context.Context, id string, postDTO *mod
 
 func (r *postRepository) CreatePost(ctx context.Context, postDTO *model.CreatePostDTO, creator_id string) (*model.Post, error) {
 	newpost := &model.Post{
-		Title:     postDTO.Title,
-		Slug:      postDTO.Slug,
-		Body:      postDTO.Body,
-		CreatedBy: creator_id,        // Assuming model.Post has CreatedBy field for user ID
-		Photo_url: postDTO.Photo_url, // Assuming CreatePostDTO and Post model have Photo_url
-		Published: postDTO.Published,
+		Title:     &postDTO.Title,
+		Slug:      &postDTO.Slug,
+		Body:      &postDTO.Body,
+		CreatedBy: &creator_id,
+		Photo_url: &postDTO.Photo_url,
+		Published: &postDTO.Published,
 	}
 
 	err := r.db.WithContext(ctx).Create(newpost).Error
@@ -141,12 +141,12 @@ func (r *postRepository) CreatePost(ctx context.Context, postDTO *model.CreatePo
 
 func (r *postRepository) CreatePostWithTags(ctx context.Context, postDTO *model.CreatePostDTO, creator_id string, tags []model.Tag) (*model.Post, error) {
 	newpost := &model.Post{
-		Title:     postDTO.Title,
-		Slug:      postDTO.Slug,
-		Body:      postDTO.Body,
-		CreatedBy: creator_id,
-		Photo_url: postDTO.Photo_url,
-		Published: postDTO.Published,
+		Title:     &postDTO.Title,
+		Slug:      &postDTO.Slug,
+		Body:      &postDTO.Body,
+		CreatedBy: &creator_id,
+		Photo_url: &postDTO.Photo_url,
+		Published: &postDTO.Published,
 		Tags:      tags, // Associate tags with the post
 	}
 

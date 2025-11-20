@@ -3,24 +3,23 @@ package model
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // PostComment represents a comment on a post
 type PostComment struct {
-	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()" json:"id"`
-	PostID    string    `gorm:"type:uuid;not null;index" json:"post_id"` // Foreign key to Post
-	Text      string    `gorm:"type:text;not null" json:"text"`
-	CreatedBy string    `gorm:"type:uuid;not null" json:"created_by"` // User UUID
+	ID               string         `gorm:"type:uuid;primaryKey" json:"id"`
+	CreatedAt        *time.Time     `json:"created_at"`
+	UpdatedAt        *time.Time     `json:"updated_at"`
+	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index"`
+	Text             *string        `json:"text" gorm:"type:text"`
+	PostID           string         `json:"post_id" gorm:"type:uuid"`
+	ParrentCommentID *int64         `json:"parrent_comment_id" gorm:"type:bigint"`
+	CreatedBy        *string        `json:"created_by" gorm:"type:uuid"`
 
 	// Relationships
-	Post    Post `gorm:"foreignKey:PostID" json:"post,omitempty"`
-	Creator User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
-
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Creator *User `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
+	Posts   *Post `gorm:"foreignKey:PostID" json:"posts,omitempty"`
 }
 
 func (PostComment) TableName() string {
@@ -28,17 +27,17 @@ func (PostComment) TableName() string {
 }
 
 type PostCommentResponse struct {
-	ID        uuid.UUID     `json:"id"`
+	ID        string        `json:"id"`
 	PostID    string        `json:"post_id"`
-	Text      string        `json:"text"`
+	Text      *string       `json:"text"`
 	Creator   *UserResponse `json:"creator,omitempty"`
-	CreatedAt time.Time     `json:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at"`
+	CreatedAt *time.Time    `json:"created_at"`
+	UpdatedAt *time.Time    `json:"updated_at"`
 }
 
 func (pc *PostComment) ToResponse() *PostCommentResponse {
 	var creatorResp *UserResponse
-	if pc.Creator.ID != "" {
+	if pc.Creator != nil && pc.Creator.ID != "" {
 		creatorResp = pc.Creator.ToResponse()
 	}
 

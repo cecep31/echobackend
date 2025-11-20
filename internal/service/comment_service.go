@@ -37,8 +37,8 @@ func (s *commentService) CreateComment(ctx context.Context, postID string, dto *
 
 	comment := &model.PostComment{
 		PostID:    postID,
-		Text:      dto.Text,
-		CreatedBy: createdBy,
+		Text:      &dto.Text,
+		CreatedBy: &createdBy,
 	}
 
 	if err := s.commentRepo.CreateComment(ctx, comment); err != nil {
@@ -82,11 +82,11 @@ func (s *commentService) UpdateComment(ctx context.Context, id string, text stri
 		return nil, err
 	}
 
-	if comment.CreatedBy != userID {
+	if comment.CreatedBy != &userID {
 		return nil, errors.New("not authorized to update this comment")
 	}
 
-	comment.Text = text
+	comment.Text = &text
 	if err := s.commentRepo.UpdateComment(ctx, comment); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (s *commentService) DeleteComment(ctx context.Context, id string, userID st
 		return err
 	}
 
-	if comment.CreatedBy != userID {
+	if comment.CreatedBy != &userID {
 		return errors.New("not authorized to delete this comment")
 	}
 
@@ -112,7 +112,7 @@ func (s *commentService) IsCommentAuthor(ctx context.Context, commentID string, 
 	if err != nil {
 		return err
 	}
-	if comment.CreatedBy != userID {
+	if comment.CreatedBy != &userID {
 		return errors.New("not author")
 	}
 	return nil

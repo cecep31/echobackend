@@ -63,7 +63,7 @@ func (h *TagHandler) UpdateTag(c echo.Context) error {
 	if err := c.Bind(tag); err != nil {
 		return response.BadRequest(c, "Invalid request payload", err)
 	}
-	tag.ID = uint(id)
+	tag.ID = int(id)
 
 	if err := h.service.UpdateTag(c.Request().Context(), tag); err != nil {
 		return response.InternalServerError(c, "Failed to update tag", err)

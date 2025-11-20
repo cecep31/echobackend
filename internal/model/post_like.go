@@ -8,16 +8,16 @@ import (
 
 // PostLike represents a like record for a post
 type PostLike struct {
-	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v7()"`
+	ID        string         `json:"id" gorm:"type:uuid;primaryKey"`
 	PostID    string         `json:"post_id" gorm:"type:uuid;not null;index"`
 	UserID    string         `json:"user_id" gorm:"type:uuid;not null;index"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	CreatedAt *time.Time     `json:"created_at" gorm:"index"`
+	UpdatedAt *time.Time     `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships
-	Post Post `json:"post" gorm:"foreignKey:PostID"`
-	User User `json:"user" gorm:"foreignKey:UserID"`
+	Post *Post `json:"post" gorm:"foreignKey:PostID"`
+	User *User `json:"user" gorm:"foreignKey:UserID"`
 }
 
 func (PostLike) TableName() string {
@@ -36,7 +36,7 @@ type PostLikeResponse struct {
 	PostID    string        `json:"post_id"`
 	UserID    string        `json:"user_id"`
 	User      *UserResponse `json:"user,omitempty"`
-	CreatedAt time.Time     `json:"created_at"`
+	CreatedAt *time.Time    `json:"created_at"`
 }
 
 func (pl *PostLike) ToResponse() *PostLikeResponse {

@@ -64,10 +64,12 @@ func (s *authService) Register(ctx context.Context, email, username, password st
 		return nil, err
 	}
 
+	hashedPassword := string(hashedPasswordBytes)
+
 	newUser := &model.User{
 		Email:    email,
-		Username: username,
-		Password: string(hashedPasswordBytes),
+		Username: &username,
+		Password: &hashedPassword,
 	}
 
 	if err := s.authRepo.CreateUser(ctx, newUser); err != nil {
@@ -86,7 +88,11 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 		return "", "", nil, ErrInvalidCredentials
 	}
 
-	if compareErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); compareErr != nil {
+	if user.Password == nil {
+		return "", "", nil, ErrInvalidCredentials
+	}
+
+	if compareErr := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(password)); compareErr != nil {
 		return "", "", nil, ErrInvalidCredentials
 	}
 

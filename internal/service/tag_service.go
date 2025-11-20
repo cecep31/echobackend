@@ -26,7 +26,7 @@ func NewTagService(tagRepo repository.TagRepository) TagService {
 }
 
 func (s *tagService) CreateTag(ctx context.Context, tag *model.Tag) error {
-	if tag.Name == "" {
+	if tag.Name == nil || *tag.Name == "" {
 		return errors.New("tag name is required")
 	}
 	return s.tagRepo.Create(ctx, tag)
@@ -61,7 +61,7 @@ func (s *tagService) FindOrCreateByName(ctx context.Context, name string) (*mode
 
 	// If tag doesn't exist, create a new one
 	newTag := &model.Tag{
-		Name: name,
+		Name: &name,
 	}
 
 	err = s.tagRepo.Create(ctx, newTag)

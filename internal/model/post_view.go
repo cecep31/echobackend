@@ -8,17 +8,17 @@ import (
 
 // PostView represents a view record for a post
 type PostView struct {
-	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v7()"`
+	ID        string         `json:"id" gorm:"type:uuid;primaryKey"`
 	PostID    string         `json:"post_id" gorm:"type:uuid;not null;index"`
-	UserID    string         `json:"user_id" gorm:"type:uuid;index"`     // nullable for anonymous views
-	IPAddress string         `json:"ip_address" gorm:"type:varchar(45)"` // for tracking anonymous views
-	UserAgent string         `json:"user_agent" gorm:"type:text"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
+	UserID    *string        `json:"user_id" gorm:"type:uuid;index"`
+	IPAddress *string        `json:"ip_address" gorm:"type:varchar(45)"`
+	UserAgent *string        `json:"user_agent"`
+	CreatedAt *time.Time     `json:"created_at" gorm:"index"`
+	UpdatedAt *time.Time     `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships
-	Post Post  `json:"post" gorm:"foreignKey:PostID"`
+	Post *Post `json:"post" gorm:"foreignKey:PostID"`
 	User *User `json:"user,omitempty" gorm:"foreignKey:UserID"`
 }
 

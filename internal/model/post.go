@@ -7,22 +7,23 @@ import (
 )
 
 type Post struct {
-	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v7()"`
-	Title     string         `json:"title" gorm:"not null"`
-	Photo_url string         `json:"photo_url" gorm:"type:text"`
-	Body      string         `json:"body" gorm:"type:text;not null"`
-	Slug      string         `json:"slug" gorm:"uniqueIndex;not null"`
-	CreatedBy string         `json:"created_by" gorm:"type:uuid"`
-	ViewCount int64          `json:"view_count" gorm:"default:0"`
-	LikeCount int64          `json:"like_count" gorm:"default:0"`
-	Published bool           `json:"published" gorm:"default:false"`
-	Creator   User           `json:"creator" gorm:"foreignKey:CreatedBy"`
-	Tags      []Tag          `json:"tags" gorm:"many2many:posts_to_tags;"`
-	Views     []PostView     `json:"views,omitempty" gorm:"foreignKey:PostID"`
-	Likes     []PostLike     `json:"likes,omitempty" gorm:"foreignKey:PostID"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+	ID            string         `json:"id" gorm:"type:uuid;primaryKey"`
+	CreatedAt     *time.Time     `json:"created_at"`
+	UpdatedAt     *time.Time     `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
+	Title         *string        `json:"title" gorm:"type:varchar(255)"`
+	CreatedBy     *string        `json:"created_by" gorm:"type:uuid;uniqueIndex:creator_slug_unique"`
+	Body          *string        `json:"body"`
+	Slug          *string        `json:"slug" gorm:"type:varchar(255);uniqueIndex:creator_slug_unique"`
+	Photo_url     *string        `json:"photo_url"`
+	Published     *bool          `json:"published" gorm:"default:true"`
+	ViewCount     int64          `json:"view_count" gorm:"type:bigint;default:0"`
+	LikeCount     int64          `json:"like_count" gorm:"type:bigint;default:0"`
+	PostComments  []PostComment  `gorm:"foreignKey:PostID"`
+	PostLikes     []PostLike     `gorm:"foreignKey:PostID"`
+	PostBookmarks []PostBookmark `gorm:"foreignKey:PostID"`
+	Creator       *User          `gorm:"foreignKey:CreatedBy"`
+	Tags          []Tag          `gorm:"many2many:posts_to_tags;"`
 }
 
 func (Post) TableName() string {
@@ -31,17 +32,17 @@ func (Post) TableName() string {
 
 type PostResponse struct {
 	ID        string        `json:"id"`
-	Title     string        `json:"title"`
-	Photo_url string        `json:"photo_url"`
-	Body      string        `json:"body"`
-	Slug      string        `json:"slug"`
+	Title     *string       `json:"title"`
+	Photo_url *string       `json:"photo_url"`
+	Body      *string       `json:"body"`
+	Slug      *string       `json:"slug"`
 	ViewCount int64         `json:"view_count"`
 	LikeCount int64         `json:"like_count"`
-	Published bool          `json:"published"`
+	Published *bool         `json:"published"`
 	Creator   *UserResponse `json:"creator,omitempty"`
 	Tags      []TagResponse `json:"tags,omitempty"`
-	CreatedAt time.Time     `json:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at"`
+	CreatedAt *time.Time    `json:"created_at"`
+	UpdatedAt *time.Time    `json:"updated_at"`
 	DeletedAt *time.Time    `json:"deleted_at,omitempty"`
 }
 

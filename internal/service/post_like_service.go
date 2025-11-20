@@ -57,11 +57,12 @@ func (s *postLikeService) LikePost(ctx context.Context, postID, userID string) e
 	}
 
 	// Create new like
+	now := time.Now()
 	like := &model.PostLike{
 		PostID:    postID,
 		UserID:    userID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: &now,
+		UpdatedAt: &now,
 	}
 
 	return s.postLikeRepo.CreateLike(ctx, like)

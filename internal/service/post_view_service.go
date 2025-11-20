@@ -49,15 +49,16 @@ func (s *postViewService) RecordView(ctx context.Context, postID, userID string)
 	}
 
 	// Create view record
+	now := time.Now()
 	view := &model.PostView{
 		PostID:    postID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: &now,
+		UpdatedAt: &now,
 	}
 
 	// Set user ID if authenticated
 	if userID != "" {
-		view.UserID = userID
+		view.UserID = &userID
 	}
 
 	// Record the view

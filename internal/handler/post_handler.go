@@ -43,8 +43,9 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	}
 
 	for _, post := range posts {
-		if len(post.Body) > 250 {
-			post.Body = post.Body[:250] + " ..."
+		if post.Body != nil && len(*post.Body) > 250 {
+			truncated := (*post.Body)[:250] + " ..."
+			post.Body = &truncated
 		}
 	}
 
@@ -177,8 +178,9 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	}
 
 	for _, post := range posts {
-		if len(post.Body) > 250 {
-			post.Body = post.Body[:250] + " ..."
+		if post.Body != nil && len(*post.Body) > 250 {
+			truncated := (*post.Body)[:250] + " ..."
+			post.Body = &truncated
 		}
 	}
 
@@ -201,8 +203,9 @@ func (h *PostHandler) GetMyPosts(c echo.Context) error {
 	posts, total, err := h.postService.GetPostsByCreatedBy(c.Request().Context(), userID, offsetInt, limitInt)
 
 	for _, post := range posts {
-		if len(post.Body) > 250 {
-			post.Body = post.Body[:250] + " ..."
+		if post.Body != nil && len(*post.Body) > 250 {
+			truncated := (*post.Body)[:250] + " ..."
+			post.Body = &truncated
 		}
 	}
 
@@ -238,8 +241,9 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offsetInt, limitInt)
 
 	for _, post := range posts {
-		if len(post.Body) > 250 {
-			post.Body = post.Body[:250] + " ..."
+		if post.Body != nil && len(*post.Body) > 250 {
+			truncated := (*post.Body)[:250] + " ..."
+			post.Body = &truncated
 		}
 	}
 
@@ -275,8 +279,9 @@ func (h *PostHandler) GetPostsByTag(c echo.Context) error {
 	posts, total, err := h.postService.GetPostsByTag(c.Request().Context(), tag, limitInt, offsetInt)
 
 	for _, post := range posts {
-		if len(post.Body) > 250 {
-			post.Body = post.Body[:250] + " ..."
+		if post.Body != nil && len(*post.Body) > 250 {
+			truncated := (*post.Body)[:250] + " ..."
+			post.Body = &truncated
 		}
 	}
 

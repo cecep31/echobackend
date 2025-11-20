@@ -39,7 +39,7 @@ func (s *postService) IsAuthor(ctx context.Context, id string, userid string) er
 	if err != nil {
 		return err
 	}
-	if post.CreatedBy != userid {
+	if post.CreatedBy == nil || *post.CreatedBy != userid {
 		return errors.New("not author")
 	}
 	return nil
