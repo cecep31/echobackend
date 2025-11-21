@@ -106,7 +106,10 @@ func (c *Container) registerRepositories() error {
 	if err := c.Provide(repository.NewPostLikeRepository); err != nil {
 		return err
 	}
-	return c.Provide(repository.NewUserFollowRepository)
+	if err := c.Provide(repository.NewUserFollowRepository); err != nil {
+		return err
+	}
+	return c.Provide(repository.NewChatConversationRepository)
 }
 
 func (c *Container) registerServices() error {
@@ -137,7 +140,10 @@ func (c *Container) registerServices() error {
 	if err := c.Provide(service.NewPostLikeService); err != nil {
 		return err
 	}
-	return c.Provide(service.NewUserFollowService)
+	if err := c.Provide(service.NewUserFollowService); err != nil {
+		return err
+	}
+	return c.Provide(service.NewChatConversationService)
 }
 
 func (c *Container) registerHandlers() error {
@@ -168,7 +174,10 @@ func (c *Container) registerHandlers() error {
 	if err := c.Provide(handler.NewPostLikeHandler); err != nil {
 		return err
 	}
-	return c.Provide(handler.NewUserFollowHandler)
+	if err := c.Provide(handler.NewUserFollowHandler); err != nil {
+		return err
+	}
+	return c.Provide(handler.NewChatConversationHandler)
 }
 
 func (c *Container) registerRoutes() error {

@@ -1036,6 +1036,245 @@ Retrieve child pages of a parent page.
 
 ---
 
+## Chat Conversation Endpoints
+
+### Get My Conversations
+
+**GET** `/v1/chat/conversations`
+
+🔒 **Authentication Required**
+
+Retrieve all chat conversations for the authenticated user with pagination support.
+
+**Query Parameters:**
+- `offset` (optional): Number of records to skip (default: 0)
+- `limit` (optional): Number of records to return (default: 10)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved conversations",
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Conversation Title",
+      "user_id": "user-uuid",
+      "message_count": 5,
+      "created_at": "2023-01-01T00:00:00Z",
+      "updated_at": "2023-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total_items": 15,
+    "offset": 0,
+    "limit": 10,
+    "total_pages": 2
+  }
+}
+```
+
+### Get Conversation by ID
+
+**GET** `/v1/chat/conversations/{id}`
+
+🔒 **Authentication Required**
+
+Retrieve a specific chat conversation by ID. Users can only access their own conversations.
+
+**Parameters:**
+- `id` (path): Conversation ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved conversation",
+  "data": {
+    "id": "uuid",
+    "title": "Conversation Title",
+    "user_id": "user-uuid",
+    "message_count": 5,
+    "created_at": "2023-01-01T00:00:00Z",
+    "updated_at": "2023-01-01T00:00:00Z"
+  }
+}
+```
+
+### Create Conversation
+
+**POST** `/v1/chat/conversations`
+
+🔒 **Authentication Required**
+
+Create a new chat conversation.
+
+**Request Body:**
+```json
+{
+  "title": "New Conversation"
+}
+```
+
+**Validation Rules:**
+- `title`: Required, maximum 255 characters
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Successfully created conversation",
+  "data": {
+    "id": "uuid",
+    "title": "New Conversation",
+    "user_id": "user-uuid",
+    "message_count": 0,
+    "created_at": "2023-01-01T00:00:00Z",
+    "updated_at": "2023-01-01T00:00:00Z"
+  }
+}
+```
+
+### Update Conversation
+
+**PUT** `/v1/chat/conversations/{id}`
+
+🔒 **Authentication Required**
+
+Update an existing chat conversation. Users can only update their own conversations.
+
+**Parameters:**
+- `id` (path): Conversation ID
+
+**Request Body:**
+```json
+{
+  "title": "Updated Conversation Title"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Conversation updated successfully",
+  "data": {
+    "id": "uuid",
+    "title": "Updated Conversation Title",
+    "user_id": "user-uuid",
+    "message_count": 5,
+    "created_at": "2023-01-01T00:00:00Z",
+    "updated_at": "2023-01-02T00:00:00Z"
+  }
+}
+```
+
+### Delete Conversation
+
+**DELETE** `/v1/chat/conversations/{id}`
+
+🔒 **Authentication Required**
+
+Delete a chat conversation. Users can only delete their own conversations.
+
+**Parameters:**
+- `id` (path): Conversation ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully deleted conversation",
+  "data": null
+}
+```
+
+---
+
+## Chat Message Endpoints
+
+### Create Message
+
+**POST** `/v1/chat/conversations/{id}/messages`
+
+🔒 **Authentication Required**
+
+Add a new message to a chat conversation.
+
+**Parameters:**
+- `id` (path): Conversation ID
+
+**Request Body:**
+```json
+{
+  "content": "Hello, how are you?",
+  "role": "user"
+}
+```
+
+**Validation Rules:**
+- `content`: Required
+- `role`: Required, must be "user" or "assistant"
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Message created successfully",
+  "data": {
+    "id": "uuid",
+    "conversation_id": "conversation-uuid",
+    "user_id": "user-uuid",
+    "role": "user",
+    "content": "Hello, how are you?",
+    "created_at": "2023-01-01T00:00:00Z",
+    "updated_at": "2023-01-01T00:00:00Z"
+  }
+}
+```
+
+### Get Messages
+
+**GET** `/v1/chat/conversations/{id}/messages`
+
+🔒 **Authentication Required**
+
+Retrieve all messages from a specific conversation.
+
+**Parameters:**
+- `id` (path): Conversation ID
+
+**Query Parameters:**
+- `offset` (optional): Number of records to skip (default: 0)
+- `limit` (optional): Number of records to return (default: 50)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved messages",
+  "data": [
+    {
+      "id": "uuid",
+      "conversation_id": "conversation-uuid",
+      "user_id": "user-uuid",
+      "role": "user",
+      "content": "Hello, how are you?",
+      "created_at": "2023-01-01T00:00:00Z",
+      "updated_at": "2023-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total_items": 5,
+    "offset": 0,
+    "limit": 50,
+    "total_pages": 1
+  }
+}
+```
+
+---
+
 ## Debug Endpoints (Development Only)
 
 These endpoints are only available when `DEBUG=true` in the configuration.
@@ -1348,6 +1587,35 @@ Certain endpoints have rate limiting applied:
   "created_at": "2023-01-01T00:00:00Z",
   "updated_at": "2023-01-01T00:00:00Z",
   "deleted_at": null
+}
+```
+
+### ChatConversation Model
+```json
+{
+  "id": "uuid",
+  "title": "Conversation Title",
+  "user_id": "user-uuid",
+  "message_count": 5,
+  "created_at": "2023-01-01T00:00:00Z",
+  "updated_at": "2023-01-01T00:00:00Z"
+}
+```
+
+### ChatMessage Model
+```json
+{
+  "id": "uuid",
+  "conversation_id": "conversation-uuid",
+  "user_id": "user-uuid",
+  "role": "user",
+  "content": "Message content",
+  "model": "gpt-3.5-turbo",
+  "prompt_tokens": 10,
+  "completion_tokens": 20,
+  "total_tokens": 30,
+  "created_at": "2023-01-01T00:00:00Z",
+  "updated_at": "2023-01-01T00:00:00Z"
 }
 ```
 
