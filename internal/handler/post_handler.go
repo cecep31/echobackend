@@ -7,6 +7,7 @@ import (
 	"echobackend/pkg/validator"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -25,19 +26,48 @@ func NewPostHandler(postService service.PostService, postViewService service.Pos
 }
 
 func (h *PostHandler) GetPosts(c echo.Context) error {
-	limit := c.QueryParam("limit")
-	offset := c.QueryParam("offset")
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 10 // Default limit if not provided or invalid
+	// Parse query parameters into filter struct
+	filter := &model.PostQueryFilter{
+		Limit:     10, // Default limit
+		Offset:    0,  // Default offset
+		Search:    c.QueryParam("search"),
+		SortBy:    c.QueryParam("sort_by"),
+		SortOrder: c.QueryParam("sort_order"),
+		StartDate: c.QueryParam("start_date"),
+		EndDate:   c.QueryParam("end_date"),
+		CreatedBy: c.QueryParam("created_by"),
 	}
 
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		offsetInt = 0 // Default offset if not provided or invalid
+	// Parse limit and offset
+	if limit := c.QueryParam("limit"); limit != "" {
+		if limitInt, err := strconv.Atoi(limit); err == nil && limitInt > 0 {
+			filter.Limit = limitInt
+		}
 	}
 
-	posts, total, err := h.postService.GetPosts(c.Request().Context(), limitInt, offsetInt)
+	if offset := c.QueryParam("offset"); offset != "" {
+		if offsetInt, err := strconv.Atoi(offset); err == nil && offsetInt > 0 {
+			filter.Offset = offsetInt
+		}
+	}
+
+	// Parse published filter
+	if published := c.QueryParam("published"); published != "" {
+		if pubBool, err := strconv.ParseBool(published); err == nil {
+			filter.Published = &pubBool
+		}
+	}
+
+	// Parse tags filter
+	if tags := c.QueryParam("tags"); tags != "" {
+		filter.Tags = strings.Split(tags, ",")
+		// Trim whitespace from each tag
+		for i, tag := range filter.Tags {
+			filter.Tags[i] = strings.TrimSpace(tag)
+		}
+	}
+
+	posts, total, err := h.postService.GetPostsFiltered(c.Request().Context(), filter)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get posts", err)
 	}
@@ -51,12 +81,12 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 
 	meta := response.PaginationMeta{
 		TotalItems: int(total),
-		Offset:     offsetInt,
-		Limit:      limitInt,
-		TotalPages: int(total)/limitInt + 1,
+		Offset:     filter.Offset,
+		Limit:      filter.Limit,
+		TotalPages: int(total)/filter.Limit + 1,
 	}
-	if int(total)%limitInt == 0 {
-		meta.TotalPages = int(total) / limitInt
+	if int(total)%filter.Limit == 0 {
+		meta.TotalPages = int(total) / filter.Limit
 	}
 
 	return response.SuccessWithMeta(c, "Successfully retrieved posts", posts, meta)

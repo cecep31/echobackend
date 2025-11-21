@@ -99,3 +99,51 @@ type UpdatePostDTO struct {
 	Published *bool    `json:"published"`
 	Tags      []string `json:"tags"`
 }
+
+type PostQueryFilter struct {
+	Limit     int      `json:"limit" query:"limit"`
+	Offset    int      `json:"offset" query:"offset"`
+	Search    string   `json:"search" query:"search"`
+	SortBy    string   `json:"sort_by" query:"sort_by"`
+	SortOrder string   `json:"sort_order" query:"sort_order"`
+	StartDate string   `json:"start_date" query:"start_date"`
+	EndDate   string   `json:"end_date" query:"end_date"`
+	Published *bool    `json:"published" query:"published"`
+	CreatedBy string   `json:"created_by" query:"created_by"`
+	Tags      []string `json:"tags" query:"tags"`
+}
+
+// ValidSortFields defines allowed sort fields
+func (f *PostQueryFilter) ValidSortFields() map[string]string {
+	return map[string]string{
+		"id":         "posts.id",
+		"title":      "posts.title",
+		"created_at": "posts.created_at",
+		"updated_at": "posts.updated_at",
+		"view_count": "posts.view_count",
+		"like_count": "posts.like_count",
+	}
+}
+
+// ValidSortOrders defines allowed sort orders
+func (f *PostQueryFilter) ValidSortOrders() []string {
+	return []string{"asc", "desc"}
+}
+
+// GetSortField returns the database field for sorting, defaults to created_at
+func (f *PostQueryFilter) GetSortField() string {
+	if field, exists := f.ValidSortFields()[f.SortBy]; exists {
+		return field
+	}
+	return "posts.created_at" // Default sort field
+}
+
+// GetSortOrder returns the sort order, defaults to desc
+func (f *PostQueryFilter) GetSortOrder() string {
+	for _, order := range f.ValidSortOrders() {
+		if order == f.SortOrder {
+			return order
+		}
+	}
+	return "desc" // Default sort order
+}

@@ -20,6 +20,7 @@ type PostRepository interface {
 	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
 	CreatePostWithTags(ctx context.Context, post *model.CreatePostDTO, creator_id string, tags []model.Tag) (*model.Post, error)
 	GetPosts(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error)
+	GetPostsFiltered(ctx context.Context, filter *model.PostQueryFilter) ([]*model.Post, int64, error)
 	GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error)
 	GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error)
 	GetPostByID(ctx context.Context, id string) (*model.Post, error)
@@ -396,4 +397,99 @@ func (r *postRepository) ExistsByID(ctx context.Context, id string) (bool, error
 		return false, fmt.Errorf("failed to check post existence: %w", err)
 	}
 	return count > 0, nil
+}
+
+// GetPostsFiltered fetches posts with advanced filtering options
+func (r *postRepository) GetPostsFiltered(ctx context.Context, filter *model.PostQueryFilter) ([]*model.Post, int64, error) {
+	var posts []*model.Post
+	var count int64
+
+	// Build the base query
+	query := r.db.WithContext(ctx).Model(&model.Post{}).
+		Preload("Creator").
+		Preload("Tags")
+
+	// Apply search filter
+	if filter.Search != "" {
+		likePattern := "%" + filter.Search + "%"
+		query = query.Where("(title ILIKE ? OR body ILIKE ?) AND published = ?", likePattern, likePattern, true)
+	} else {
+		// If no search, still filter by published status
+		query = query.Where("published = ?", true)
+	}
+
+	// Apply date range filter
+	if filter.StartDate != "" {
+		query = query.Where("created_at >= ?", filter.StartDate)
+	}
+	if filter.EndDate != "" {
+		query = query.Where("created_at <= ?", filter.EndDate)
+	}
+
+	// Apply published status filter (only if search is not provided)
+	if filter.Search == "" && filter.Published != nil {
+		query = query.Where("published = ?", *filter.Published)
+	}
+
+	// Apply author filter
+	if filter.CreatedBy != "" {
+		query = query.Where("created_by = ?", filter.CreatedBy)
+	}
+
+	// Apply tags filter
+	if len(filter.Tags) > 0 {
+		query = query.Joins("JOIN posts_to_tags ON posts_to_tags.post_id = posts.id").
+			Joins("JOIN tags ON tags.id = posts_to_tags.tag_id").
+			Where("tags.name IN ?", filter.Tags)
+	}
+
+	// Count total records
+	countQuery := r.db.WithContext(ctx).Model(&model.Post{})
+
+	// Apply same filters to count query
+	if filter.Search != "" {
+		likePattern := "%" + filter.Search + "%"
+		countQuery = countQuery.Where("(title ILIKE ? OR body ILIKE ?) AND published = ?", likePattern, likePattern, true)
+	} else {
+		countQuery = countQuery.Where("published = ?", true)
+	}
+
+	if filter.StartDate != "" {
+		countQuery = countQuery.Where("created_at >= ?", filter.StartDate)
+	}
+	if filter.EndDate != "" {
+		countQuery = countQuery.Where("created_at <= ?", filter.EndDate)
+	}
+	if filter.Search == "" && filter.Published != nil {
+		countQuery = countQuery.Where("published = ?", *filter.Published)
+	}
+	if filter.CreatedBy != "" {
+		countQuery = countQuery.Where("created_by = ?", filter.CreatedBy)
+	}
+	if len(filter.Tags) > 0 {
+		countQuery = countQuery.Joins("JOIN posts_to_tags ON posts_to_tags.post_id = posts.id").
+			Joins("JOIN tags ON tags.id = posts_to_tags.tag_id").
+			Where("tags.name IN ?", filter.Tags)
+	}
+
+	err := countQuery.Count(&count).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count posts: %w", err)
+	}
+
+	// Apply sorting
+	sortField := filter.GetSortField()
+	sortOrder := filter.GetSortOrder()
+	query = query.Order(fmt.Sprintf("%s %s", sortField, sortOrder))
+
+	// Apply pagination
+	query = query.Limit(filter.Limit).Offset(filter.Offset)
+
+	// Execute the query
+	err = query.Find(&posts).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get filtered posts: %w", err)
+	}
+
+	return posts, count, nil
 }

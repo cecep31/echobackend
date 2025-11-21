@@ -11,6 +11,7 @@ import (
 
 type PostService interface {
 	GetPosts(ctx context.Context, limit int, offset int) ([]*model.PostResponse, int64, error)
+	GetPostsFiltered(ctx context.Context, filter *model.PostQueryFilter) ([]*model.PostResponse, int64, error)
 	GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.PostResponse, int64, error)
 	GetPostsRandom(ctx context.Context, limit int) ([]*model.PostResponse, error)
 	GetPostByID(ctx context.Context, id string) (*model.PostResponse, error)
@@ -214,6 +215,34 @@ func (s *postService) GetPostsByTag(ctx context.Context, tag string, limit int, 
 	postsResponse := make([]*model.PostResponse, 0, len(posts))
 	for _, post := range posts {
 		postsResponse = append(postsResponse, post.ToResponse())
+	}
+
+	return postsResponse, total, nil
+}
+
+func (s *postService) GetPostsFiltered(ctx context.Context, filter *model.PostQueryFilter) ([]*model.PostResponse, int64, error) {
+	// Input validation and defaults
+	if filter.Limit < 0 {
+		filter.Limit = 10
+	}
+	if filter.Limit > 100 {
+		filter.Limit = 100 // Maximum limit
+	}
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+
+	posts, total, err := s.postRepo.GetPostsFiltered(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Pre-allocate slice with known capacity to reduce memory allocations
+	postsResponse := make([]*model.PostResponse, 0, len(posts))
+
+	for _, post := range posts {
+		postResponse := post.ToResponse()
+		postsResponse = append(postsResponse, postResponse)
 	}
 
 	return postsResponse, total, nil
