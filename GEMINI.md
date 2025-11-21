@@ -1,52 +1,114 @@
-# GEMINI Project Analysis
+# Gemini Project: Echo Backend API
 
 ## Project Overview
 
-This project is a backend API for a blog/content management system, built with the Go programming language and the Echo web framework. It uses a PostgreSQL database for data storage and JWT for user authentication. The API provides a comprehensive set of endpoints for managing users, posts, comments, tags, and workspaces.
+This is a REST API for a blog/content management system built with Go, the Echo framework, and PostgreSQL. It features user authentication, posts, comments, tags, user follows, post likes, workspaces, and pages.
 
-The project is well-structured, with a clear separation of concerns between handlers, services, repositories, and models. It also includes support for Docker, making it easy to build and deploy the application in a containerized environment.
+**Key Technologies:**
+
+*   **Backend:** Go, Echo
+*   **Database:** PostgreSQL
+*   **ORM:** GORM
+*   **Authentication:** JWT
+*   **Dependency Injection:** go.uber.org/dig
+*   **Validation:** go-playground/validator
+*   **Logging:** zerolog
+
+**Architecture:**
+
+The project follows a standard layered architecture:
+
+*   `cmd/main.go`: Application entry point, responsible for initialization and startup.
+*   `internal/`: Internal application logic, separated into:
+    *   `handler`: HTTP handlers that receive requests and send responses.
+    *   `service`: Business logic.
+    *   `repository`: Data access layer that interacts with the database.
+    *   `model`: GORM models that represent database tables.
+    *   `middleware`: Custom middleware for tasks like authentication.
+*   `pkg/`: Shared packages that can be used by other applications.
+*   `config/`: Configuration management.
+*   `migrations/`: Database migrations.
+*   `routes/`: Route definitions.
 
 ## Building and Running
 
 ### Prerequisites
 
-*   Go 1.24+
-*   PostgreSQL 16+
+*   Go 1.21+
+*   PostgreSQL 14+
 *   Docker (optional)
 
-### Key Commands
+### Setup
+
+1.  **Clone the repository:**
+    ```bash
+    git clone <your-repo-url>
+    cd echobackend
+    ```
+
+2.  **Configure environment variables:**
+    Copy the `.env.example` file to `.env` and update it with your PostgreSQL database credentials.
+    ```bash
+    cp .env.example .env
+    ```
+
+### Commands
+
+The following commands are available in the `Makefile`:
 
 *   **Run the application:**
     ```bash
-    go run cmd/main.go
+    make run
     ```
-    The server will start on `http://localhost:8080`.
+    This will start the server at `http://localhost:8080`.
 
-*   **Run with hot-reloading (requires `air`):**
+*   **Run with hot-reloading:**
     ```bash
-    air
-    ```
-
-*   **Run tests:**
-    ```bash
-    go test ./...
+    make dev
     ```
 
 *   **Build the application:**
     ```bash
     make build
     ```
+    This will create a binary in the `bin/` directory.
 
-*   **Run with Docker:**
+*   **Run tests:**
     ```bash
-    docker build -t echobackend .
-    docker run -p 8080:8080 echobackend
+    make test
+    ```
+
+*   **Run tests with coverage:**
+    ```bash
+    make test-coverage
+    ```
+
+*   **Lint the code:**
+    ```bash
+    make lint
+    ```
+
+*   **Format the code:**
+    ```bash
+    make fmt
+    ```
+
+### Docker
+
+*   **Build the Docker image:**
+    ```bash
+    make docker-build
+    ```
+
+*   **Run the Docker container:**
+    ```bash
+    make docker-run
     ```
 
 ## Development Conventions
 
-*   **Code Style:** The codebase follows standard Go conventions.
-*   **Testing:** The project includes a `test` directory, and the `go test ./...` command is used to run tests. New features should include corresponding tests.
-*   **API Documentation:** The `api_doc.md` file provides detailed documentation for all API endpoints. This file should be kept up-to-date as the API evolves.
-*   **Dependency Management:** The project uses Go modules for dependency management. The `go.mod` file lists all the project's dependencies.
-*   **Configuration:** The application is configured using environment variables. A `.env.example` file is provided to show the required variables.
+*   **Code Style:** Follow the standard Go formatting guidelines. Use `make fmt` to format the code.
+*   **Testing:** Include tests for new features. Use `make test` to run all tests.
+*   **Commits:** Follow conventional commit message standards.
+*   **Dependencies:** Manage dependencies using Go modules. Use `go mod tidy` to clean up unused dependencies.
+*   **API Documentation:** The API is documented in `api_doc.md`.
