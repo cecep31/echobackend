@@ -2,14 +2,15 @@
 
 ## Overview
 
-This is a comprehensive REST API for a blog/content management system. The API provides endpoints for user management, authentication, posts, comments, tags, workspaces, and more.
+This is a comprehensive REST API for a blog/content management system built with Go and Echo framework. The API provides endpoints for user management, authentication, posts, comments, tags, workspaces, pages, user interactions, and chat conversations.
 
 ## Base URL
 
 ```
-http://echo.pilput.me/v1
-http://nest.pilput.me/v1
+http://localhost:8080/v1
 ```
+
+Note: Replace with your actual deployment URL when deployed.
 
 ## Authentication
 
@@ -165,6 +166,99 @@ Check if a username is available for registration.
 }
 ```
 
+### Forgot Password
+
+**POST** `/v1/auth/forgot-password`
+
+Request a password reset email.
+
+**Rate Limit:** 5 requests per 5 minutes
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Password reset email sent if user exists"
+}
+```
+
+### Reset Password
+
+**POST** `/v1/auth/reset-password`
+
+Reset password using reset token.
+
+**Request Body:**
+```json
+{
+  "token": "reset-token-from-email",
+  "password": "new-password123"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Password reset successfully"
+}
+```
+
+### Refresh Token
+
+**POST** `/v1/auth/refresh`
+
+Refresh JWT token using refresh token.
+
+**Request Body:**
+```json
+{
+  "refresh_token": "refresh-token"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Token refreshed successfully",
+  "data": {
+    "access_token": "new-jwt-token"
+  }
+}
+```
+
+### Change Password
+
+**PUT** `/v1/auth/change-password`
+
+🔒 **Authentication Required**
+
+Change user password.
+
+**Request Body:**
+```json
+{
+  "current_password": "current-password",
+  "new_password": "new-password123"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Password changed successfully"
+}
+```
+
 ---
 
 ## User Endpoints
@@ -300,6 +394,14 @@ Follow another user.
 }
 ```
 
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully followed user"
+}
+```
+
 ### Unfollow User
 
 **DELETE** `/v1/users/{id}/follow`
@@ -311,6 +413,14 @@ Unfollow a user.
 **Parameters:**
 - `id` (path): User ID to unfollow
 
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully unfollowed user"
+}
+```
+
 ### Check Follow Status
 
 **GET** `/v1/users/{id}/follow-status`
@@ -318,6 +428,20 @@ Unfollow a user.
 🔒 **Authentication Required**
 
 Check if current user follows the specified user.
+
+**Parameters:**
+- `id` (path): User ID to check
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Follow status retrieved",
+  "data": {
+    "is_following": true
+  }
+}
+```
 
 ### Get Mutual Follows
 
@@ -327,11 +451,67 @@ Check if current user follows the specified user.
 
 Get users that both current user and specified user follow.
 
+**Parameters:**
+- `id` (path): User ID
+
+**Query Parameters:**
+- `offset` (optional): Number of records to skip (default: 0)
+- `limit` (optional): Number of records to return (default: 10)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mutual follows retrieved",
+  "data": [
+    {
+      "id": "uuid",
+      "username": "mutual-friend",
+      "name": "Mutual Friend"
+    }
+  ],
+  "meta": {
+    "total_items": 5,
+    "offset": 0,
+    "limit": 10,
+    "total_pages": 1
+  }
+}
+```
+
 ### Get User Followers
 
 **GET** `/v1/users/{id}/followers`
 
 Get list of users following the specified user.
+
+**Parameters:**
+- `id` (path): User ID
+
+**Query Parameters:**
+- `offset` (optional): Number of records to skip (default: 0)
+- `limit` (optional): Number of records to return (default: 10)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Followers retrieved",
+  "data": [
+    {
+      "id": "uuid",
+      "username": "follower",
+      "name": "Follower Name"
+    }
+  ],
+  "meta": {
+    "total_items": 25,
+    "offset": 0,
+    "limit": 10,
+    "total_pages": 3
+  }
+}
+```
 
 ### Get User Following
 
@@ -339,11 +519,55 @@ Get list of users following the specified user.
 
 Get list of users that the specified user follows.
 
+**Parameters:**
+- `id` (path): User ID
+
+**Query Parameters:**
+- `offset` (optional): Number of records to skip (default: 0)
+- `limit` (optional): Number of records to return (default: 10)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Following list retrieved",
+  "data": [
+    {
+      "id": "uuid",
+      "username": "followed-user",
+      "name": "Followed User"
+    }
+  ],
+  "meta": {
+    "total_items": 15,
+    "offset": 0,
+    "limit": 10,
+    "total_pages": 2
+  }
+}
+```
+
 ### Get Follow Statistics
 
 **GET** `/v1/users/{id}/follow-stats`
 
 Get follower and following counts for a user.
+
+**Parameters:**
+- `id` (path): User ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Follow statistics retrieved",
+  "data": {
+    "user_id": "uuid",
+    "followers_count": 100,
+    "following_count": 50
+  }
+}
+```
 
 ---
 
@@ -476,11 +700,35 @@ Retrieve a post by username and slug. Automatically records a view.
 - `username` (path): Author's username
 - `slug` (path): Post slug
 
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved post",
+  "data": {
+    "id": "uuid",
+    "title": "Post Title",
+    "photo_url": "image-url",
+    "body": "Full post content...",
+    "slug": "post-slug",
+    "view_count": 100,
+    "creator": {
+      "id": "uuid",
+      "username": "author",
+      "name": "Author Name"
+    },
+    "tags": [],
+    "created_at": "2023-01-01T00:00:00Z",
+    "updated_at": "2023-01-01T00:00:00Z"
+  }
+}
+```
+
 ### Update Post
 
 **PUT** `/v1/posts/{id}`
 
-🔒 **Authentication Required** | 👤 **Author Only**
+🔒 **Authentication Required**
 
 Update an existing post. Only the post author can update.
 
@@ -498,16 +746,54 @@ Update an existing post. Only the post author can update.
 }
 ```
 
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Post updated successfully",
+  "data": {
+    "id": "uuid",
+    "title": "Updated Title",
+    "photo_url": "new-image-url",
+    "slug": "updated-slug",
+    "body": "Updated content...",
+    "view_count": 100,
+    "creator": {
+      "id": "uuid",
+      "username": "author",
+      "name": "Author Name"
+    },
+    "tags": [
+      {
+        "id": "uuid",
+        "name": "new-tag"
+      }
+    ],
+    "created_at": "2023-01-01T00:00:00Z",
+    "updated_at": "2023-01-02T00:00:00Z"
+  }
+}
+```
+
 ### Delete Post
 
 **DELETE** `/v1/posts/{id}`
 
-🔒 **Authentication Required** | 👤 **Author Only**
+🔒 **Authentication Required**
 
 Delete a post. Only the post author can delete.
 
 **Parameters:**
 - `id` (path): Post ID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Post deleted successfully",
+  "data": null
+}
+```
 
 ### Get Random Posts
 
@@ -517,6 +803,28 @@ Retrieve random posts for discovery.
 
 **Query Parameters:**
 - `limit` (optional): Number of posts to return (default: 9, max: 50)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved random posts",
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Random Post Title",
+      "photo_url": "image-url",
+      "slug": "random-post-slug",
+      "view_count": 50,
+      "creator": {
+        "id": "uuid",
+        "username": "author",
+        "name": "Author Name"
+      }
+    }
+  ]
+}
+```
 
 ### Get My Posts
 
@@ -529,6 +837,33 @@ Retrieve current user's posts.
 **Query Parameters:**
 - `offset` (optional): Number of records to skip (default: 0)
 - `limit` (optional): Number of records to return (default: 10)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved user's posts",
+  "data": [
+    {
+      "id": "uuid",
+      "title": "User's Post Title",
+      "photo_url": "image-url",
+      "slug": "user-post-slug",
+      "body": "Post content...",
+      "view_count": 25,
+      "like_count": 3,
+      "created_at": "2023-01-01T00:00:00Z",
+      "updated_at": "2023-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total_items": 5,
+    "offset": 0,
+    "limit": 10,
+    "total_pages": 1
+  }
+}
+```
 
 ### Get Posts by Username
 
@@ -543,6 +878,37 @@ Retrieve posts by a specific user.
 - `offset` (optional): Number of records to skip (default: 0)
 - `limit` (optional): Number of records to return (default: 10)
 
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved posts by username",
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Post Title",
+      "photo_url": "image-url",
+      "slug": "post-slug",
+      "view_count": 75,
+      "creator": {
+        "id": "uuid",
+        "username": "author",
+        "name": "Author Name"
+      },
+      "tags": [],
+      "created_at": "2023-01-01T00:00:00Z",
+      "updated_at": "2023-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total_items": 15,
+    "offset": 0,
+    "limit": 10,
+    "total_pages": 2
+  }
+}
+```
+
 ### Get Posts by Tag
 
 **GET** `/v1/posts/tag/{tag}`
@@ -556,6 +922,42 @@ Retrieve posts with a specific tag.
 - `offset` (optional): Number of records to skip (default: 0)
 - `limit` (optional): Number of records to return (default: 10)
 
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved posts by tag",
+  "data": [
+    {
+      "id": "uuid",
+      "title": "Post Title",
+      "photo_url": "image-url",
+      "slug": "post-slug",
+      "view_count": 45,
+      "creator": {
+        "id": "uuid",
+        "username": "author",
+        "name": "Author Name"
+      },
+      "tags": [
+        {
+          "id": "uuid",
+          "name": "tag-name"
+        }
+      ],
+      "created_at": "2023-01-01T00:00:00Z",
+      "updated_at": "2023-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "total_items": 8,
+    "offset": 0,
+    "limit": 10,
+    "total_pages": 1
+  }
+}
+```
+
 ### Upload Post Image
 
 **POST** `/v1/posts/image`
@@ -566,6 +968,20 @@ Upload an image for use in posts.
 
 **Request:** Multipart form data
 - `image` (file): Image file to upload
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Image uploaded successfully",
+  "data": {
+    "image_url": "https://your-domain.com/uploads/image-uuid.jpg",
+    "filename": "original-filename.jpg",
+    "size": 1024000,
+    "mime_type": "image/jpeg"
+  }
+}
+```
 
 ---
 
@@ -1299,160 +1715,6 @@ Available endpoints:
 
 ---
 
-## WebSocket Gateway
-
-### Connection
-
-**WebSocket** `wss://nest.pilput.me/ws/posts`
-
-Connect to the WebSocket gateway for real-time post interactions. Requires authentication via JWT token and a post ID.
-
-**Connection Parameters:**
-- `token` (query): JWT authentication token
-- `post_id` (query): ID of the post to connect to
-
-**Example Connection URL:**
-```
-wss://nest.pilput.me/ws/posts?token=your-jwt-token&post_id=post-uuid
-```
-
-### Authentication
-
-WebSocket connections require a valid JWT token passed as a query parameter. The token is verified upon connection.
-
-### Events
-
-#### Client to Server Events
-
-**`sendComment`**
-Send a new comment to a post.
-
-**Payload:**
-```json
-[
-  {
-    "id": "comment-uuid",
-    "text": "Comment text",
-    "created_at": "2023-01-01T00:00:00Z",
-    "creator": {
-      "id": "user-uuid",
-      "username": "commenter",
-      "email": "commenter@example.com",
-      "first_name": "Commenter",
-      "last_name": "User"
-    }
-  }
-]
-```
-
-**`typing`**
-Send typing indicator status.
-
-**Payload:**
-```json
-{
-  "postId": "post-uuid",
-  "isTyping": true
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success"
-}
-```
-
-**`markAsRead`**
-Mark a comment as read.
-
-**Payload:**
-```json
-{
-  "commentId": "comment-uuid"
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success"
-}
-```
-
-**`getAllComments`**
-Request all comments for the post.
-
-**Response:**
-```json
-{
-  "status": "success"
-}
-```
-
-#### Server to Client Events
-
-**`newComment`**
-Broadcast when new comments are available or updated.
-
-**Payload:**
-```json
-[
-  {
-    "id": "comment-uuid",
-    "text": "Comment text",
-    "created_at": "2023-01-01T00:00:00Z",
-    "creator": {
-      "id": "user-uuid",
-      "username": "commenter",
-      "email": "commenter@example.com",
-      "first_name": "Commenter",
-      "last_name": "User"
-    }
-  }
-]
-```
-
-**`userTyping`**
-Broadcast when a user starts or stops typing.
-
-**Payload:**
-```json
-{
-  "userId": "user-uuid",
-  "isTyping": true
-}
-```
-
-**`error`**
-Sent when an error occurs during connection or processing.
-
-**Payload:**
-```json
-{
-  "status": "error",
-  "message": "Error description"
-}
-```
-
-### WebSocket Connection Lifecycle
-
-1. **Connection**: Client connects with token and post_id parameters
-2. **Authentication**: Server verifies JWT token
-3. **Initialization**: Server loads initial comments and sends them via `newComment` event
-4. **Real-time Interaction**: Client and server exchange events for comments and typing indicators
-5. **Disconnection**: Client or server terminates connection
-
-### Error Handling
-
-WebSocket errors are sent via the `error` event. Common errors include:
-- Invalid or missing authentication token
-- Invalid post ID
-- Unauthorized access
-- Connection timeout
-
----
-
 ## Error Handling
 
 ### Common Error Responses
@@ -1509,9 +1771,14 @@ WebSocket errors are sent via the `error` event. Common errors include:
 
 ## Rate Limiting
 
-Certain endpoints have rate limiting applied:
+Certain endpoints have rate limiting applied to prevent abuse:
 
 - **Login endpoint**: 5 requests per 5 minutes per IP address
+- **Forgot password endpoint**: 5 requests per 5 minutes per IP address
+- **Register endpoint**: No specific rate limiting (handled by general API limits)
+- **General API**: Default rate limits apply based on server configuration
+
+Rate limits are subject to change and may be adjusted based on server load and usage patterns.
 
 ---
 
@@ -1649,6 +1916,14 @@ Respect rate limits and implement appropriate retry logic with exponential backo
 
 ## Changelog
 
+### Current Version
+- **Updated API Documentation**: Comprehensive review and update of all API endpoints
+- **Added Missing Endpoints**: Added forgot password, reset password, refresh token, and change password endpoints
+- **Enhanced Response Examples**: Added detailed response examples for all endpoints
+- **Improved Authentication Requirements**: Updated authentication requirements for all endpoints
+- **Removed Non-existent Features**: Removed WebSocket documentation (not implemented)
+- **Updated Rate Limiting**: Added comprehensive rate limiting information
+
 ### Version 1.0.0
 - Initial API release
 - User authentication and management
@@ -1658,6 +1933,9 @@ Respect rate limits and implement appropriate retry logic with exponential backo
 - Workspace and page management
 - User follow system
 - Post view tracking
+- Chat conversations and messages
+- Post likes and views tracking
+- Enhanced security with rate limiting
 
 ---
 
