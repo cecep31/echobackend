@@ -22,3 +22,8 @@ go.work
 
 # Temporary files
 tmp/
+
+
+bin/echobackend
+bin/echobackend.exe
+bin/main

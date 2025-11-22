@@ -11,8 +11,11 @@ import (
 // SessionRepository defines operations for managing user sessions (refresh tokens).
 type SessionRepository interface {
 	CreateSession(ctx context.Context, s *model.Session) error
+	GetSessionByRefreshToken(ctx context.Context, token string) (*model.Session, error)
 	GetByRefreshToken(ctx context.Context, token string) (*model.Session, error)
+	DeleteSession(ctx context.Context, token string) error
 	DeleteByRefreshToken(ctx context.Context, token string) error
+	UpdateSession(ctx context.Context, s *model.Session) error
 }
 
 type sessionRepository struct {
@@ -35,6 +38,22 @@ func (r *sessionRepository) GetByRefreshToken(ctx context.Context, token string)
 	return &sess, nil
 }
 
+func (r *sessionRepository) GetSessionByRefreshToken(ctx context.Context, token string) (*model.Session, error) {
+	var sess model.Session
+	if err := r.db.WithContext(ctx).Where("refresh_token = ?", token).First(&sess).Error; err != nil {
+		return nil, err
+	}
+	return &sess, nil
+}
+
+func (r *sessionRepository) DeleteSession(ctx context.Context, token string) error {
+	return r.db.WithContext(ctx).Where("refresh_token = ?", token).Delete(&model.Session{}).Error
+}
+
 func (r *sessionRepository) DeleteByRefreshToken(ctx context.Context, token string) error {
 	return r.db.WithContext(ctx).Where("refresh_token = ?", token).Delete(&model.Session{}).Error
+}
+
+func (r *sessionRepository) UpdateSession(ctx context.Context, s *model.Session) error {
+	return r.db.WithContext(ctx).Save(s).Error
 }

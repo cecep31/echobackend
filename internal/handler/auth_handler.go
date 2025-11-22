@@ -2,6 +2,7 @@ package handler
 
 import (
 	"echobackend/internal/service"
+	"echobackend/internal/model"
 	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
 	"net/http"
@@ -26,6 +27,24 @@ type RegisterRequest struct {
 
 type CheckUsernameRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=30"`
+}
+
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPasswordRequest struct {
+	Token    string `json:"token" validate:"required"`
+	Password string `json:"password" validate:"required,min=6"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" validate:"required,min=6"`
+	NewPassword     string `json:"new_password" validate:"required,min=6"`
 }
 
 func NewAuthHandler(authService service.AuthService) *AuthHandler {
@@ -133,4 +152,131 @@ func (h *AuthHandler) CheckUsername(c echo.Context) error {
 		"username":  req.Username,
 		"available": isAvailable,
 	})
+}
+
+func (h *AuthHandler) ForgotPassword(c echo.Context) error {
+	var req ForgotPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return response.BadRequest(c, "Invalid request format", err)
+	}
+
+	if err := c.Validate(req); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
+				Success: false,
+				Message: "Validation failed",
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
+			})
+		}
+		return response.ValidationError(c, "Validation failed", err)
+	}
+
+	err := h.authService.ForgotPassword(c.Request().Context(), req.Email)
+	if err == service.ErrUserNotFound {
+		// Return success even if email doesn't exist for security reasons
+		return response.Success(c, "If the email exists, a password reset link has been sent", nil)
+	}
+	if err != nil {
+		return response.InternalServerError(c, "Failed to process password reset request", err)
+	}
+
+	return response.Success(c, "If the email exists, a password reset link has been sent", nil)
+}
+
+func (h *AuthHandler) ResetPassword(c echo.Context) error {
+	var req ResetPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return response.BadRequest(c, "Invalid request format", err)
+	}
+
+	if err := c.Validate(req); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
+				Success: false,
+				Message: "Validation failed",
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
+			})
+		}
+		return response.ValidationError(c, "Validation failed", err)
+	}
+
+	err := h.authService.ResetPassword(c.Request().Context(), req.Token, req.Password)
+	if err == service.ErrInvalidToken {
+		return response.BadRequest(c, "Invalid or expired reset token", err)
+	}
+	if err != nil {
+		return response.InternalServerError(c, "Failed to reset password", err)
+	}
+
+	return response.Success(c, "Password reset successful", nil)
+}
+
+func (h *AuthHandler) RefreshToken(c echo.Context) error {
+	var req RefreshTokenRequest
+	if err := c.Bind(&req); err != nil {
+		return response.BadRequest(c, "Invalid request format", err)
+	}
+
+	if err := c.Validate(req); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
+				Success: false,
+				Message: "Validation failed",
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
+			})
+		}
+		return response.ValidationError(c, "Validation failed", err)
+	}
+
+	token, refreshToken, user, err := h.authService.RefreshToken(c.Request().Context(), req.RefreshToken)
+	if err == service.ErrInvalidToken {
+		return response.Unauthorized(c, "Invalid or expired refresh token")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "Failed to refresh token", err)
+	}
+
+	return response.Success(c, "Token refreshed successfully", map[string]any{
+		"access_token":  token,
+		"refresh_token": refreshToken,
+		"user": map[string]any{
+			"id":       user.ID,
+			"email":    user.Email,
+			"username": user.Username,
+		},
+	})
+}
+
+func (h *AuthHandler) ChangePassword(c echo.Context) error {
+	user := c.Get("user").(*model.User)
+
+	var req ChangePasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return response.BadRequest(c, "Invalid request format", err)
+	}
+
+	if err := c.Validate(req); err != nil {
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			return c.JSON(http.StatusBadRequest, response.APIResponse{
+				Success: false,
+				Message: "Validation failed",
+				Error:   validationErrors.Error(),
+				Data:    validationErrors.Errors,
+			})
+		}
+		return response.ValidationError(c, "Validation failed", err)
+	}
+
+	err := h.authService.ChangePassword(c.Request().Context(), user.ID, req.CurrentPassword, req.NewPassword)
+	if err == service.ErrInvalidCredentials {
+		return response.Unauthorized(c, "Current password is incorrect")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "Failed to change password", err)
+	}
+
+	return response.Success(c, "Password changed successfully", nil)
 }
