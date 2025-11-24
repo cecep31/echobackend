@@ -619,7 +619,7 @@ Retrieve paginated list of all posts with advanced filtering and search capabili
 **Query Parameters:**
 - `offset` (optional): Number of records to skip (default: 0)
 - `limit` (optional): Number of records to return (default: 10, max: 100)
-- `search` (optional): Search term to filter posts by title and body content (case-insensitive)
+- `search` (optional): Search term to filter posts by title only (case-insensitive)
 - `sort_by` (optional): Sort field - `id`, `title`, `created_at`, `updated_at`, `view_count`, `like_count` (default: `created_at`)
 - `sort_order` (optional): Sort order - `asc` or `desc` (default: `desc`)
 - `start_date` (optional): Filter posts created after this date (YYYY-MM-DD format)

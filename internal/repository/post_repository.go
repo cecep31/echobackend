@@ -412,7 +412,7 @@ func (r *postRepository) GetPostsFiltered(ctx context.Context, filter *model.Pos
 	// Apply search filter
 	if filter.Search != "" {
 		likePattern := "%" + filter.Search + "%"
-		query = query.Where("(title ILIKE ? OR body ILIKE ?) AND published = ?", likePattern, likePattern, true)
+		query = query.Where("title ILIKE ? AND published = ?", likePattern, true)
 	} else {
 		// If no search, still filter by published status
 		query = query.Where("published = ?", true)
@@ -449,7 +449,7 @@ func (r *postRepository) GetPostsFiltered(ctx context.Context, filter *model.Pos
 	// Apply same filters to count query
 	if filter.Search != "" {
 		likePattern := "%" + filter.Search + "%"
-		countQuery = countQuery.Where("(title ILIKE ? OR body ILIKE ?) AND published = ?", likePattern, likePattern, true)
+		countQuery = countQuery.Where("title ILIKE ? AND published = ?", likePattern, true)
 	} else {
 		countQuery = countQuery.Where("published = ?", true)
 	}
