@@ -614,11 +614,27 @@ Create a new blog post.
 
 **GET** `/v1/posts`
 
-Retrieve paginated list of all posts.
+Retrieve paginated list of all posts with advanced filtering and search capabilities.
 
 **Query Parameters:**
 - `offset` (optional): Number of records to skip (default: 0)
-- `limit` (optional): Number of records to return (default: 10)
+- `limit` (optional): Number of records to return (default: 10, max: 100)
+- `search` (optional): Search term to filter posts by title and body content (case-insensitive)
+- `sort_by` (optional): Sort field - `id`, `title`, `created_at`, `updated_at`, `view_count`, `like_count` (default: `created_at`)
+- `sort_order` (optional): Sort order - `asc` or `desc` (default: `desc`)
+- `start_date` (optional): Filter posts created after this date (YYYY-MM-DD format)
+- `end_date` (optional): Filter posts created before this date (YYYY-MM-DD format)
+- `created_by` (optional): Filter posts by author ID
+- `tags` (optional): Filter posts by tag names (comma-separated, e.g., "golang,webdev,api")
+- `published` (optional): Filter by publication status - `true` or `false`
+
+**Examples:**
+```
+GET /v1/posts?search=golang&limit=20
+GET /v1/posts?sort_by=view_count&sort_order=desc&limit=10
+GET /v1/posts?tags=golang,webdev&start_date=2023-01-01&end_date=2023-12-31
+GET /v1/posts?search=api&sort_by=created_at&sort_order=desc&limit=20&offset=10
+```
 
 **Response (200):**
 ```json
