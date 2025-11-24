@@ -1,11 +1,10 @@
 package response
 
 import (
+	"log"
 	"net/http"
 
-	"echobackend/pkg/validator"
 	"github.com/labstack/echo/v4"
-	"github.com/rs/zerolog/log"
 )
 
 // APIResponse represents the standard API response format
@@ -27,7 +26,7 @@ type PaginationMeta struct {
 
 // Success sends a successful response
 func Success(c echo.Context, message string, data any) error {
-	log.Info().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Msg("Success response")
+	log.Printf("Success response request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
@@ -38,7 +37,7 @@ func Success(c echo.Context, message string, data any) error {
 
 // SuccessWithMeta sends a successful response with metadata
 func SuccessWithMeta(c echo.Context, message string, data any, meta any) error {
-	log.Info().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Msg("Success response with meta")
+	log.Printf("Success response with meta request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
@@ -50,7 +49,7 @@ func SuccessWithMeta(c echo.Context, message string, data any, meta any) error {
 
 // Created sends a created response
 func Created(c echo.Context, message string, data any) error {
-	log.Info().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Msg("Created response")
+	log.Printf("Created response request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusCreated, APIResponse{
 		Success: true,
@@ -66,7 +65,7 @@ func BadRequest(c echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	log.Warn().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Str("error", errorMsg).Msg("Bad request")
+	log.Printf("Bad request request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), message, errorMsg)
 
 	return c.JSON(http.StatusBadRequest, APIResponse{
 		Success: false,
@@ -77,7 +76,7 @@ func BadRequest(c echo.Context, message string, err error) error {
 
 // Unauthorized sends an unauthorized error response
 func Unauthorized(c echo.Context, message string) error {
-	log.Warn().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Msg("Unauthorized access")
+	log.Printf("Unauthorized access request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusUnauthorized, APIResponse{
 		Success: false,
@@ -88,7 +87,7 @@ func Unauthorized(c echo.Context, message string) error {
 
 // Forbidden sends a forbidden error response
 func Forbidden(c echo.Context, message string) error {
-	log.Warn().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Msg("Forbidden access")
+	log.Printf("Forbidden access request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusForbidden, APIResponse{
 		Success: false,
@@ -104,7 +103,7 @@ func NotFound(c echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	log.Warn().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Str("error", errorMsg).Msg("Resource not found")
+	log.Printf("Resource not found request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), message, errorMsg)
 
 	return c.JSON(http.StatusNotFound, APIResponse{
 		Success: false,
@@ -120,7 +119,7 @@ func InternalServerError(c echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	log.Error().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Str("error", errorMsg).Msg("Internal server error")
+	log.Printf("Internal server error request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), message, errorMsg)
 
 	return c.JSON(http.StatusInternalServerError, APIResponse{
 		Success: false,
@@ -136,13 +135,7 @@ func ValidationError(c echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	// Import validator package to access ValidationErrors type
-	validationErr, ok := err.(validator.ValidationErrors)
-	if ok {
-		log.Warn().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Interface("validation_errors", validationErr.Errors).Msg("Validation error")
-	} else {
-		log.Warn().Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).Str("message", message).Str("error", errorMsg).Msg("Validation error")
-	}
+	log.Printf("Validation error request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), message, errorMsg)
 
 	return c.JSON(http.StatusUnprocessableEntity, APIResponse{
 		Success: false,

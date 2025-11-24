@@ -1,26 +1,30 @@
 package middleware
 
 import (
-	"os"
+	"log"
 	"time"
 
 	"echobackend/config"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/time/rate"
 )
 
 func InitMiddleware(e *echo.Echo, config *config.Config) {
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	logger := log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
 
 	// Set server timeouts
 	e.Server.ReadTimeout = 10 * time.Second
 	e.Server.WriteTimeout = 15 * time.Second
 	e.Server.IdleTimeout = 60 * time.Second
+
+	// Middleware to set start time for latency measurement
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("start", time.Now())
+			return next(c)
+		}
+	})
 
 	// Add body limit middleware to prevent memory exhaustion
 	e.Use(middleware.BodyLimit("10M")) // Limit request body to 10MB
@@ -40,14 +44,9 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		LogStatus: true,
 		LogMethod: true,
 		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
-			logger.Info().
-				Str("method", values.Method).
-				Str("uri", values.URI).
-				Str("request_id", c.Response().Header().Get(echo.HeaderXRequestID)).
-				Int("status", values.Status).
-				Dur("latency", values.Latency).
-				Str("remote_ip", c.RealIP()).
-				Msg("handled request")
+			start := c.Get("start").(time.Time)
+			latency := time.Since(start)
+			log.Printf("handled request method=%s uri=%s request_id=%s status=%d latency=%.3f ms remote_ip=%s", values.Method, values.URI, c.Response().Header().Get(echo.HeaderXRequestID), values.Status, float64(latency.Nanoseconds())/1000000, c.RealIP())
 
 			return nil
 		},
