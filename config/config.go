@@ -18,21 +18,21 @@ type S3Config struct {
 }
 
 type Config struct {
-	App_Port string
+	AppPort string
 	// JWT configuration
-	JWT_SECRET string
+	JWTSecret string
 	// Database configuration
-	Database_URL    string
+	DatabaseURL     string
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
 	// Rate limiter configuration
-	RATE_LIMITER_MAX int
-	RATE_LIMITER_TTL int
+	RateLimiterMax int
+	RateLimiterTTL int
 	// S3 configuration
 	S3 S3Config
 	// Debug mode
-	DEBUG bool
+	Debug bool
 }
 
 // Load reads configuration from environment variables with defaults
@@ -41,14 +41,14 @@ func Load() (*Config, error) {
 	gotenv.Load()
 
 	config := &Config{
-		App_Port:         getEnv("PORT", "8080"),
-		JWT_SECRET:       getEnv("JWT_SECRET", "your-secret-key"),
-		Database_URL:     getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"),
-		MaxOpenConns:     getEnvAsInt("MAX_OPEN_CONNS", 30),
-		MaxIdleConns:     getEnvAsInt("MAX_IDLE_CONNS", 2),
-		ConnMaxLifetime:  getEnvAsDuration("CONN_MAX_LIFETIME", 30*time.Minute),
-		RATE_LIMITER_MAX: getEnvAsInt("RATE_LIMITER_MAX", 0),
-		RATE_LIMITER_TTL: getEnvAsInt("RATE_LIMITER_TTL", 60),
+		AppPort:         getEnv("PORT", "8080"),
+		JWTSecret:       getEnv("JWT_SECRET", "your-secret-key"),
+		DatabaseURL:     getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"),
+		MaxOpenConns:    getEnvAsInt("MAX_OPEN_CONNS", 30),
+		MaxIdleConns:    getEnvAsInt("MAX_IDLE_CONNS", 2),
+		ConnMaxLifetime: getEnvAsDuration("CONN_MAX_LIFETIME", 30*time.Minute),
+		RateLimiterMax:  getEnvAsInt("RATE_LIMITER_MAX", 0),
+		RateLimiterTTL:  getEnvAsInt("RATE_LIMITER_TTL", 60),
 		S3: S3Config{
 			Endpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
 			AccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
@@ -56,7 +56,7 @@ func Load() (*Config, error) {
 			Bucket:    getEnv("MINIO_BUCKET", "minio-bucket"),
 			UseSSL:    getEnvAsBool("MINIO_USE_SSL", false),
 		},
-		DEBUG: getEnvAsBool("DEBUG", false),
+		Debug: getEnvAsBool("DEBUG", false),
 	}
 
 	if err := config.validate(); err != nil {
@@ -105,10 +105,10 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 }
 
 func (c *Config) validate() error {
-	if c.JWT_SECRET == "" {
+	if c.JWTSecret == "" {
 		return fmt.Errorf("JWT_SECRET is required")
 	}
-	if c.Database_URL == "" {
+	if c.DatabaseURL == "" {
 		return fmt.Errorf("DATABASE_URL is required")
 	}
 	return nil

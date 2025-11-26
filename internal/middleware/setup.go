@@ -53,12 +53,12 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 	}))
 
 	// Enhanced rate limiting with custom store and configuration
-	if config.RATE_LIMITER_MAX > 0 {
+	if config.RateLimiterMax > 0 {
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(
 			// Use the correct RateLimiterMemoryStoreConfig
 			middleware.RateLimiterMemoryStoreConfig{
-				Rate:  rate.Limit(config.RATE_LIMITER_MAX),
-				Burst: config.RATE_LIMITER_MAX * 2,
+				Rate:  rate.Limit(config.RateLimiterMax),
+				Burst: config.RateLimiterMax * 2,
 			},
 		)))
 	}

@@ -46,7 +46,7 @@ func NewAuthService(authRepo repository.AuthRepository, userRepo repository.User
 		authRepo:    authRepo,
 		userRepo:    userRepo,
 		sessionRepo: sessionRepo,
-		jwtSecret:   []byte(config.JWT_SECRET),
+		jwtSecret:   []byte(config.JWTSecret),
 	}
 }
 

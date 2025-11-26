@@ -19,7 +19,7 @@ import (
 func NewDatabase(config *config.Config) *DatabaseWrapper {
 	// Configure GORM logger
 	var gormLogLevel logger.LogLevel
-	if config.DEBUG {
+	if config.Debug {
 		gormLogLevel = logger.Info
 	} else {
 		gormLogLevel = logger.Error
@@ -30,7 +30,7 @@ func NewDatabase(config *config.Config) *DatabaseWrapper {
 	}
 
 	// Parse database configuration
-	pgxConfig, err := pgx.ParseConfig(config.Database_URL)
+	pgxConfig, err := pgx.ParseConfig(config.DatabaseURL)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse database config: %w", err))
 	}

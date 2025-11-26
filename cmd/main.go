@@ -51,8 +51,8 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
-		e.Logger.Printf("Starting server on port %s", conf.App_Port)
-		if err := e.Start(":" + conf.App_Port); err != nil && err != http.ErrServerClosed {
+		e.Logger.Printf("Starting server on port %s", conf.AppPort)
+		if err := e.Start(":" + conf.AppPort); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()
