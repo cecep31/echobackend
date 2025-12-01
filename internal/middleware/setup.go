@@ -39,6 +39,7 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		ReferrerPolicy:        "strict-origin-when-cross-origin",
 	}))
 
+	// Enhanced request logging with structured format
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,
