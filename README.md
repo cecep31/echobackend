@@ -1,22 +1,26 @@
 # Echo Backend API
 
-A REST API for a blog/content management system built with Go, Echo framework, and PostgreSQL.
+A modern REST API for a blog/content management system built with Go, Echo framework, and PostgreSQL. Features include user management, posts, comments, chat functionality, file uploads, and more.
 
 ## Features
 
-- User authentication & management
-- Posts, comments, and tags
-- User follows and post likes
-- Workspaces and pages
-- JWT authentication
-- PostgreSQL database
-- Docker support
+- **User Management**: Complete user system with authentication, profiles, and following
+- **Content Management**: Posts with rich text, images, tags, and versioning
+- **Social Features**: User follows, post likes, comments, and bookmarks
+- **Real-time Chat**: Conversational AI with message history and token tracking
+- **File Storage**: MinIO/S3 integration for file uploads and management
+- **Analytics**: Post view tracking and statistics
+- **Security**: JWT authentication, rate limiting, and input validation
+- **Performance**: Database connection pooling, caching, and optimized queries
+- **Deployment**: Docker support with multi-stage builds
+- **Monitoring**: Comprehensive logging and metrics
 
 ## Quick Start
 
 ### Prerequisites
-- Go 1.21+
+- Go 1.25+
 - PostgreSQL 14+
+- Docker (optional, for containerized deployment)
 
 ### Setup
 
@@ -27,19 +31,44 @@ A REST API for a blog/content management system built with Go, Echo framework, a
    cp .env.example .env
    ```
 
-2. **Configure database:**
-   Edit `.env` file with your PostgreSQL credentials:
+2. **Configure environment:**
+   Edit `.env` file with your configuration:
    ```env
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_USER=postgres
-   DB_PASSWORD=your_password
-   DB_NAME=your_database_name
+   # Server
+   PORT=8080
+   
+   # Database
+   DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+   MAX_OPEN_CONNS=30
+   MAX_IDLE_CONNS=2
+   CONN_MAX_LIFETIME=30m
+   
+   # Authentication
+   JWT_SECRET=your-secret-key
+   
+   # File Storage (MinIO/S3)
+   MINIO_ENDPOINT=localhost:9000
+   MINIO_ACCESS_KEY=minioadmin
+   MINIO_SECRET_KEY=minioadmin
+   MINIO_BUCKET=minio-bucket
+   
+   # Rate Limiting
+   RATE_LIMITER_MAX=0
+   RATE_LIMITER_TTL=60
+   
+   # Debug
+   DEBUG=false
    ```
 
 3. **Run:**
    ```bash
+   # Install dependencies
    go mod download
+   
+   # Run migrations (if using migration tool)
+   # psql -d your_database_name -f migrations/*.sql
+   
+   # Start the server
    go run cmd/main.go
    ```
 
@@ -47,13 +76,24 @@ A REST API for a blog/content management system built with Go, Echo framework, a
 
 ### Development
 
-- **Hot reload:** `air`
-- **Tests:** `go test ./...`
-- **Build:** `make build`
+```bash
+# Build and run
+make build
+make dev
+
+# Run tests
+make test
+
+# Code quality
+make fmt
+make vet
+make lint
+```
 
 ### Docker
 
 ```bash
+# Build and run
 docker build -t echobackend .
 docker run -p 8080:8080 echobackend
 ```
@@ -66,16 +106,20 @@ For detailed API endpoints and examples, see [api_doc.md](api_doc.md).
 
 ```
 ├── cmd/                    # Application entry point
+├── config/                 # Configuration management
 ├── internal/               # Private application code
 │   ├── handler/            # HTTP handlers
 │   ├── service/            # Business logic
 │   ├── repository/         # Data access
 │   ├── model/              # Database models
-│   └── middleware/         # Custom middleware
-├── pkg/                    # Shared packages
+│   ├── middleware/         # HTTP middleware
+│   └── routes/             # Route definitions
 ├── migrations/             # Database migrations
-└── config/                 # Configuration
+├── test/                   # Test files
+└── pkg/                    # Shared utilities
 ```
+
+This project follows a clean architecture pattern with separation of concerns between handlers, services, repositories, and models.
 
 ## Contributing
 
@@ -86,3 +130,22 @@ For detailed API endpoints and examples, see [api_doc.md](api_doc.md).
 5. Submit a pull request
 
 Please follow existing code style and include tests for new features.
+
+## License
+
+MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/your-repo/echobackend/issues)
+- **Documentation**: [API Documentation](api_doc.md)
+
+## Technologies
+
+- **Go**: 1.25+
+- **Echo Framework**: v4.13.4
+- **GORM**: v1.31.1
+- **PostgreSQL**: 14+
+- **JWT Authentication**: github.com/golang-jwt/jwt/v5
+- **File Storage**: MinIO/S3 compatible
+- **Docker**: Containerization support
