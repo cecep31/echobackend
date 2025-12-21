@@ -36,8 +36,12 @@ func (h *PostViewHandler) RecordView(c echo.Context) error {
 		}
 	}
 
-	// Record the view
-	err := h.postViewService.RecordView(c.Request().Context(), postID, userID)
+	// Extract IP address and user agent from request
+	ipAddress := c.RealIP()
+	userAgent := c.Request().UserAgent()
+
+	// Record the view with additional metadata
+	err := h.postViewService.RecordView(c.Request().Context(), postID, userID, &ipAddress, &userAgent)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to record view", err)
 	}
