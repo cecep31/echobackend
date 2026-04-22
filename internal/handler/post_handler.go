@@ -256,6 +256,54 @@ func (h *PostHandler) GetMyPosts(c *echo.Context) error {
 	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
 }
 
+func (h *PostHandler) GetPostsForYou(c *echo.Context) error {
+	offset := c.QueryParam("offset")
+	limit := c.QueryParam("limit")
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		offsetInt = 0
+	}
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		limitInt = 10
+	}
+
+	claims := c.Get("user").(jwt.MapClaims)
+	userID := claims["user_id"].(string)
+
+	posts, total, err := h.postService.GetPostsForYou(c.Request().Context(), userID, offsetInt, limitInt)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get posts", err)
+	}
+
+	metaLimit := limitInt
+	if metaLimit <= 0 {
+		metaLimit = 10
+	}
+	if metaLimit > 100 {
+		metaLimit = 100
+	}
+
+	for _, post := range posts {
+		if post.Body != nil && len(*post.Body) > 250 {
+			truncated := (*post.Body)[:250] + " ..."
+			post.Body = &truncated
+		}
+	}
+
+	meta := response.PaginationMeta{
+		TotalItems: int(total),
+		Offset:     offsetInt,
+		Limit:      metaLimit,
+		TotalPages: int(total)/metaLimit + 1,
+	}
+	if int(total)%metaLimit == 0 {
+		meta.TotalPages = int(total) / metaLimit
+	}
+
+	return response.SuccessWithMeta(c, "Successfully retrieved for-you posts", posts, meta)
+}
+
 func (h *PostHandler) GetPostsByUsername(c *echo.Context) error {
 	username := c.Param("username")
 	offset := c.QueryParam("offset")

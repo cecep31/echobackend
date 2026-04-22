@@ -33,6 +33,7 @@ type PostRepository interface {
 	// Additional functions
 	SearchPosts(ctx context.Context, keyword string, limit int, offset int) ([]*model.Post, int64, error)
 	GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.Post, int64, error)
+	GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*model.Post, int64, error)
 	ExistsByID(ctx context.Context, id string) (bool, error)
 }
 
@@ -324,6 +325,43 @@ func (r *postRepository) GetPostsByCreatedBy(ctx context.Context, createdBy stri
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get posts by creator ID %s: %w", createdBy, err)
 	}
+	return posts, count, nil
+}
+
+// GetPostsForYou returns published posts authored by the user or by users they follow, newest first.
+func (r *postRepository) GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*model.Post, int64, error) {
+	var posts []*model.Post
+	var count int64
+
+	if userID == "" {
+		return []*model.Post{}, 0, nil
+	}
+
+	followingIDs := r.db.WithContext(ctx).Model(&model.UserFollow{}).
+		Select("following_id").
+		Where("follower_id = ?", userID)
+
+	base := r.db.WithContext(ctx).Model(&model.Post{}).
+		Where("published = ?", true).
+		Where("created_by = ? OR created_by IN (?)", userID, followingIDs)
+
+	if err := base.Count(&count).Error; err != nil {
+		return nil, 0, fmt.Errorf("failed to count for-you posts: %w", err)
+	}
+
+	err := r.db.WithContext(ctx).
+		Preload("Creator").
+		Preload("Tags").
+		Where("published = ?", true).
+		Where("created_by = ? OR created_by IN (?)", userID, followingIDs).
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&posts).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get for-you posts: %w", err)
+	}
+
 	return posts, count, nil
 }
 

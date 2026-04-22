@@ -18,6 +18,7 @@ type PostService interface {
 	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error)
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
 	GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.PostResponse, int64, error)
+	GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*model.PostResponse, int64, error)
 	DeletePostByID(ctx context.Context, id string) error
 	UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error
 	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
@@ -244,6 +245,36 @@ func (s *postService) GetPostsFiltered(ctx context.Context, filter *model.PostQu
 	for _, post := range posts {
 		postResponse := post.ToResponse()
 		postsResponse = append(postsResponse, postResponse)
+	}
+
+	return postsResponse, total, nil
+}
+
+func (s *postService) GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*model.PostResponse, int64, error) {
+	if limit < 0 {
+		limit = 10
+	}
+	if limit == 0 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	if userID == "" {
+		return []*model.PostResponse{}, 0, nil
+	}
+
+	posts, total, err := s.postRepo.GetPostsForYou(ctx, userID, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	postsResponse := make([]*model.PostResponse, 0, len(posts))
+	for _, post := range posts {
+		postsResponse = append(postsResponse, post.ToResponse())
 	}
 
 	return postsResponse, total, nil
