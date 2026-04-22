@@ -32,3 +32,9 @@ func (t *Tag) ToResponse() *TagResponse {
 		Name: t.Name,
 	}
 }
+
+// SitemapTag is minimal tag data for sitemap URL generation
+type SitemapTag struct {
+	Name      string     `json:"name"`
+	CreatedAt *time.Time `json:"created_at"`
+}

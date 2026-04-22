@@ -19,6 +19,7 @@ type TagRepository interface {
 	FindAll(ctx context.Context) ([]model.Tag, error)
 	FindByID(ctx context.Context, id uint) (*model.Tag, error)
 	FindByName(ctx context.Context, name string) (*model.Tag, error)
+	GetTagsForSitemap(ctx context.Context, limit int) ([]*model.SitemapTag, error)
 	Update(ctx context.Context, tag *model.Tag) error
 	Delete(ctx context.Context, id uint) error
 }
@@ -80,6 +81,28 @@ func (r *tagRepository) FindByName(ctx context.Context, name string) (*model.Tag
 		return nil, fmt.Errorf("failed to find tag by name %s: %w", name, err)
 	}
 	return &tag, nil
+}
+
+// GetTagsForSitemap returns tags that have at least one published post (for public sitemap URLs)
+func (r *tagRepository) GetTagsForSitemap(ctx context.Context, limit int) ([]*model.SitemapTag, error) {
+	var sitemapTags []*model.SitemapTag
+
+	err := r.db.WithContext(ctx).
+		Table("tags").
+		Select("tags.name, tags.created_at").
+		Joins("INNER JOIN posts_to_tags ON posts_to_tags.tag_id = tags.id").
+		Joins("INNER JOIN posts ON posts.id = posts_to_tags.post_id").
+		Where("posts.published = ?", true).
+		Group("tags.id, tags.name, tags.created_at").
+		Order("tags.name ASC").
+		Limit(limit).
+		Find(&sitemapTags).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tags for sitemap: %w", err)
+	}
+
+	return sitemapTags, nil
 }
 
 func (r *tagRepository) Update(ctx context.Context, tag *model.Tag) error {

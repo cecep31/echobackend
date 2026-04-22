@@ -7,6 +7,7 @@ func (r *Routes) setupTagRoutes(v1 *echo.Group) {
 	{
 		tags.POST("", r.tagHandler.CreateTag, r.authMiddleware.Auth())
 		tags.GET("", r.tagHandler.GetTags)
+		tags.GET("/sitemap", r.tagHandler.GetTagsForSitemap)
 		tags.GET("/:id", r.tagHandler.GetTagByID)
 		tags.PUT("/:id", r.tagHandler.UpdateTag, r.authMiddleware.Auth(), r.authMiddleware.AuthAdmin())
 		tags.DELETE("/:id", r.tagHandler.DeleteTag, r.authMiddleware.Auth(), r.authMiddleware.AuthAdmin())

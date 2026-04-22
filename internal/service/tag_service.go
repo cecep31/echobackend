@@ -16,6 +16,7 @@ type TagService interface {
 	GetTags(ctx context.Context) ([]model.Tag, error)
 	GetTagByID(ctx context.Context, id uint) (*model.Tag, error)
 	GetTagByName(ctx context.Context, name string) (*model.Tag, error)
+	GetTagsForSitemap(ctx context.Context, limit int) ([]*model.SitemapTag, error)
 	FindOrCreateByName(ctx context.Context, name string) (*model.Tag, error)
 	UpdateTag(ctx context.Context, tag *model.Tag) error
 	DeleteTag(ctx context.Context, id uint) error
@@ -46,6 +47,10 @@ func (s *tagService) UpdateTag(ctx context.Context, tag *model.Tag) error {
 
 func (s *tagService) GetTagByName(ctx context.Context, name string) (*model.Tag, error) {
 	return s.tagRepo.FindByName(ctx, name)
+}
+
+func (s *tagService) GetTagsForSitemap(ctx context.Context, limit int) ([]*model.SitemapTag, error) {
+	return s.tagRepo.GetTagsForSitemap(ctx, limit)
 }
 
 func (s *tagService) FindOrCreateByName(ctx context.Context, name string) (*model.Tag, error) {

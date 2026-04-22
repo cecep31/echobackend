@@ -39,6 +39,15 @@ func (h *TagHandler) GetTags(c *echo.Context) error {
 	return response.Success(c, "Successfully retrieved tags", tags)
 }
 
+func (h *TagHandler) GetTagsForSitemap(c *echo.Context) error {
+	tags, err := h.service.GetTagsForSitemap(c.Request().Context(), 1000)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get tags for sitemap", err)
+	}
+
+	return response.Success(c, "Successfully retrieved tags for sitemap", tags)
+}
+
 func (h *TagHandler) GetTagByID(c *echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

@@ -15,8 +15,6 @@ type Routes struct {
 	authHandler             *handler.AuthHandler
 	authMiddleware          *middleware.AuthMiddleware
 	tagHandler              *handler.TagHandler
-	pageHandler             *handler.PageHandler
-	workspaceHandler        *handler.WorkspaceHandler
 	commentHandler          *handler.CommentHandler
 	postViewHandler         *handler.PostViewHandler
 	postLikeHandler         *handler.PostLikeHandler
@@ -31,8 +29,6 @@ func NewRoutes(
 	authHandler *handler.AuthHandler,
 	authMiddleware *middleware.AuthMiddleware,
 	tagHandler *handler.TagHandler,
-	pageHandler *handler.PageHandler,
-	workspaceHandler *handler.WorkspaceHandler,
 	commentHandler *handler.CommentHandler,
 	postViewHandler *handler.PostViewHandler,
 	postLikeHandler *handler.PostLikeHandler,
@@ -46,8 +42,6 @@ func NewRoutes(
 		authHandler:             authHandler,
 		authMiddleware:          authMiddleware,
 		tagHandler:              tagHandler,
-		pageHandler:             pageHandler,
-		workspaceHandler:        workspaceHandler,
 		commentHandler:          commentHandler,
 		postViewHandler:         postViewHandler,
 		postLikeHandler:         postLikeHandler,
@@ -67,8 +61,6 @@ func (r *Routes) setupV1Routes(v1 *echo.Group) {
 	r.setupPostRoutes(v1)
 	r.setupAuthRoutes(v1)
 	r.setupTagRoutes(v1)
-	r.setupPageRoutes(v1)
-	r.setupWorkspaceRoutes(v1)
 	r.setupChatConversationRoutes(v1)
 	if r.config.AppDebug {
 		r.setupDebugRoutes(v1)

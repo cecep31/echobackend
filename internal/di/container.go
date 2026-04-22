@@ -33,8 +33,6 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	authRepo := repository.NewAuthRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
 	tagRepo := repository.NewTagRepository(db)
-	pageRepo := repository.NewPageRepository(db)
-	workspaceRepo := repository.NewWorkspaceRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	postViewRepo := repository.NewPostViewRepository(db)
 	postLikeRepo := repository.NewPostLikeRepository(db)
@@ -45,8 +43,6 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	tagService := service.NewTagService(tagRepo)
 	postService := service.NewPostService(postRepo, tagService, s3Storage)
 	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, cfg)
-	pageService := service.NewPageService(pageRepo)
-	workspaceService := service.NewWorkspaceService(workspaceRepo)
 	commentService := service.NewCommentService(commentRepo, postRepo)
 	postViewService := service.NewPostViewService(postViewRepo, postRepo)
 	postLikeService := service.NewPostLikeService(postLikeRepo, postRepo)
@@ -57,8 +53,6 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	postHandler := handler.NewPostHandler(postService, postViewService)
 	authHandler := handler.NewAuthHandler(authService)
 	tagHandler := handler.NewTagHandler(tagService)
-	pageHandler := handler.NewPageHandler(pageService)
-	workspaceHandler := handler.NewWorkspaceHandler(workspaceService)
 	commentHandler := handler.NewCommentHandler(commentService)
 	postViewHandler := handler.NewPostViewHandler(postViewService)
 	postLikeHandler := handler.NewPostLikeHandler(postLikeService)
@@ -73,8 +67,6 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		authHandler,
 		authMiddleware,
 		tagHandler,
-		pageHandler,
-		workspaceHandler,
 		commentHandler,
 		postViewHandler,
 		postLikeHandler,
