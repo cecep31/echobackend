@@ -24,7 +24,7 @@ type Post struct {
 	PostComments  []PostComment  `gorm:"foreignKey:PostID"`
 	PostLikes     []PostLike     `gorm:"foreignKey:PostID"`
 	PostBookmarks []PostBookmark `gorm:"foreignKey:PostID"`
-	Creator       *User          `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	User          *User          `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"user,omitempty"`
 	Tags          []Tag          `gorm:"many2many:posts_to_tags;"`
 }
 
@@ -43,7 +43,7 @@ type PostResponse struct {
 	BookmarkCount int64         `json:"bookmark_count"`
 	Published     *bool         `json:"published"`
 	PublishedAt   *time.Time    `json:"published_at"`
-	Creator       *UserResponse `json:"creator,omitempty"`
+	User          *UserResponse `json:"user,omitempty"`
 	Tags          []TagResponse `json:"tags,omitempty"`
 	CreatedAt     *time.Time    `json:"created_at"`
 	UpdatedAt     *time.Time    `json:"updated_at"`
@@ -51,9 +51,9 @@ type PostResponse struct {
 }
 
 func (p *Post) ToResponse() *PostResponse {
-	var creatorResp *UserResponse
-	if p.Creator.ID != "" {
-		creatorResp = p.Creator.ToResponse()
+	var userResp *UserResponse
+	if p.User != nil && p.User.ID != "" {
+		userResp = p.User.ToResponse()
 	}
 
 	var tagResponses []TagResponse
@@ -80,7 +80,7 @@ func (p *Post) ToResponse() *PostResponse {
 		BookmarkCount: p.BookmarkCount,
 		Published:     p.Published,
 		PublishedAt:   p.PublishedAt,
-		Creator:       creatorResp,
+		User:          userResp,
 		Tags:          tagResponses,
 		CreatedAt:     p.CreatedAt,
 		UpdatedAt:     p.UpdatedAt,

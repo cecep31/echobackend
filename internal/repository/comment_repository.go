@@ -32,9 +32,9 @@ func (r *commentRepository) CreateComment(ctx context.Context, comment *model.Po
 func (r *commentRepository) GetCommentsByPostID(ctx context.Context, postID string) ([]*model.PostComment, error) {
 	var comments []*model.PostComment
 
-	// Get all comments with creator information
+	// Get all comments with user information
 	if err := r.db.WithContext(ctx).
-		Preload("Creator").
+		Preload("User").
 		Where("post_id = ?", postID).
 		Order("created_at DESC").
 		Find(&comments).Error; err != nil {
@@ -47,7 +47,7 @@ func (r *commentRepository) GetCommentsByPostID(ctx context.Context, postID stri
 func (r *commentRepository) GetCommentByID(ctx context.Context, id string) (*model.PostComment, error) {
 	var comment model.PostComment
 	if err := r.db.WithContext(ctx).
-		Preload("Creator").
+		Preload("User").
 		Preload("Post").
 		Where("id = ?", id).
 		First(&comment).Error; err != nil {
