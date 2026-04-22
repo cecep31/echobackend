@@ -8,7 +8,7 @@ import (
 
 // User represents the user model in the database
 type User struct {
-	ID             string         `json:"id" gorm:"type:uuid;primaryKey"`
+	ID             string         `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	CreatedAt      *time.Time     `json:"created_at"`
 	UpdatedAt      *time.Time     `json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`
@@ -19,22 +19,23 @@ type User struct {
 	Image          *string        `json:"image"`
 	IsSuperAdmin   *bool          `json:"is_super_admin" gorm:"default:false"`
 	Username       *string        `json:"username" gorm:"uniqueIndex;type:varchar(255)"`
-	GithubID       *int64         `json:"github_id" gorm:"uniqueIndex"`
+	GithubID       *int64         `json:"github_id" gorm:"uniqueIndex:users_github_id_unique"`
 	FollowersCount int64          `json:"followers_count" gorm:"type:bigint;default:0"`
 	FollowingCount int64          `json:"following_count" gorm:"type:bigint;default:0"`
+	LastLoggedAt   *time.Time     `json:"last_logged_at"`
 
 	// Relationships
-	Files         []File         `gorm:"foreignKey:CreatedBy"`
-	Likes         []Like         `gorm:"foreignKey:UserID"`
-	PostComments  []PostComment  `gorm:"foreignKey:CreatedBy"`
-	PostLikes     []PostLike     `gorm:"foreignKey:UserID"`
-	PostViews     []PostView     `gorm:"foreignKey:UserID"`
-	PostBookmarks []PostBookmark `gorm:"foreignKey:UserID"`
-	Posts         []Post         `gorm:"foreignKey:CreatedBy"`
-	Profile       *Profile       `gorm:"foreignKey:UserID"`
-	Sessions      []Session      `gorm:"foreignKey:UserID"`
-	Followers     []UserFollow   `gorm:"foreignKey:FollowingID"`
-	Following     []UserFollow   `gorm:"foreignKey:FollowerID"`
+	Files           []File           `gorm:"foreignKey:CreatedBy"`
+	PostComments    []PostComment    `gorm:"foreignKey:CreatedBy"`
+	PostLikes       []PostLike       `gorm:"foreignKey:UserID"`
+	PostViews       []PostView       `gorm:"foreignKey:UserID"`
+	PostBookmarks   []PostBookmark   `gorm:"foreignKey:UserID"`
+	BookmarkFolders []BookmarkFolder `gorm:"foreignKey:UserID"`
+	Posts           []Post           `gorm:"foreignKey:CreatedBy"`
+	Profile         *Profile         `gorm:"foreignKey:UserID"`
+	Sessions        []Session        `gorm:"foreignKey:UserID"`
+	Followers       []UserFollow     `gorm:"foreignKey:FollowingID"`
+	Following       []UserFollow     `gorm:"foreignKey:FollowerID"`
 }
 
 // TableName specifies the table name for GORM
@@ -55,6 +56,7 @@ type UserResponse struct {
 	GithubID       *int64     `json:"github_id"`
 	FollowersCount int64      `json:"followers_count"`
 	FollowingCount int64      `json:"following_count"`
+	LastLoggedAt   *time.Time `json:"last_logged_at,omitempty"`
 	IsFollowing    *bool      `json:"is_following,omitempty"` // Whether current user follows this user
 	CreatedAt      *time.Time `json:"created_at"`
 	UpdatedAt      *time.Time `json:"updated_at"`
@@ -79,6 +81,7 @@ func (u *User) ToResponse() *UserResponse {
 		GithubID:       u.GithubID,
 		FollowersCount: u.FollowersCount,
 		FollowingCount: u.FollowingCount,
+		LastLoggedAt:   u.LastLoggedAt,
 		CreatedAt:      u.CreatedAt,
 		UpdatedAt:      u.UpdatedAt,
 		// Convert gorm.DeletedAt to *time.Time for the response

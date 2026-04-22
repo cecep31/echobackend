@@ -6,7 +6,7 @@ import (
 
 type Tag struct {
 	ID        int        `json:"id" gorm:"primaryKey;autoIncrement"`
-	Name      *string    `json:"name" gorm:"uniqueIndex;type:varchar(30)"`
+	Name      string     `json:"name" gorm:"uniqueIndex:idx_tags_name;type:varchar(30);not null"`
 	CreatedAt *time.Time `json:"created_at"`
 	Posts     []Post     `gorm:"many2many:posts_to_tags;"`
 }
@@ -18,8 +18,8 @@ func (Tag) TableName() string {
 
 // TagResponse represents the tag data that can be safely sent to clients
 type TagResponse struct {
-	ID   int     `json:"id"`
-	Name *string `json:"name"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 // ToResponse converts a Tag model to a TagResponse

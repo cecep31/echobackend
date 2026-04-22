@@ -18,9 +18,9 @@ type Post struct {
 	Photo_url     *string        `json:"photo_url"`
 	Published     *bool          `json:"published" gorm:"default:true"`
 	PublishedAt   *time.Time     `json:"published_at"`
-	ViewCount     int64          `json:"view_count" gorm:"type:bigint;default:0;check:view_count >= 0"`
-	LikeCount     int64          `json:"like_count" gorm:"type:bigint;default:0;check:like_count >= 0"`
-	BookmarkCount int64          `json:"bookmark_count" gorm:"type:bigint;default:0;check:bookmark_count >= 0"`
+	ViewCount     int64          `json:"view_count" gorm:"type:bigint;default:0"`
+	LikeCount     int64          `json:"like_count" gorm:"type:bigint;default:0"`
+	BookmarkCount int64          `json:"bookmark_count" gorm:"type:bigint;default:0;check:chk_posts_counts_positive,view_count >= 0 AND like_count >= 0 AND bookmark_count >= 0"`
 	PostComments  []PostComment  `gorm:"foreignKey:PostID"`
 	PostLikes     []PostLike     `gorm:"foreignKey:PostID"`
 	PostBookmarks []PostBookmark `gorm:"foreignKey:PostID"`

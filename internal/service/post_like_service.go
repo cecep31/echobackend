@@ -62,7 +62,6 @@ func (s *postLikeService) LikePost(ctx context.Context, postID, userID string) e
 		PostID:    postID,
 		UserID:    userID,
 		CreatedAt: &now,
-		UpdatedAt: &now,
 	}
 
 	return s.postLikeRepo.CreateLike(ctx, like)

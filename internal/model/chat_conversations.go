@@ -7,11 +7,13 @@ import (
 )
 
 type ChatConversation struct {
-	ID        string         `gorm:"type:uuid;primaryKey"`
+	ID        string         `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `json:"-"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 	Title     string         `gorm:"type:varchar(255);not null"`
+	IsPinned  bool           `json:"is_pinned" gorm:"column:is_pinned;default:false;not null"`
+	PinnedAt  *time.Time     `json:"pinned_at" gorm:"column:pinned_at"`
 	UserID    string         `gorm:"type:uuid;not null"`
 	Messages  []ChatMessage  `gorm:"foreignKey:ConversationID"`
 }
@@ -30,12 +32,14 @@ type UpdateChatConversationDTO struct {
 }
 
 type ChatConversationResponse struct {
-	ID           string    `json:"id"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	Title        string    `json:"title"`
-	UserID       string    `json:"user_id"`
-	MessageCount int       `json:"message_count"`
+	ID           string     `json:"id"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Title        string     `json:"title"`
+	IsPinned     bool       `json:"is_pinned"`
+	PinnedAt     *time.Time `json:"pinned_at,omitempty"`
+	UserID       string     `json:"user_id"`
+	MessageCount int        `json:"message_count"`
 }
 
 func (c *ChatConversation) ToResponse() *ChatConversationResponse {
@@ -44,6 +48,8 @@ func (c *ChatConversation) ToResponse() *ChatConversationResponse {
 		CreatedAt:    c.CreatedAt,
 		UpdatedAt:    c.UpdatedAt,
 		Title:        c.Title,
+		IsPinned:     c.IsPinned,
+		PinnedAt:     c.PinnedAt,
 		UserID:       c.UserID,
 		MessageCount: len(c.Messages),
 	}
