@@ -47,14 +47,16 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		},
 	}))
 
-	// Enhanced rate limiting with custom store and configuration
-	if config.RateLimiterMax > 0 {
-		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(
-			middleware.RateLimiterMemoryStoreConfig{
-				Rate:  float64(config.RateLimiterMax),
-				Burst: config.RateLimiterMax * 2,
-			},
-		)))
+	// Global HTTP rate limit (sustained RPS, token bucket; 0 = disabled)
+	if config.HTTPRateLimitRPS > 0 {
+		storeCfg := middleware.RateLimiterMemoryStoreConfig{
+			Rate:  float64(config.HTTPRateLimitRPS),
+			Burst: config.HTTPRateLimitRPS * 2,
+		}
+		if config.HTTPRateLimitWindowSec > 0 {
+			storeCfg.ExpiresIn = time.Duration(config.HTTPRateLimitWindowSec) * time.Second
+		}
+		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(storeCfg)))
 	}
 
 	e.Use(middleware.RequestID())

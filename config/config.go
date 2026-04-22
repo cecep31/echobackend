@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/subosito/gotenv"
+	"github.com/joho/godotenv"
 )
 
 type S3Config struct {
@@ -24,31 +24,26 @@ type S3Config struct {
 
 // Config represents the application configuration.
 type Config struct {
-	// AppPort is the port on which the HTTP server will listen
-	AppPort string
-	// JWT configuration
-	// JWTSecret is the secret key used for JWT token signing and verification
+	// HTTPPort is the TCP port the HTTP server listens on (e.g. "8080").
+	HTTPPort string
+	// JWTSecret is the secret key used for JWT token signing and verification.
 	JWTSecret string
-	// Database configuration
-	// DatabaseURL is the PostgreSQL connection string
-	DatabaseURL string
-	// MaxOpenConns is the maximum number of open database connections in the pool
+	// PostgresDSN is the PostgreSQL connection string (lib/pgx / GORM DSN).
+	PostgresDSN string
+	// MaxOpenConns is the maximum number of open database connections in the pool.
 	MaxOpenConns int
-	// MaxIdleConns is the maximum number of idle database connections in the pool
+	// MaxIdleConns is the maximum number of idle database connections in the pool.
 	MaxIdleConns int
-	// ConnMaxLifetime is the maximum duration a database connection can be reused
+	// ConnMaxLifetime is the maximum duration a database connection can be reused.
 	ConnMaxLifetime time.Duration
-	// Rate limiter configuration
-	// RateLimiterMax is the maximum number of requests allowed per window (0 = disabled)
-	RateLimiterMax int
-	// RateLimiterTTL is the time window in seconds for rate limiting
-	RateLimiterTTL int
-	// S3 configuration
-	// S3 contains MinIO/S3 storage configuration
+	// HTTPRateLimitRPS is the global Echo rate limiter sustained rate in requests per second (0 = disabled).
+	HTTPRateLimitRPS int
+	// HTTPRateLimitWindowSec is, when >0, the Echo memory store visitor ExpiresIn in seconds. When 0, Echo defaults (3m) apply.
+	HTTPRateLimitWindowSec int
+	// S3 contains S3-compatible object storage (MinIO, AWS S3, etc.).
 	S3 S3Config
-	// Debug mode
-	// Debug enables verbose logging and debug features
-	Debug bool
+	// AppDebug enables verbose logging, GORM info logs, and debug routes.
+	AppDebug bool
 }
 
 // Load reads configuration from environment variables with defaults.
@@ -56,25 +51,27 @@ type Config struct {
 // Returns a validated Config struct or an error if required fields are missing.
 func Load() (*Config, error) {
 	// Load .env file
-	gotenv.Load()
+	_ = godotenv.Load()
 
+	// New env names are scoped where noted (DB_POOL_*, S3_*, etc.).
 	config := &Config{
-		AppPort:         getEnv("PORT", "8080"),
-		JWTSecret:       getEnv("JWT_SECRET", "your-secret-key"),
-		DatabaseURL:     getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"),
-		MaxOpenConns:    getEnvAsInt("MAX_OPEN_CONNS", 30),
-		MaxIdleConns:    getEnvAsInt("MAX_IDLE_CONNS", 2),
-		ConnMaxLifetime: getEnvAsDuration("CONN_MAX_LIFETIME", 30*time.Minute),
-		RateLimiterMax:  getEnvAsInt("RATE_LIMITER_MAX", 0),
-		RateLimiterTTL:  getEnvAsInt("RATE_LIMITER_TTL", 60),
+		HTTPPort:  envString([]string{"PORT"}, "8080"),
+		JWTSecret: envString([]string{"JWT_SECRET"}, "your-secret-key"),
+		// Default requires TLS; for local Postgres without SSL, set DATABASE_URL (see .env.example).
+		PostgresDSN:     envString([]string{"DATABASE_URL"}, "postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=require"),
+		MaxOpenConns:    envInt([]string{"DB_POOL_MAX_OPEN", "MAX_OPEN_CONNS"}, 25),
+		MaxIdleConns:    envInt([]string{"DB_POOL_MAX_IDLE", "MAX_IDLE_CONNS"}, 10),
+		ConnMaxLifetime: envDuration([]string{"DB_POOL_CONN_LIFETIME", "CONN_MAX_LIFETIME"}, 15*time.Minute),
+		HTTPRateLimitRPS:       envInt([]string{"HTTP_RATE_LIMIT_RPS", "RATE_LIMITER_MAX"}, 0),
+		HTTPRateLimitWindowSec: envInt([]string{"HTTP_RATE_LIMIT_WINDOW_SEC", "RATE_LIMITER_TTL"}, 0),
 		S3: S3Config{
-			Endpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
-			AccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
-			SecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
-			Bucket:    getEnv("MINIO_BUCKET", "minio-bucket"),
-			UseSSL:    getEnvAsBool("MINIO_USE_SSL", false),
+			Endpoint:  envString([]string{"S3_ENDPOINT", "MINIO_ENDPOINT"}, "localhost:9000"),
+			AccessKey: envString([]string{"S3_ACCESS_KEY", "MINIO_ACCESS_KEY"}, "minioadmin"),
+			SecretKey: envString([]string{"S3_SECRET_KEY", "MINIO_SECRET_KEY"}, "minioadmin"),
+			Bucket:    envString([]string{"S3_BUCKET", "MINIO_BUCKET"}, "minio-bucket"),
+			UseSSL:    envBool([]string{"S3_USE_SSL", "MINIO_USE_SSL"}, false),
 		},
-		Debug: getEnvAsBool("DEBUG", false),
+		AppDebug: envBool([]string{"APP_DEBUG", "DEBUG"}, false),
 	}
 
 	if err := config.validate(); err != nil {
@@ -84,59 +81,63 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
-// Helper function to get environment variable with default value.
-// Returns the environment variable value if it exists, otherwise returns the default value.
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
-}
-
-// Helper function to get environment variable as integer with default value.
-// Returns the parsed integer value if the environment variable exists and is valid,
-// otherwise returns the default value.
-func getEnvAsInt(key string, defaultValue int) int {
-	if valueStr, exists := os.LookupEnv(key); exists {
-		if value, err := strconv.Atoi(valueStr); err == nil {
-			return value
-		}
-	}
-	return defaultValue
-}
-
-// Helper function to get environment variable as boolean with default value.
-// Returns the parsed boolean value if the environment variable exists and is valid,
-// otherwise returns the default value.
-func getEnvAsBool(key string, defaultValue bool) bool {
-	if valueStr, exists := os.LookupEnv(key); exists {
-		if value, err := strconv.ParseBool(valueStr); err == nil {
-			return value
-		}
-	}
-	return defaultValue
-}
-
-// Helper function to get environment variable as duration with default value.
-// Returns the parsed duration value if the environment variable exists and is valid,
-// otherwise returns the default value.
-func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
-	if valueStr, exists := os.LookupEnv(key); exists {
-		if value, err := time.ParseDuration(valueStr); err == nil {
-			return value
-		}
-	}
-	return defaultValue
-}
-
 // validate ensures that all required configuration fields are present and valid.
 // Returns an error if any required field is missing or invalid.
 func (c *Config) validate() error {
 	if c.JWTSecret == "" {
 		return fmt.Errorf("JWT_SECRET is required")
 	}
-	if c.DatabaseURL == "" {
+	if c.PostgresDSN == "" {
 		return fmt.Errorf("DATABASE_URL is required")
 	}
 	return nil
+}
+
+// envString returns the first set environment variable from keys, or defaultValue.
+func envString(keys []string, defaultValue string) string {
+	for _, k := range keys {
+		if v, ok := os.LookupEnv(k); ok {
+			return v
+		}
+	}
+	return defaultValue
+}
+
+// envInt returns the first successfully parsed int from set env keys, or defaultValue.
+func envInt(keys []string, defaultValue int) int {
+	for _, k := range keys {
+		if s, ok := os.LookupEnv(k); ok {
+			if n, err := strconv.Atoi(s); err == nil {
+				return n
+			}
+			return defaultValue
+		}
+	}
+	return defaultValue
+}
+
+// envBool returns the first successfully parsed bool from set env keys, or defaultValue.
+func envBool(keys []string, defaultValue bool) bool {
+	for _, k := range keys {
+		if s, ok := os.LookupEnv(k); ok {
+			if b, err := strconv.ParseBool(s); err == nil {
+				return b
+			}
+			return defaultValue
+		}
+	}
+	return defaultValue
+}
+
+// envDuration returns the first successfully parsed duration from set env keys, or defaultValue.
+func envDuration(keys []string, defaultValue time.Duration) time.Duration {
+	for _, k := range keys {
+		if s, ok := os.LookupEnv(k); ok {
+			if d, err := time.ParseDuration(s); err == nil {
+				return d
+			}
+			return defaultValue
+		}
+	}
+	return defaultValue
 }

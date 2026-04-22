@@ -70,7 +70,7 @@ func (r *Routes) setupV1Routes(v1 *echo.Group) {
 	r.setupPageRoutes(v1)
 	r.setupWorkspaceRoutes(v1)
 	r.setupChatConversationRoutes(v1)
-	if r.config.Debug {
+	if r.config.AppDebug {
 		r.setupDebugRoutes(v1)
 	}
 }

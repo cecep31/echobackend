@@ -44,7 +44,7 @@ func main() {
 
 	// Start server in a goroutine
 	server := &http.Server{
-		Addr:         ":" + conf.AppPort,
+		Addr:         ":" + conf.HTTPPort,
 		Handler:      e,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -52,7 +52,7 @@ func main() {
 	}
 
 	go func() {
-		e.Logger.Info("starting server", "port", conf.AppPort)
+		e.Logger.Info("starting server", "port", conf.HTTPPort)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			e.Logger.Error("server exited unexpectedly", "error", err)
 		}
