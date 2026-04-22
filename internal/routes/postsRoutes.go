@@ -13,6 +13,7 @@ func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 		posts.PUT("/:id", r.postHandler.UpdatePost, r.authMiddleware.Auth())
 		posts.DELETE("/:id", r.postHandler.DeletePost, r.authMiddleware.Auth())
 		posts.GET("/random", r.postHandler.GetPostsRandom)
+		posts.GET("/trending", r.postHandler.GetPostsTrending)
 		posts.GET("/:id", r.postHandler.GetPost)
 		posts.GET("/mine", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
 		posts.GET("/for-you", r.postHandler.GetPostsForYou, r.authMiddleware.Auth())

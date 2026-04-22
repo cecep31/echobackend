@@ -14,6 +14,7 @@ type PostService interface {
 	GetPostsFiltered(ctx context.Context, filter *model.PostQueryFilter) ([]*model.PostResponse, int64, error)
 	GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.PostResponse, int64, error)
 	GetPostsRandom(ctx context.Context, limit int) ([]*model.PostResponse, error)
+	GetPostsTrending(ctx context.Context, offset int, limit int) ([]*model.PostResponse, int64, error)
 	GetPostByID(ctx context.Context, id string) (*model.PostResponse, error)
 	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error)
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
@@ -168,6 +169,33 @@ func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*model.P
 	}
 
 	return postsResponse, nil
+}
+
+func (s *postService) GetPostsTrending(ctx context.Context, offset int, limit int) ([]*model.PostResponse, int64, error) {
+	if limit < 0 {
+		limit = 10
+	}
+	if limit == 0 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	posts, total, err := s.postRepo.GetPostsTrending(ctx, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	postsResponse := make([]*model.PostResponse, 0, len(posts))
+	for _, post := range posts {
+		postsResponse = append(postsResponse, post.ToResponse())
+	}
+
+	return postsResponse, total, nil
 }
 
 func (s *postService) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error) {

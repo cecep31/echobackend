@@ -217,6 +217,51 @@ func (h *PostHandler) GetPostsRandom(c *echo.Context) error {
 	return response.Success(c, "Successfully retrieved posts", posts)
 }
 
+func (h *PostHandler) GetPostsTrending(c *echo.Context) error {
+	offset := c.QueryParam("offset")
+	limit := c.QueryParam("limit")
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		offsetInt = 0
+	}
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		limitInt = 10
+	}
+
+	posts, total, err := h.postService.GetPostsTrending(c.Request().Context(), offsetInt, limitInt)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get trending posts", err)
+	}
+
+	for _, post := range posts {
+		if post.Body != nil && len(*post.Body) > 250 {
+			truncated := (*post.Body)[:250] + " ..."
+			post.Body = &truncated
+		}
+	}
+
+	metaLimit := limitInt
+	if metaLimit <= 0 {
+		metaLimit = 10
+	}
+	if metaLimit > 100 {
+		metaLimit = 100
+	}
+
+	meta := response.PaginationMeta{
+		TotalItems: int(total),
+		Offset:     offsetInt,
+		Limit:      metaLimit,
+		TotalPages: int(total)/metaLimit + 1,
+	}
+	if int(total)%metaLimit == 0 {
+		meta.TotalPages = int(total) / metaLimit
+	}
+
+	return response.SuccessWithMeta(c, "Successfully retrieved trending posts", posts, meta)
+}
+
 func (h *PostHandler) GetMyPosts(c *echo.Context) error {
 	offset := c.QueryParam("offset")
 	limit := c.QueryParam("limit")
