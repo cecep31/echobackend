@@ -11,18 +11,20 @@ type Post struct {
 	CreatedAt     *time.Time     `json:"created_at"`
 	UpdatedAt     *time.Time     `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
-	Title         *string        `json:"title" gorm:"type:varchar(255)"`
-	CreatedBy     *string        `json:"created_by" gorm:"type:uuid;uniqueIndex:creator_slug_unique"`
+	Title         *string        `json:"title" gorm:"type:varchar(255);not null"`
+	CreatedBy     *string        `json:"created_by" gorm:"type:uuid;not null;uniqueIndex:creator_and_slug_unique"`
 	Body          *string        `json:"body"`
-	Slug          *string        `json:"slug" gorm:"type:varchar(255);uniqueIndex:creator_slug_unique"`
+	Slug          *string        `json:"slug" gorm:"type:varchar(255);not null;uniqueIndex:creator_and_slug_unique"`
 	Photo_url     *string        `json:"photo_url"`
 	Published     *bool          `json:"published" gorm:"default:true"`
-	ViewCount     int64          `json:"view_count" gorm:"type:bigint;default:0"`
-	LikeCount     int64          `json:"like_count" gorm:"type:bigint;default:0"`
+	PublishedAt   *time.Time     `json:"published_at"`
+	ViewCount     int64          `json:"view_count" gorm:"type:bigint;default:0;check:view_count >= 0"`
+	LikeCount     int64          `json:"like_count" gorm:"type:bigint;default:0;check:like_count >= 0"`
+	BookmarkCount int64          `json:"bookmark_count" gorm:"type:bigint;default:0;check:bookmark_count >= 0"`
 	PostComments  []PostComment  `gorm:"foreignKey:PostID"`
 	PostLikes     []PostLike     `gorm:"foreignKey:PostID"`
 	PostBookmarks []PostBookmark `gorm:"foreignKey:PostID"`
-	Creator       *User          `gorm:"foreignKey:CreatedBy"`
+	Creator       *User          `gorm:"foreignKey:CreatedBy;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Tags          []Tag          `gorm:"many2many:posts_to_tags;"`
 }
 
@@ -31,19 +33,21 @@ func (Post) TableName() string {
 }
 
 type PostResponse struct {
-	ID        string        `json:"id"`
-	Title     *string       `json:"title"`
-	Photo_url *string       `json:"photo_url"`
-	Body      *string       `json:"body"`
-	Slug      *string       `json:"slug"`
-	ViewCount int64         `json:"view_count"`
-	LikeCount int64         `json:"like_count"`
-	Published *bool         `json:"published"`
-	Creator   *UserResponse `json:"creator,omitempty"`
-	Tags      []TagResponse `json:"tags,omitempty"`
-	CreatedAt *time.Time    `json:"created_at"`
-	UpdatedAt *time.Time    `json:"updated_at"`
-	DeletedAt *time.Time    `json:"deleted_at,omitempty"`
+	ID            string        `json:"id"`
+	Title         *string       `json:"title"`
+	Photo_url     *string       `json:"photo_url"`
+	Body          *string       `json:"body"`
+	Slug          *string       `json:"slug"`
+	ViewCount     int64         `json:"view_count"`
+	LikeCount     int64         `json:"like_count"`
+	BookmarkCount int64         `json:"bookmark_count"`
+	Published     *bool         `json:"published"`
+	PublishedAt   *time.Time    `json:"published_at"`
+	Creator       *UserResponse `json:"creator,omitempty"`
+	Tags          []TagResponse `json:"tags,omitempty"`
+	CreatedAt     *time.Time    `json:"created_at"`
+	UpdatedAt     *time.Time    `json:"updated_at"`
+	DeletedAt     *time.Time    `json:"deleted_at,omitempty"`
 }
 
 func (p *Post) ToResponse() *PostResponse {
@@ -66,19 +70,21 @@ func (p *Post) ToResponse() *PostResponse {
 	}
 
 	return &PostResponse{
-		ID:        p.ID,
-		Title:     p.Title,
-		Photo_url: p.Photo_url,
-		Body:      p.Body,
-		Slug:      p.Slug,
-		ViewCount: p.ViewCount,
-		LikeCount: p.LikeCount,
-		Published: p.Published,
-		Creator:   creatorResp,
-		Tags:      tagResponses,
-		CreatedAt: p.CreatedAt,
-		UpdatedAt: p.UpdatedAt,
-		DeletedAt: deletedAtTime,
+		ID:            p.ID,
+		Title:         p.Title,
+		Photo_url:     p.Photo_url,
+		Body:          p.Body,
+		Slug:          p.Slug,
+		ViewCount:     p.ViewCount,
+		LikeCount:     p.LikeCount,
+		BookmarkCount: p.BookmarkCount,
+		Published:     p.Published,
+		PublishedAt:   p.PublishedAt,
+		Creator:       creatorResp,
+		Tags:          tagResponses,
+		CreatedAt:     p.CreatedAt,
+		UpdatedAt:     p.UpdatedAt,
+		DeletedAt:     deletedAtTime,
 	}
 }
 
@@ -146,4 +152,12 @@ func (f *PostQueryFilter) GetSortOrder() string {
 		}
 	}
 	return "desc" // Default sort order
+}
+
+// SitemapPost represents a minimal post structure for sitemap
+type SitemapPost struct {
+	Username  *string    `json:"username"`
+	Slug      *string    `json:"slug"`
+	CreatedAt *time.Time `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at"`
 }

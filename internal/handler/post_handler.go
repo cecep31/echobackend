@@ -347,3 +347,12 @@ func (h *PostHandler) UploadImagePosts(c *echo.Context) error {
 	}
 	return response.Success(c, "success uploading image", nil)
 }
+
+func (h *PostHandler) GetPostsForSitemap(c *echo.Context) error {
+	posts, err := h.postService.GetPostsForSitemap(c.Request().Context(), 1000)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get posts for sitemap", err)
+	}
+
+	return response.Success(c, "Successfully retrieved posts for sitemap", posts)
+}

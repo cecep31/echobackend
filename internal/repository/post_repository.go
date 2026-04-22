@@ -28,6 +28,7 @@ type PostRepository interface {
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error)
 	DeletePostByID(ctx context.Context, id string) error
 	UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error)
+	GetPostsForSitemap(ctx context.Context, limit int) ([]*model.SitemapPost, error)
 
 	// Additional functions
 	SearchPosts(ctx context.Context, keyword string, limit int, offset int) ([]*model.Post, int64, error)
@@ -492,4 +493,24 @@ func (r *postRepository) GetPostsFiltered(ctx context.Context, filter *model.Pos
 	}
 
 	return posts, count, nil
+}
+
+// GetPostsForSitemap fetches minimal post data for sitemap generation
+func (r *postRepository) GetPostsForSitemap(ctx context.Context, limit int) ([]*model.SitemapPost, error) {
+	var sitemapPosts []*model.SitemapPost
+
+	err := r.db.WithContext(ctx).
+		Table("posts").
+		Select("users.username, posts.slug, posts.created_at, posts.updated_at").
+		Joins("JOIN users ON users.id = posts.created_by").
+		Where("posts.published = ?", true).
+		Order("posts.created_at DESC").
+		Limit(limit).
+		Find(&sitemapPosts).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get posts for sitemap: %w", err)
+	}
+
+	return sitemapPosts, nil
 }

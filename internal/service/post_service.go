@@ -23,6 +23,7 @@ type PostService interface {
 	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
 	UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error)
 	IsAuthor(ctx context.Context, id string, userid string) error
+	GetPostsForSitemap(ctx context.Context, limit int) ([]*model.SitemapPost, error)
 }
 
 type postService struct {
@@ -267,4 +268,11 @@ func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.File
 // findOrCreateTagByName finds an existing tag by name or creates a new one
 func (s *postService) findOrCreateTagByName(ctx context.Context, tagName string) (*model.Tag, error) {
 	return s.tagService.FindOrCreateByName(ctx, tagName)
+}
+
+func (s *postService) GetPostsForSitemap(ctx context.Context, limit int) ([]*model.SitemapPost, error) {
+	if limit < 0 {
+		limit = 0
+	}
+	return s.postRepo.GetPostsForSitemap(ctx, limit)
 }
