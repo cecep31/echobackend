@@ -11,7 +11,6 @@ require (
 	github.com/minio/minio-go/v7 v7.0.100
 	github.com/stretchr/testify v1.11.1
 	github.com/subosito/gotenv v1.6.0
-	go.uber.org/dig v1.19.0
 	golang.org/x/crypto v0.50.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1

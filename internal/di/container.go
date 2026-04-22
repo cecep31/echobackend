@@ -9,193 +9,90 @@ import (
 	"echobackend/internal/service"
 	"echobackend/pkg/database"
 	"echobackend/pkg/storage"
-
-	"go.uber.org/dig"
-	"gorm.io/gorm"
 )
 
-// Container holds the dependency injection container.
-// It's recommended to use a struct to hold the container to avoid global variables.
+// Container holds the manually wired application dependencies.
 type Container struct {
-	*dig.Container
+	Config  *config.Config
+	Cleanup *CleanupManager
+	Routes  *routes.Routes
 }
 
-// NewContainer creates a new dependency injection container and registers all the dependencies.
+// NewContainer creates a manually wired application container.
 func NewContainer(cfg *config.Config) (*Container, error) {
-	container := &Container{dig.New()}
+	cleanup := NewCleanupManager()
 
-	if err := container.Provide(func() *config.Config { return cfg }); err != nil {
-		return nil, err
-	}
+	dbWrapper := database.NewDatabase(cfg)
+	cleanup.Register(dbWrapper)
+	db := dbWrapper.DB
 
-	if err := container.registerDatabase(); err != nil {
-		return nil, err
-	}
+	s3Storage := storage.NewS3Storage(cfg)
 
-	if err := container.registerRepositories(); err != nil {
-		return nil, err
-	}
+	userRepo := repository.NewUserRepository(db)
+	postRepo := repository.NewPostRepository(db)
+	authRepo := repository.NewAuthRepository(db)
+	sessionRepo := repository.NewSessionRepository(db)
+	tagRepo := repository.NewTagRepository(db)
+	pageRepo := repository.NewPageRepository(db)
+	workspaceRepo := repository.NewWorkspaceRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
+	postViewRepo := repository.NewPostViewRepository(db)
+	postLikeRepo := repository.NewPostLikeRepository(db)
+	userFollowRepo := repository.NewUserFollowRepository(db)
+	chatConversationRepo := repository.NewChatConversationRepository(db)
 
-	if err := container.registerServices(); err != nil {
-		return nil, err
-	}
+	userService := service.NewUserService(userRepo)
+	tagService := service.NewTagService(tagRepo)
+	postService := service.NewPostService(postRepo, tagService, s3Storage)
+	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, cfg)
+	pageService := service.NewPageService(pageRepo)
+	workspaceService := service.NewWorkspaceService(workspaceRepo)
+	commentService := service.NewCommentService(commentRepo, postRepo)
+	postViewService := service.NewPostViewService(postViewRepo, postRepo)
+	postLikeService := service.NewPostLikeService(postLikeRepo, postRepo)
+	userFollowService := service.NewUserFollowService(userFollowRepo, userRepo)
+	chatConversationService := service.NewChatConversationService(chatConversationRepo)
 
-	if err := container.registerHandlers(); err != nil {
-		return nil, err
-	}
+	userHandler := handler.NewUserHandler(userService, userFollowService)
+	postHandler := handler.NewPostHandler(postService, postViewService)
+	authHandler := handler.NewAuthHandler(authService)
+	tagHandler := handler.NewTagHandler(tagService)
+	pageHandler := handler.NewPageHandler(pageService)
+	workspaceHandler := handler.NewWorkspaceHandler(workspaceService)
+	commentHandler := handler.NewCommentHandler(commentService)
+	postViewHandler := handler.NewPostViewHandler(postViewService)
+	postLikeHandler := handler.NewPostLikeHandler(postLikeService)
+	userFollowHandler := handler.NewUserFollowHandler(userFollowService)
+	chatConversationHandler := handler.NewChatConversationHandler(chatConversationService)
 
-	if err := container.registerRoutes(); err != nil {
-		return nil, err
-	}
+	authMiddleware := middleware.NewAuthMiddleware(cfg)
+	appRoutes := routes.NewRoutes(
+		cfg,
+		userHandler,
+		postHandler,
+		authHandler,
+		authMiddleware,
+		tagHandler,
+		pageHandler,
+		workspaceHandler,
+		commentHandler,
+		postViewHandler,
+		postLikeHandler,
+		userFollowHandler,
+		chatConversationHandler,
+	)
 
-	// Provide cleanup manager
-	if err := container.Provide(NewCleanupManager); err != nil {
-		return nil, err
-	}
-
-	// Provide storage
-	if err := container.Provide(storage.NewS3Storage); err != nil {
-		return nil, err
-	}
-
-	return container, nil
-}
-
-func (c *Container) registerDatabase() error {
-	if err := c.Provide(func(config *config.Config, cleanup *CleanupManager) *database.DatabaseWrapper {
-		db := database.NewDatabase(config)
-		cleanup.Register(db)
-		return db
-	}); err != nil {
-		return err
-	}
-
-	return c.Provide(func(wrapper *database.DatabaseWrapper) *gorm.DB {
-		return wrapper.DB
-	})
-}
-
-func (c *Container) registerRepositories() error {
-	if err := c.Provide(repository.NewUserRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewPostRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewAuthRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewSessionRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewTagRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewPageRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewWorkspaceRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewCommentRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewPostViewRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewPostLikeRepository); err != nil {
-		return err
-	}
-	if err := c.Provide(repository.NewUserFollowRepository); err != nil {
-		return err
-	}
-	return c.Provide(repository.NewChatConversationRepository)
-}
-
-func (c *Container) registerServices() error {
-	if err := c.Provide(service.NewUserService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewPostService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewAuthService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewTagService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewPageService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewWorkspaceService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewCommentService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewPostViewService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewPostLikeService); err != nil {
-		return err
-	}
-	if err := c.Provide(service.NewUserFollowService); err != nil {
-		return err
-	}
-	return c.Provide(service.NewChatConversationService)
-}
-
-func (c *Container) registerHandlers() error {
-	if err := c.Provide(handler.NewUserHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewPostHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewAuthHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewTagHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewPageHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewWorkspaceHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewCommentHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewPostViewHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewPostLikeHandler); err != nil {
-		return err
-	}
-	if err := c.Provide(handler.NewUserFollowHandler); err != nil {
-		return err
-	}
-	return c.Provide(handler.NewChatConversationHandler)
-}
-
-func (c *Container) registerRoutes() error {
-	if err := c.Provide(middleware.NewAuthMiddleware); err != nil {
-		return err
-	}
-	return c.Provide(routes.NewRoutes)
+	return &Container{
+		Config:  cfg,
+		Cleanup: cleanup,
+		Routes:  appRoutes,
+	}, nil
 }
 
 // GetCleanupManager retrieves the cleanup manager from the container.
-// This function is kept for convenience, but it's recommended to pass the container
-// instance around instead of using this function.
 func GetCleanupManager(container *Container) (*CleanupManager, error) {
-	var cleanup *CleanupManager
-	if err := container.Invoke(func(c *CleanupManager) {
-		cleanup = c
-	}); err != nil {
-		return nil, err
+	if container == nil {
+		return nil, nil
 	}
-	return cleanup, nil
+	return container.Cleanup, nil
 }

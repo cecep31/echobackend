@@ -5,7 +5,6 @@ import (
 	"echobackend/config"
 	"echobackend/internal/di"
 	"echobackend/internal/middleware"
-	"echobackend/internal/routes"
 	"echobackend/pkg/validator"
 	"net/http"
 	"os"
@@ -35,14 +34,8 @@ func main() {
 	// Set custom validator
 	e.Validator = validator.NewValidator()
 
-	// Initialize routes with dependencies
-	var newroutes *routes.Routes
-	if err := container.Invoke(func(r *routes.Routes) {
-		newroutes = r
-	}); err != nil {
-		panic(err)
-	}
-	newroutes.Setup(e)
+	// Initialize routes with manually wired dependencies
+	container.Routes.Setup(e)
 
 	e.GET("/", helloWorld)
 
@@ -85,7 +78,7 @@ func main() {
 	cleanup, err := di.GetCleanupManager(container)
 	if err != nil {
 		e.Logger.Error("failed to get cleanup manager", "error", err)
-	} else {
+	} else if cleanup != nil {
 		if err := cleanup.CleanupWithTimeout(5 * time.Second); err != nil {
 			e.Logger.Error("cleanup failed", "error", err)
 		} else {
