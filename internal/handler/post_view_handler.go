@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type PostViewHandler struct {
@@ -18,7 +18,7 @@ func NewPostViewHandler(postViewService service.PostViewService) *PostViewHandle
 }
 
 // RecordView records a view for a post
-func (h *PostViewHandler) RecordView(c echo.Context) error {
+func (h *PostViewHandler) RecordView(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -50,7 +50,7 @@ func (h *PostViewHandler) RecordView(c echo.Context) error {
 }
 
 // GetPostViews gets views for a specific post
-func (h *PostViewHandler) GetPostViews(c echo.Context) error {
+func (h *PostViewHandler) GetPostViews(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -83,7 +83,7 @@ func (h *PostViewHandler) GetPostViews(c echo.Context) error {
 }
 
 // GetPostViewStats gets view statistics for a specific post
-func (h *PostViewHandler) GetPostViewStats(c echo.Context) error {
+func (h *PostViewHandler) GetPostViewStats(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -99,7 +99,7 @@ func (h *PostViewHandler) GetPostViewStats(c echo.Context) error {
 }
 
 // CheckUserViewed checks if the current user has viewed a specific post
-func (h *PostViewHandler) CheckUserViewed(c echo.Context) error {
+func (h *PostViewHandler) CheckUserViewed(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)

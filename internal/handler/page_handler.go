@@ -7,7 +7,7 @@ import (
 	"echobackend/internal/service"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type PageHandler struct {
@@ -19,10 +19,10 @@ func NewPageHandler(pageService service.PageService) *PageHandler {
 }
 
 // CreatePage handles the creation of a new page
-func (h *PageHandler) CreatePage(c echo.Context) error {
+func (h *PageHandler) CreatePage(c *echo.Context) error {
 	var page model.Page
 	if err := c.Bind(&page); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid request format",
 			"success": false,
@@ -34,14 +34,14 @@ func (h *PageHandler) CreatePage(c echo.Context) error {
 	page.CreatedBy = userID
 
 	if err := h.pageService.CreatePage(c.Request().Context(), &page); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to create page",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
+	return c.JSON(http.StatusCreated, map[string]any{
 		"data":    page,
 		"message": "Page created successfully",
 		"success": true,
@@ -49,10 +49,10 @@ func (h *PageHandler) CreatePage(c echo.Context) error {
 }
 
 // GetPage retrieves a page by ID
-func (h *PageHandler) GetPage(c echo.Context) error {
+func (h *PageHandler) GetPage(c *echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid page ID",
 			"success": false,
@@ -61,14 +61,14 @@ func (h *PageHandler) GetPage(c echo.Context) error {
 
 	page, err := h.pageService.GetPageByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{
+		return c.JSON(http.StatusNotFound, map[string]any{
 			"error":   err.Error(),
 			"message": "Page not found",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    page,
 		"message": "Page retrieved successfully",
 		"success": true,
@@ -76,10 +76,10 @@ func (h *PageHandler) GetPage(c echo.Context) error {
 }
 
 // GetWorkspacePages retrieves all pages in a workspace
-func (h *PageHandler) GetWorkspacePages(c echo.Context) error {
+func (h *PageHandler) GetWorkspacePages(c *echo.Context) error {
 	workspaceID, err := uuid.Parse(c.Param("workspace_id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid workspace ID",
 			"success": false,
@@ -88,14 +88,14 @@ func (h *PageHandler) GetWorkspacePages(c echo.Context) error {
 
 	pages, err := h.pageService.GetPagesByWorkspaceID(c.Request().Context(), workspaceID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to retrieve pages",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    pages,
 		"message": "Pages retrieved successfully",
 		"success": true,
@@ -103,10 +103,10 @@ func (h *PageHandler) GetWorkspacePages(c echo.Context) error {
 }
 
 // GetChildPages retrieves all child pages of a given page
-func (h *PageHandler) GetChildPages(c echo.Context) error {
+func (h *PageHandler) GetChildPages(c *echo.Context) error {
 	parentID, err := uuid.Parse(c.Param("parent_id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid parent page ID",
 			"success": false,
@@ -115,14 +115,14 @@ func (h *PageHandler) GetChildPages(c echo.Context) error {
 
 	pages, err := h.pageService.GetChildPages(c.Request().Context(), parentID)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to retrieve child pages",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    pages,
 		"message": "Child pages retrieved successfully",
 		"success": true,
@@ -130,10 +130,10 @@ func (h *PageHandler) GetChildPages(c echo.Context) error {
 }
 
 // UpdatePage updates an existing page
-func (h *PageHandler) UpdatePage(c echo.Context) error {
+func (h *PageHandler) UpdatePage(c *echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid page ID",
 			"success": false,
@@ -142,7 +142,7 @@ func (h *PageHandler) UpdatePage(c echo.Context) error {
 
 	var page model.Page
 	if err := c.Bind(&page); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid request payload",
 			"success": false,
@@ -151,14 +151,14 @@ func (h *PageHandler) UpdatePage(c echo.Context) error {
 
 	page.ID = id
 	if err := h.pageService.UpdatePage(c.Request().Context(), &page); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to update page",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"data":    page,
 		"message": "Page updated successfully",
 		"success": true,
@@ -166,10 +166,10 @@ func (h *PageHandler) UpdatePage(c echo.Context) error {
 }
 
 // DeletePage deletes a page by ID
-func (h *PageHandler) DeletePage(c echo.Context) error {
+func (h *PageHandler) DeletePage(c *echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid page ID",
 			"success": false,
@@ -177,7 +177,7 @@ func (h *PageHandler) DeletePage(c echo.Context) error {
 	}
 
 	if err := h.pageService.DeletePage(c.Request().Context(), id); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to delete page",
 			"success": false,

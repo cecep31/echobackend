@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // AuthMiddleware provides authentication middleware for Echo
@@ -23,7 +23,7 @@ func NewAuthMiddleware(conf *config.Config) *AuthMiddleware {
 // Auth validates JWT tokens and sets user claims in the context
 func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
 				return echo.NewHTTPError(http.StatusUnauthorized, "missing authorization header")
@@ -48,7 +48,7 @@ func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 // AuthAdmin validates that the user has admin privileges
 func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			userClaims := c.Get("user")
 			if userClaims == nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized: missing user context")

@@ -1,13 +1,13 @@
 package handler
 
 import (
-	"echobackend/internal/service"
 	"echobackend/internal/model"
+	"echobackend/internal/service"
 	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type AuthHandler struct {
@@ -51,7 +51,7 @@ func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
-func (h *AuthHandler) Register(c echo.Context) error {
+func (h *AuthHandler) Register(c *echo.Context) error {
 	var req RegisterRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
@@ -88,7 +88,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	})
 }
 
-func (h *AuthHandler) Login(c echo.Context) error {
+func (h *AuthHandler) Login(c *echo.Context) error {
 	var loginReq LoginRequest
 	if err := c.Bind(&loginReq); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
@@ -125,7 +125,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	})
 }
 
-func (h *AuthHandler) CheckUsername(c echo.Context) error {
+func (h *AuthHandler) CheckUsername(c *echo.Context) error {
 	var req CheckUsernameRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
@@ -154,7 +154,7 @@ func (h *AuthHandler) CheckUsername(c echo.Context) error {
 	})
 }
 
-func (h *AuthHandler) ForgotPassword(c echo.Context) error {
+func (h *AuthHandler) ForgotPassword(c *echo.Context) error {
 	var req ForgotPasswordRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
@@ -184,7 +184,7 @@ func (h *AuthHandler) ForgotPassword(c echo.Context) error {
 	return response.Success(c, "If the email exists, a password reset link has been sent", nil)
 }
 
-func (h *AuthHandler) ResetPassword(c echo.Context) error {
+func (h *AuthHandler) ResetPassword(c *echo.Context) error {
 	var req ResetPasswordRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
@@ -213,7 +213,7 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 	return response.Success(c, "Password reset successful", nil)
 }
 
-func (h *AuthHandler) RefreshToken(c echo.Context) error {
+func (h *AuthHandler) RefreshToken(c *echo.Context) error {
 	var req RefreshTokenRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
@@ -250,7 +250,7 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 	})
 }
 
-func (h *AuthHandler) ChangePassword(c echo.Context) error {
+func (h *AuthHandler) ChangePassword(c *echo.Context) error {
 	user := c.Get("user").(*model.User)
 
 	var req ChangePasswordRequest

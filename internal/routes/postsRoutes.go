@@ -1,6 +1,6 @@
 package routes
 
-import "github.com/labstack/echo/v4"
+import "github.com/labstack/echo/v5"
 
 func (r *Routes) setupPostRoutes(v1 *echo.Group) {
 	posts := v1.Group("/posts")

@@ -6,7 +6,7 @@ import (
 	"echobackend/pkg/response"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type TagHandler struct {
@@ -17,7 +17,7 @@ func NewTagHandler(service service.TagService) *TagHandler {
 	return &TagHandler{service: service}
 }
 
-func (h *TagHandler) CreateTag(c echo.Context) error {
+func (h *TagHandler) CreateTag(c *echo.Context) error {
 	tag := new(model.Tag)
 	if err := c.Bind(tag); err != nil {
 		return response.BadRequest(c, "Invalid request payload", err)
@@ -30,7 +30,7 @@ func (h *TagHandler) CreateTag(c echo.Context) error {
 	return response.Created(c, "Tag created successfully", tag)
 }
 
-func (h *TagHandler) GetTags(c echo.Context) error {
+func (h *TagHandler) GetTags(c *echo.Context) error {
 	tags, err := h.service.GetTags(c.Request().Context())
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get tags", err)
@@ -39,7 +39,7 @@ func (h *TagHandler) GetTags(c echo.Context) error {
 	return response.Success(c, "Successfully retrieved tags", tags)
 }
 
-func (h *TagHandler) GetTagByID(c echo.Context) error {
+func (h *TagHandler) GetTagByID(c *echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.BadRequest(c, "Invalid tag ID", err)
@@ -53,7 +53,7 @@ func (h *TagHandler) GetTagByID(c echo.Context) error {
 	return response.Success(c, "Successfully retrieved tag", tag)
 }
 
-func (h *TagHandler) UpdateTag(c echo.Context) error {
+func (h *TagHandler) UpdateTag(c *echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.BadRequest(c, "Invalid tag ID", err)
@@ -72,7 +72,7 @@ func (h *TagHandler) UpdateTag(c echo.Context) error {
 	return response.Success(c, "Tag updated successfully", tag)
 }
 
-func (h *TagHandler) DeleteTag(c echo.Context) error {
+func (h *TagHandler) DeleteTag(c *echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		return response.BadRequest(c, "Invalid tag ID", err)

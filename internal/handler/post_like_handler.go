@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type PostLikeHandler struct {
@@ -18,7 +18,7 @@ func NewPostLikeHandler(postLikeService service.PostLikeService) *PostLikeHandle
 }
 
 // LikePost likes a post
-func (h *PostLikeHandler) LikePost(c echo.Context) error {
+func (h *PostLikeHandler) LikePost(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -53,7 +53,7 @@ func (h *PostLikeHandler) LikePost(c echo.Context) error {
 }
 
 // UnlikePost unlikes a post
-func (h *PostLikeHandler) UnlikePost(c echo.Context) error {
+func (h *PostLikeHandler) UnlikePost(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -88,7 +88,7 @@ func (h *PostLikeHandler) UnlikePost(c echo.Context) error {
 }
 
 // GetPostLikes gets likes for a specific post
-func (h *PostLikeHandler) GetPostLikes(c echo.Context) error {
+func (h *PostLikeHandler) GetPostLikes(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -136,7 +136,7 @@ func (h *PostLikeHandler) GetPostLikes(c echo.Context) error {
 }
 
 // GetPostLikeStats gets like statistics for a post
-func (h *PostLikeHandler) GetPostLikeStats(c echo.Context) error {
+func (h *PostLikeHandler) GetPostLikeStats(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -151,7 +151,7 @@ func (h *PostLikeHandler) GetPostLikeStats(c echo.Context) error {
 }
 
 // CheckUserLiked checks if the current user has liked a post
-func (h *PostLikeHandler) CheckUserLiked(c echo.Context) error {
+func (h *PostLikeHandler) CheckUserLiked(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)

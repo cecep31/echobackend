@@ -5,7 +5,7 @@ import (
 	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type UserHandler struct {
@@ -20,7 +20,7 @@ func NewUserHandler(userService service.UserService, userFollowService service.U
 	}
 }
 
-func (h *UserHandler) GetByID(c echo.Context) error {
+func (h *UserHandler) GetByID(c *echo.Context) error {
 	userID := c.Param("id")
 
 	// Get current user ID from JWT if authenticated
@@ -44,7 +44,7 @@ func (h *UserHandler) GetByID(c echo.Context) error {
 	return response.Success(c, "Successfully retrieved user", userResponse)
 }
 
-func (h *UserHandler) GetUsers(c echo.Context) error {
+func (h *UserHandler) GetUsers(c *echo.Context) error {
 	// Validate and sanitize pagination parameters
 	limit, offset, err := validator.ValidatePaginationWithDefaults(c.QueryParam("limit"), c.QueryParam("offset"))
 	if err != nil {
@@ -61,7 +61,7 @@ func (h *UserHandler) GetUsers(c echo.Context) error {
 }
 
 // delete user
-func (h *UserHandler) DeleteUser(c echo.Context) error {
+func (h *UserHandler) DeleteUser(c *echo.Context) error {
 	id := c.Param("id")
 	err := h.userService.Delete(c.Request().Context(), id)
 	if err != nil {
@@ -72,7 +72,7 @@ func (h *UserHandler) DeleteUser(c echo.Context) error {
 }
 
 // GetMe returns the current authenticated user's information
-func (h *UserHandler) GetMe(c echo.Context) error {
+func (h *UserHandler) GetMe(c *echo.Context) error {
 	userClaims := c.Get("user")
 	if userClaims == nil {
 		return response.InternalServerError(c, "User context not found", nil)

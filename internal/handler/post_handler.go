@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type PostHandler struct {
@@ -25,7 +25,7 @@ func NewPostHandler(postService service.PostService, postViewService service.Pos
 	}
 }
 
-func (h *PostHandler) GetPosts(c echo.Context) error {
+func (h *PostHandler) GetPosts(c *echo.Context) error {
 	// Parse query parameters into filter struct
 	filter := &model.PostQueryFilter{
 		Limit:     10, // Default limit
@@ -92,7 +92,7 @@ func (h *PostHandler) GetPosts(c echo.Context) error {
 	return response.SuccessWithMeta(c, "Successfully retrieved posts", posts, meta)
 }
 
-func (h *PostHandler) CreatePost(c echo.Context) error {
+func (h *PostHandler) CreatePost(c *echo.Context) error {
 	var postReq model.CreatePostDTO
 	if err := c.Bind(&postReq); err != nil {
 		return response.BadRequest(c, "Failed to create post", err)
@@ -123,7 +123,7 @@ func (h *PostHandler) CreatePost(c echo.Context) error {
 	})
 }
 
-func (h *PostHandler) UpdatePost(c echo.Context) error {
+func (h *PostHandler) UpdatePost(c *echo.Context) error {
 	id := c.Param("id")
 	var updateDTO model.UpdatePostDTO
 	if err := c.Bind(&updateDTO); err != nil {
@@ -161,7 +161,7 @@ func (h *PostHandler) UpdatePost(c echo.Context) error {
 	return response.Success(c, "Post updated successfully", updatedPost)
 }
 
-func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
+func (h *PostHandler) GetPostBySlugAndUsername(c *echo.Context) error {
 	slug := c.Param("slug")
 	username := c.Param("username")
 	post, err := h.postService.GetPostBySlugAndUsername(c.Request().Context(), slug, username)
@@ -172,7 +172,7 @@ func (h *PostHandler) GetPostBySlugAndUsername(c echo.Context) error {
 	return response.Success(c, "Successfully retrieved post", post)
 }
 
-func (h *PostHandler) GetPost(c echo.Context) error {
+func (h *PostHandler) GetPost(c *echo.Context) error {
 	id := c.Param("id")
 	post, err := h.postService.GetPostByID(c.Request().Context(), id)
 	if err != nil {
@@ -182,7 +182,7 @@ func (h *PostHandler) GetPost(c echo.Context) error {
 	return response.Success(c, "Successfully retrieved post", post)
 }
 
-func (h *PostHandler) DeletePost(c echo.Context) error {
+func (h *PostHandler) DeletePost(c *echo.Context) error {
 	id := c.Param("id")
 	err := h.postService.DeletePostByID(c.Request().Context(), id)
 	if err != nil {
@@ -192,7 +192,7 @@ func (h *PostHandler) DeletePost(c echo.Context) error {
 	return response.Success(c, "Successfully deleted post", nil)
 }
 
-func (h *PostHandler) GetPostsRandom(c echo.Context) error {
+func (h *PostHandler) GetPostsRandom(c *echo.Context) error {
 	limit := c.QueryParam("limit") // Default limit if not provided or invalid
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
@@ -217,7 +217,7 @@ func (h *PostHandler) GetPostsRandom(c echo.Context) error {
 	return response.Success(c, "Successfully retrieved posts", posts)
 }
 
-func (h *PostHandler) GetMyPosts(c echo.Context) error {
+func (h *PostHandler) GetMyPosts(c *echo.Context) error {
 	offset := c.QueryParam("offset")
 	limit := c.QueryParam("limit")
 	offsetInt, err := strconv.Atoi(offset)
@@ -256,7 +256,7 @@ func (h *PostHandler) GetMyPosts(c echo.Context) error {
 	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
 }
 
-func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
+func (h *PostHandler) GetPostsByUsername(c *echo.Context) error {
 	username := c.Param("username")
 	offset := c.QueryParam("offset")
 	limit := c.QueryParam("limit")
@@ -294,7 +294,7 @@ func (h *PostHandler) GetPostsByUsername(c echo.Context) error {
 	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
 }
 
-func (h *PostHandler) GetPostsByTag(c echo.Context) error {
+func (h *PostHandler) GetPostsByTag(c *echo.Context) error {
 	tag := c.Param("tag")
 	offset := c.QueryParam("offset")
 	limit := c.QueryParam("limit")
@@ -332,7 +332,7 @@ func (h *PostHandler) GetPostsByTag(c echo.Context) error {
 	return response.SuccessWithMeta(c, "success retrieving posts by tag", posts, meta)
 }
 
-func (h *PostHandler) UploadImagePosts(c echo.Context) error {
+func (h *PostHandler) UploadImagePosts(c *echo.Context) error {
 	file, err := c.FormFile("image")
 	if err != nil {
 		return response.BadRequest(c, "Failed to upload image", err)

@@ -1,6 +1,6 @@
 package routes
 
-import "github.com/labstack/echo/v4"
+import "github.com/labstack/echo/v5"
 
 func (r *Routes) setupWorkspaceRoutes(v1 *echo.Group) {
 	workspaces := v1.Group("/workspaces", r.authMiddleware.Auth())

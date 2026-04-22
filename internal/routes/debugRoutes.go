@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 func (r *Routes) setupDebugRoutes(v1 *echo.Group) {

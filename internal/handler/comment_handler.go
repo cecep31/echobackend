@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type CommentHandler struct {
@@ -22,7 +22,7 @@ func NewCommentHandler(commentService service.CommentService) *CommentHandler {
 }
 
 // CreateComment handles creating a new comment on a post
-func (h *CommentHandler) CreateComment(c echo.Context) error {
+func (h *CommentHandler) CreateComment(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -59,7 +59,7 @@ func (h *CommentHandler) CreateComment(c echo.Context) error {
 }
 
 // GetCommentsByPostID handles getting all comments for a specific post
-func (h *CommentHandler) GetCommentsByPostID(c echo.Context) error {
+func (h *CommentHandler) GetCommentsByPostID(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
@@ -74,7 +74,7 @@ func (h *CommentHandler) GetCommentsByPostID(c echo.Context) error {
 }
 
 // UpdateComment handles updating a comment
-func (h *CommentHandler) UpdateComment(c echo.Context) error {
+func (h *CommentHandler) UpdateComment(c *echo.Context) error {
 	commentID := c.Param("comment_id")
 	if commentID == "" {
 		return response.BadRequest(c, "Comment ID is required", nil)
@@ -111,7 +111,7 @@ func (h *CommentHandler) UpdateComment(c echo.Context) error {
 }
 
 // DeleteComment handles deleting a comment
-func (h *CommentHandler) DeleteComment(c echo.Context) error {
+func (h *CommentHandler) DeleteComment(c *echo.Context) error {
 	commentID := c.Param("comment_id")
 	if commentID == "" {
 		return response.BadRequest(c, "Comment ID is required", nil)

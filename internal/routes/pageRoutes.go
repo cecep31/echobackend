@@ -1,6 +1,6 @@
 package routes
 
-import "github.com/labstack/echo/v4"
+import "github.com/labstack/echo/v5"
 
 func (r *Routes) setupPageRoutes(v1 *echo.Group) {
 	pages := v1.Group("/pages", r.authMiddleware.Auth())

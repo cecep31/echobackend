@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type UserFollowHandler struct {
@@ -19,7 +19,7 @@ func NewUserFollowHandler(userFollowService service.UserFollowService) *UserFoll
 }
 
 // FollowUser follows a user
-func (h *UserFollowHandler) FollowUser(c echo.Context) error {
+func (h *UserFollowHandler) FollowUser(c *echo.Context) error {
 	// Get current user ID from JWT
 	userClaims := c.Get("user")
 	if userClaims == nil {
@@ -61,7 +61,7 @@ func (h *UserFollowHandler) FollowUser(c echo.Context) error {
 }
 
 // UnfollowUser unfollows a user
-func (h *UserFollowHandler) UnfollowUser(c echo.Context) error {
+func (h *UserFollowHandler) UnfollowUser(c *echo.Context) error {
 	// Get current user ID from JWT
 	userClaims := c.Get("user")
 	if userClaims == nil {
@@ -99,7 +99,7 @@ func (h *UserFollowHandler) UnfollowUser(c echo.Context) error {
 }
 
 // GetFollowers gets followers of a user
-func (h *UserFollowHandler) GetFollowers(c echo.Context) error {
+func (h *UserFollowHandler) GetFollowers(c *echo.Context) error {
 	userID := c.Param("id")
 	if userID == "" {
 		return response.BadRequest(c, "User ID is required", nil)
@@ -132,7 +132,7 @@ func (h *UserFollowHandler) GetFollowers(c echo.Context) error {
 }
 
 // GetFollowing gets users that a user is following
-func (h *UserFollowHandler) GetFollowing(c echo.Context) error {
+func (h *UserFollowHandler) GetFollowing(c *echo.Context) error {
 	userID := c.Param("id")
 	if userID == "" {
 		return response.BadRequest(c, "User ID is required", nil)
@@ -165,7 +165,7 @@ func (h *UserFollowHandler) GetFollowing(c echo.Context) error {
 }
 
 // GetFollowStats gets follow statistics for a user
-func (h *UserFollowHandler) GetFollowStats(c echo.Context) error {
+func (h *UserFollowHandler) GetFollowStats(c *echo.Context) error {
 	userID := c.Param("id")
 	if userID == "" {
 		return response.BadRequest(c, "User ID is required", nil)
@@ -181,7 +181,7 @@ func (h *UserFollowHandler) GetFollowStats(c echo.Context) error {
 }
 
 // CheckFollowStatus checks if current user is following a specific user
-func (h *UserFollowHandler) CheckFollowStatus(c echo.Context) error {
+func (h *UserFollowHandler) CheckFollowStatus(c *echo.Context) error {
 	// Get current user from JWT
 	userClaims := c.Get("user")
 	if userClaims == nil {
@@ -221,7 +221,7 @@ func (h *UserFollowHandler) CheckFollowStatus(c echo.Context) error {
 }
 
 // GetMutualFollows gets mutual follows between current user and another user
-func (h *UserFollowHandler) GetMutualFollows(c echo.Context) error {
+func (h *UserFollowHandler) GetMutualFollows(c *echo.Context) error {
 	// Get current user from JWT
 	userClaims := c.Get("user")
 	if userClaims == nil {

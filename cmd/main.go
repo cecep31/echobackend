@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 func main() {
@@ -50,10 +50,18 @@ func main() {
 	middleware.InitMiddleware(e, conf)
 
 	// Start server in a goroutine
+	server := &http.Server{
+		Addr:         ":" + conf.AppPort,
+		Handler:      e,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
 	go func() {
-		e.Logger.Printf("Starting server on port %s", conf.AppPort)
-		if err := e.Start(":" + conf.AppPort); err != nil && err != http.ErrServerClosed {
-			e.Logger.Fatal("shutting down the server")
+		e.Logger.Info("starting server", "port", conf.AppPort)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			e.Logger.Error("server exited unexpectedly", "error", err)
 		}
 	}()
 
@@ -62,33 +70,33 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	e.Logger.Print("Server is shutting down...")
+	e.Logger.Info("server is shutting down")
 
 	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Shutdown Echo server
-	if err := e.Shutdown(ctx); err != nil {
-		e.Logger.Fatal("Server forced to shutdown:", err)
+	// Shutdown server
+	if err := server.Shutdown(ctx); err != nil {
+		e.Logger.Error("server forced to shutdown", "error", err)
 	}
 
 	// Cleanup resources
 	cleanup, err := di.GetCleanupManager(container)
 	if err != nil {
-		e.Logger.Error("Failed to get cleanup manager:", err)
+		e.Logger.Error("failed to get cleanup manager", "error", err)
 	} else {
 		if err := cleanup.CleanupWithTimeout(5 * time.Second); err != nil {
-			e.Logger.Error("Cleanup failed:", err)
+			e.Logger.Error("cleanup failed", "error", err)
 		} else {
-			e.Logger.Print("Resources cleaned up successfully")
+			e.Logger.Info("resources cleaned up successfully")
 		}
 	}
 
-	e.Logger.Print("Server exited")
+	e.Logger.Info("server exited")
 }
 
-func helloWorld(c echo.Context) error {
+func helloWorld(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]any{
 		"message": "Hello, World!",
 		"success": true,

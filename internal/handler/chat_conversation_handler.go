@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type ChatConversationHandler struct {
@@ -22,7 +22,7 @@ func NewChatConversationHandler(chatConversationService service.ChatConversation
 	}
 }
 
-func (h *ChatConversationHandler) CreateConversation(c echo.Context) error {
+func (h *ChatConversationHandler) CreateConversation(c *echo.Context) error {
 	var conversationReq model.CreateChatConversationDTO
 	if err := c.Bind(&conversationReq); err != nil {
 		return response.BadRequest(c, "Failed to create conversation", err)
@@ -52,7 +52,7 @@ func (h *ChatConversationHandler) CreateConversation(c echo.Context) error {
 	return response.Created(c, "Successfully created conversation", newConversation)
 }
 
-func (h *ChatConversationHandler) GetConversation(c echo.Context) error {
+func (h *ChatConversationHandler) GetConversation(c *echo.Context) error {
 	id := c.Param("id")
 
 	// Get the user ID from the JWT token
@@ -67,7 +67,7 @@ func (h *ChatConversationHandler) GetConversation(c echo.Context) error {
 	return response.Success(c, "Successfully retrieved conversation", conversation)
 }
 
-func (h *ChatConversationHandler) GetConversations(c echo.Context) error {
+func (h *ChatConversationHandler) GetConversations(c *echo.Context) error {
 	offset := c.QueryParam("offset")
 	limit := c.QueryParam("limit")
 
@@ -103,7 +103,7 @@ func (h *ChatConversationHandler) GetConversations(c echo.Context) error {
 	return response.SuccessWithMeta(c, "Successfully retrieved conversations", conversations, meta)
 }
 
-func (h *ChatConversationHandler) UpdateConversation(c echo.Context) error {
+func (h *ChatConversationHandler) UpdateConversation(c *echo.Context) error {
 	id := c.Param("id")
 	var updateDTO model.UpdateChatConversationDTO
 	if err := c.Bind(&updateDTO); err != nil {
@@ -134,7 +134,7 @@ func (h *ChatConversationHandler) UpdateConversation(c echo.Context) error {
 	return response.Success(c, "Conversation updated successfully", updatedConversation)
 }
 
-func (h *ChatConversationHandler) DeleteConversation(c echo.Context) error {
+func (h *ChatConversationHandler) DeleteConversation(c *echo.Context) error {
 	id := c.Param("id")
 
 	// Get the user ID from the JWT token

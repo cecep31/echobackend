@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // APIResponse represents the standard API response format
@@ -25,7 +25,7 @@ type PaginationMeta struct {
 }
 
 // Success sends a successful response
-func Success(c echo.Context, message string, data any) error {
+func Success(c *echo.Context, message string, data any) error {
 	log.Printf("Success response request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusOK, APIResponse{
@@ -36,7 +36,7 @@ func Success(c echo.Context, message string, data any) error {
 }
 
 // SuccessWithMeta sends a successful response with metadata
-func SuccessWithMeta(c echo.Context, message string, data any, meta any) error {
+func SuccessWithMeta(c *echo.Context, message string, data any, meta any) error {
 	log.Printf("Success response with meta request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusOK, APIResponse{
@@ -48,7 +48,7 @@ func SuccessWithMeta(c echo.Context, message string, data any, meta any) error {
 }
 
 // Created sends a created response
-func Created(c echo.Context, message string, data any) error {
+func Created(c *echo.Context, message string, data any) error {
 	log.Printf("Created response request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusCreated, APIResponse{
@@ -59,7 +59,7 @@ func Created(c echo.Context, message string, data any) error {
 }
 
 // BadRequest sends a bad request error response
-func BadRequest(c echo.Context, message string, err error) error {
+func BadRequest(c *echo.Context, message string, err error) error {
 	errorMsg := ""
 	if err != nil {
 		errorMsg = err.Error()
@@ -75,7 +75,7 @@ func BadRequest(c echo.Context, message string, err error) error {
 }
 
 // Unauthorized sends an unauthorized error response
-func Unauthorized(c echo.Context, message string) error {
+func Unauthorized(c *echo.Context, message string) error {
 	log.Printf("Unauthorized access request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusUnauthorized, APIResponse{
@@ -86,7 +86,7 @@ func Unauthorized(c echo.Context, message string) error {
 }
 
 // Forbidden sends a forbidden error response
-func Forbidden(c echo.Context, message string) error {
+func Forbidden(c *echo.Context, message string) error {
 	log.Printf("Forbidden access request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
 
 	return c.JSON(http.StatusForbidden, APIResponse{
@@ -97,7 +97,7 @@ func Forbidden(c echo.Context, message string) error {
 }
 
 // NotFound sends a not found error response
-func NotFound(c echo.Context, message string, err error) error {
+func NotFound(c *echo.Context, message string, err error) error {
 	errorMsg := "Resource not found"
 	if err != nil {
 		errorMsg = err.Error()
@@ -113,7 +113,7 @@ func NotFound(c echo.Context, message string, err error) error {
 }
 
 // InternalServerError sends an internal server error response
-func InternalServerError(c echo.Context, message string, err error) error {
+func InternalServerError(c *echo.Context, message string, err error) error {
 	errorMsg := ""
 	if err != nil {
 		errorMsg = err.Error()
@@ -129,7 +129,7 @@ func InternalServerError(c echo.Context, message string, err error) error {
 }
 
 // ValidationError sends a validation error response
-func ValidationError(c echo.Context, message string, err error) error {
+func ValidationError(c *echo.Context, message string, err error) error {
 	errorMsg := ""
 	if err != nil {
 		errorMsg = err.Error()

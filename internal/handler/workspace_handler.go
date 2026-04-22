@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type WorkspaceHandler struct {
@@ -20,7 +20,7 @@ func NewWorkspaceHandler(workspaceService service.WorkspaceService) *WorkspaceHa
 }
 
 // CreateWorkspace handles the creation of a new workspace
-func (h *WorkspaceHandler) CreateWorkspace(c echo.Context) error {
+func (h *WorkspaceHandler) CreateWorkspace(c *echo.Context) error {
 	type CreateWorkspaceRequest struct {
 		Name        string `json:"name" validate:"required"`
 		Description string `json:"description"`
@@ -29,7 +29,7 @@ func (h *WorkspaceHandler) CreateWorkspace(c echo.Context) error {
 
 	var req CreateWorkspaceRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Invalid request format",
 			"success": false,
@@ -37,7 +37,7 @@ func (h *WorkspaceHandler) CreateWorkspace(c echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"error":   err.Error(),
 			"message": "Validation failed",
 			"success": false,
@@ -58,14 +58,14 @@ func (h *WorkspaceHandler) CreateWorkspace(c echo.Context) error {
 	}
 
 	if err := h.workspaceService.Create(c.Request().Context(), workspace); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"message": "Failed to create workspace",
 			"success": false,
 		})
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
+	return c.JSON(http.StatusCreated, map[string]any{
 		"data":    workspace,
 		"message": "Workspace created successfully",
 		"success": true,
@@ -73,7 +73,7 @@ func (h *WorkspaceHandler) CreateWorkspace(c echo.Context) error {
 }
 
 // GetWorkspaceByID retrieves a workspace by its ID
-func (h *WorkspaceHandler) GetWorkspaceByID(c echo.Context) error {
+func (h *WorkspaceHandler) GetWorkspaceByID(c *echo.Context) error {
 	workspaceID := c.Param("id")
 
 	workspace, err := h.workspaceService.GetByID(c.Request().Context(), workspaceID)
@@ -92,7 +92,7 @@ func (h *WorkspaceHandler) GetWorkspaceByID(c echo.Context) error {
 }
 
 // GetAllWorkspaces retrieves all workspaces with pagination
-func (h *WorkspaceHandler) GetAllWorkspaces(c echo.Context) error {
+func (h *WorkspaceHandler) GetAllWorkspaces(c *echo.Context) error {
 	offset, err := strconv.Atoi(c.QueryParam("offset"))
 	if err != nil {
 		offset = 0
@@ -121,7 +121,7 @@ func (h *WorkspaceHandler) GetAllWorkspaces(c echo.Context) error {
 }
 
 // GetUserWorkspaces retrieves all workspaces a user is a member of
-func (h *WorkspaceHandler) GetUserWorkspaces(c echo.Context) error {
+func (h *WorkspaceHandler) GetUserWorkspaces(c *echo.Context) error {
 	// Get user ID from context (assuming it's set by auth middleware)
 	userID := c.Get("user_id").(string)
 
@@ -141,7 +141,7 @@ func (h *WorkspaceHandler) GetUserWorkspaces(c echo.Context) error {
 }
 
 // UpdateWorkspace updates an existing workspace
-func (h *WorkspaceHandler) UpdateWorkspace(c echo.Context) error {
+func (h *WorkspaceHandler) UpdateWorkspace(c *echo.Context) error {
 	workspaceID := c.Param("id")
 
 	type UpdateWorkspaceRequest struct {
@@ -200,7 +200,7 @@ func (h *WorkspaceHandler) UpdateWorkspace(c echo.Context) error {
 }
 
 // DeleteWorkspace soft deletes a workspace
-func (h *WorkspaceHandler) DeleteWorkspace(c echo.Context) error {
+func (h *WorkspaceHandler) DeleteWorkspace(c *echo.Context) error {
 	workspaceID := c.Param("id")
 
 	if err := h.workspaceService.Delete(c.Request().Context(), workspaceID); err != nil {
@@ -218,7 +218,7 @@ func (h *WorkspaceHandler) DeleteWorkspace(c echo.Context) error {
 }
 
 // AddMember adds a new member to a workspace
-func (h *WorkspaceHandler) AddMember(c echo.Context) error {
+func (h *WorkspaceHandler) AddMember(c *echo.Context) error {
 	workspaceID := c.Param("id")
 
 	type AddMemberRequest struct {
@@ -258,7 +258,7 @@ func (h *WorkspaceHandler) AddMember(c echo.Context) error {
 }
 
 // GetMembers retrieves all members of a workspace
-func (h *WorkspaceHandler) GetMembers(c echo.Context) error {
+func (h *WorkspaceHandler) GetMembers(c *echo.Context) error {
 	workspaceID := c.Param("id")
 
 	members, err := h.workspaceService.GetMembers(c.Request().Context(), workspaceID)
@@ -277,7 +277,7 @@ func (h *WorkspaceHandler) GetMembers(c echo.Context) error {
 }
 
 // UpdateMemberRole updates a member's role in a workspace
-func (h *WorkspaceHandler) UpdateMemberRole(c echo.Context) error {
+func (h *WorkspaceHandler) UpdateMemberRole(c *echo.Context) error {
 	workspaceID := c.Param("id")
 	userID := c.Param("user_id")
 
@@ -317,7 +317,7 @@ func (h *WorkspaceHandler) UpdateMemberRole(c echo.Context) error {
 }
 
 // RemoveMember removes a member from a workspace
-func (h *WorkspaceHandler) RemoveMember(c echo.Context) error {
+func (h *WorkspaceHandler) RemoveMember(c *echo.Context) error {
 	workspaceID := c.Param("id")
 	userID := c.Param("user_id")
 

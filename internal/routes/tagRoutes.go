@@ -1,6 +1,6 @@
 package routes
 
-import "github.com/labstack/echo/v4"
+import "github.com/labstack/echo/v5"
 
 func (r *Routes) setupTagRoutes(v1 *echo.Group) {
 	tags := v1.Group("/tags")
