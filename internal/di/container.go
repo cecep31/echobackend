@@ -22,9 +22,14 @@ type Container struct {
 func NewContainer(cfg *config.Config) (*Container, error) {
 	cleanup := NewCleanupManager()
 
-	dbWrapper := database.NewDatabase(cfg)
-	cleanup.Register(dbWrapper)
-	db := dbWrapper.DB
+	db := database.NewDatabase(cfg)
+	cleanup.Register(func() error {
+		sqlDB, err := db.DB()
+		if err != nil {
+			return err
+		}
+		return sqlDB.Close()
+	})
 
 	s3Storage := storage.NewS3Storage(cfg)
 

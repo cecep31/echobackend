@@ -16,7 +16,7 @@ import (
 )
 
 // NewDatabase creates a new database connection using the provided configuration
-func NewDatabase(config *config.Config) *DatabaseWrapper {
+func NewDatabase(config *config.Config) *gorm.DB {
 	// Configure GORM logger
 	var gormLogLevel logger.LogLevel
 	if config.AppDebug {
@@ -112,5 +112,5 @@ func NewDatabase(config *config.Config) *DatabaseWrapper {
 		panic(fmt.Errorf("failed to connect to database after %d attempts: %w", maxRetries, err))
 	}
 
-	return NewDatabaseWrapper(db)
+	return db
 }
