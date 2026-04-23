@@ -30,6 +30,11 @@ func main() {
 
 	// Initialize Echo
 	e := echo.New()
+	if conf.HTTPTrustProxy {
+		e.IPExtractor = echo.ExtractIPFromXFFHeader()
+	} else {
+		e.IPExtractor = echo.ExtractIPDirect()
+	}
 
 	// Set custom validator
 	e.Validator = validator.NewValidator()

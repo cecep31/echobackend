@@ -40,6 +40,9 @@ type Config struct {
 	HTTPRateLimitRPS int
 	// HTTPRateLimitWindowSec is, when >0, the Echo memory store visitor ExpiresIn in seconds. When 0, Echo defaults (3m) apply.
 	HTTPRateLimitWindowSec int
+	// HTTPTrustProxy when true sets Echo IP extraction from X-Forwarded-For with trust rules (typical behind nginx/ALB).
+	// When false, only the direct TCP peer address is used (safer when the app faces the internet without a trusted proxy).
+	HTTPTrustProxy bool
 	// S3 contains S3-compatible object storage (MinIO, AWS S3, etc.).
 	S3 S3Config
 	// AppDebug enables verbose logging, GORM info logs, and debug routes.
@@ -64,6 +67,7 @@ func Load() (*Config, error) {
 		ConnMaxLifetime: envDuration([]string{"DB_POOL_CONN_LIFETIME", "CONN_MAX_LIFETIME"}, 15*time.Minute),
 		HTTPRateLimitRPS:       envInt([]string{"HTTP_RATE_LIMIT_RPS", "RATE_LIMITER_MAX"}, 0),
 		HTTPRateLimitWindowSec: envInt([]string{"HTTP_RATE_LIMIT_WINDOW_SEC", "RATE_LIMITER_TTL"}, 0),
+		HTTPTrustProxy:         envBool([]string{"HTTP_TRUST_PROXY", "TRUST_PROXY"}, false),
 		S3: S3Config{
 			Endpoint:  envString([]string{"S3_ENDPOINT", "MINIO_ENDPOINT"}, "localhost:9000"),
 			AccessKey: envString([]string{"S3_ACCESS_KEY", "MINIO_ACCESS_KEY"}, "minioadmin"),

@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"log"
 	"time"
 
 	"echobackend/config"
@@ -33,7 +32,9 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		ReferrerPolicy:        "strict-origin-when-cross-origin",
 	}))
 
-	// Enhanced request logging with structured format
+	e.Use(middleware.RequestID())
+
+	// Enhanced request logging with structured format (Echo v5 logger is *slog.Logger)
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,
@@ -41,8 +42,14 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		LogValuesFunc: func(c *echo.Context, values middleware.RequestLoggerValues) error {
 			start := c.Get("start").(time.Time)
 			latency := time.Since(start)
-			log.Printf("handled request method=%s uri=%s request_id=%s status=%d latency=%.3f ms remote_ip=%s", values.Method, values.URI, c.Response().Header().Get(echo.HeaderXRequestID), values.Status, float64(latency.Nanoseconds())/1000000, c.RealIP())
-
+			e.Logger.Info("handled request",
+				"method", values.Method,
+				"uri", values.URI,
+				"request_id", c.Response().Header().Get(echo.HeaderXRequestID),
+				"status", values.Status,
+				"latency_ms", float64(latency.Nanoseconds())/1e6,
+				"remote_ip", c.RealIP(),
+			)
 			return nil
 		},
 	}))
@@ -59,7 +66,6 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(storeCfg)))
 	}
 
-	e.Use(middleware.RequestID())
 	e.Use(middleware.Gzip())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}}))
