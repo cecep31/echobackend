@@ -1,14 +1,14 @@
 package database
 
 import (
-	"context"
 	"fmt"
 	"sync"
 
 	"gorm.io/gorm"
 )
 
-// DatabaseWrapper wraps gorm.DB with cleanup functionality
+// DatabaseWrapper wraps gorm.DB so it can be registered as a [Cleaner] (Close on shutdown)
+// while still exposing *gorm.DB via embedding for repositories.
 type DatabaseWrapper struct {
 	*gorm.DB
 	mu     sync.RWMutex
@@ -31,7 +31,6 @@ func (dw *DatabaseWrapper) Close() error {
 		return nil
 	}
 
-	// Get the underlying sql.DB and close it
 	sqlDB, err := dw.DB.DB()
 	if err != nil {
 		return fmt.Errorf("failed to get underlying sql.DB for closing: %w", err)
@@ -42,40 +41,4 @@ func (dw *DatabaseWrapper) Close() error {
 
 	dw.closed = true
 	return nil
-}
-
-// IsClosed returns whether the database connection is closed
-func (dw *DatabaseWrapper) IsClosed() bool {
-	dw.mu.RLock()
-	defer dw.mu.RUnlock()
-	return dw.closed
-}
-
-// Ping checks if the database connection is still alive
-func (dw *DatabaseWrapper) Ping(ctx context.Context) error {
-	dw.mu.RLock()
-	defer dw.mu.RUnlock()
-
-	if dw.closed {
-		return fmt.Errorf("database connection is closed")
-	}
-
-	// Get the underlying sql.DB and ping it
-	sqlDB, err := dw.DB.DB()
-	if err != nil {
-		return fmt.Errorf("failed to get underlying sql.DB for ping: %w", err)
-	}
-	return sqlDB.PingContext(ctx)
-}
-
-// WithTransaction executes a function within a database transaction
-func (dw *DatabaseWrapper) WithTransaction(ctx context.Context, fn func(*gorm.DB) error) error {
-	dw.mu.RLock()
-	if dw.closed {
-		dw.mu.RUnlock()
-		return fmt.Errorf("database connection is closed")
-	}
-	dw.mu.RUnlock()
-
-	return dw.DB.WithContext(ctx).Transaction(fn)
 }

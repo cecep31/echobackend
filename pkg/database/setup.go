@@ -95,8 +95,9 @@ func NewDatabase(config *config.Config) *DatabaseWrapper {
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := sqlDB.PingContext(ctx); err != nil {
+		err = sqlDB.PingContext(ctx)
+		cancel()
+		if err != nil {
 			log.Printf("Failed to ping database (attempt %d/%d): %v", attempt+1, maxRetries, err)
 			sqlDB.Close()
 			continue
