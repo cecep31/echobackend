@@ -8,7 +8,6 @@ QWEN.md
 api_doc.md
 Makefile
 .air.toml
-.golangci.yml
 .env.example
 fly.toml
 /bin
