@@ -66,7 +66,6 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(storeCfg)))
 	}
 
-	e.Use(middleware.Gzip())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}}))
 }
