@@ -4,8 +4,8 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "tmp\\main.exe"
-  cmd = "go build -o ./tmp/main.exe cmd/main.go"
+  bin = "./tmp/main"
+  cmd = "go build -o ./tmp/main cmd/main.go"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []
@@ -25,7 +25,12 @@ tmp_dir = "tmp"
   rerun = false
   rerun_delay = 500
   send_interrupt = false
-  stop_on_error = false
+   stop_on_error = false
+
+[build.windows]
+  cmd = "go build -o ./tmp/main.exe cmd/main.go"
+  bin = "tmp\\main.exe"
+  entrypoint = ["tmp\\main.exe"]
 
 [color]
   app = ""
