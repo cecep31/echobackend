@@ -387,6 +387,44 @@ func (h *PostHandler) GetPostsByUsername(c *echo.Context) error {
 	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
 }
 
+func (h *PostHandler) GetPostsByAuthor(c *echo.Context) error {
+	username := c.Param("username")
+	offset := c.QueryParam("offset")
+	limit := c.QueryParam("limit")
+	offsetInt, err := strconv.Atoi(offset)
+	if err != nil {
+		offsetInt = 0 // Default offset if not provided or invalid
+	}
+	limitInt, err := strconv.Atoi(limit)
+	if err != nil {
+		limitInt = 10 // Default limit if not provided or invalid
+	}
+	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offsetInt, limitInt)
+
+	for _, post := range posts {
+		if post.Body != nil && len(*post.Body) > 250 {
+			truncated := (*post.Body)[:250] + " ..."
+			post.Body = &truncated
+		}
+	}
+
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get posts", err)
+	}
+
+	meta := response.PaginationMeta{
+		TotalItems: int(total),
+		Offset:     offsetInt,
+		Limit:      limitInt,
+		TotalPages: int(total)/limitInt + 1,
+	}
+	if int(total)%limitInt == 0 {
+		meta.TotalPages = int(total) / limitInt
+	}
+
+	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
+}
+
 func (h *PostHandler) GetPostsByTag(c *echo.Context) error {
 	tag := c.Param("tag")
 	offset := c.QueryParam("offset")
