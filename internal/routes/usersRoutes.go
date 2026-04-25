@@ -7,6 +7,7 @@ func (r *Routes) setupUserRoutes(v1 *echo.Group) {
 	{
 		// Public routes
 		users.GET("/:id", r.userHandler.GetByID)
+		users.GET("/username/:username", r.userHandler.GetByUsername)
 
 		// Authenticated routes
 		authUsers := users.Group("", r.authMiddleware.Auth())

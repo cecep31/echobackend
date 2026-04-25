@@ -13,7 +13,7 @@ type Profile struct {
 	Website   *string    `json:"website"`
 	Phone     *string    `json:"phone" gorm:"type:varchar(50)"`
 	Location  *string    `json:"location" gorm:"type:varchar(255)"`
-	User      User       `gorm:"foreignKey:UserID"`
+	User      User       `json:"-" gorm:"foreignKey:UserID"`
 }
 
 func (Profile) TableName() string {

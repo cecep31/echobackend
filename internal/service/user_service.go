@@ -9,6 +9,7 @@ import (
 
 type UserService interface {
 	GetByID(ctx context.Context, id string) (*model.UserResponse, error)
+	GetByUsername(ctx context.Context, username string) (*model.UserResponse, error)
 	GetUsers(ctx context.Context, offset int, limit int) ([]*model.UserResponse, int64, error)
 	Delete(ctx context.Context, id string) error
 }
@@ -23,6 +24,14 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 
 func (s *userService) GetByID(ctx context.Context, id string) (*model.UserResponse, error) {
 	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return user.ToResponse(), nil
+}
+
+func (s *userService) GetByUsername(ctx context.Context, username string) (*model.UserResponse, error) {
+	user, err := s.userRepo.GetByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}

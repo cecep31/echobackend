@@ -90,7 +90,7 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 
 func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&user).Error
+	err := r.db.WithContext(ctx).Preload("Profile").Where("id = ?", id).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrUserNotFound
@@ -118,8 +118,8 @@ func (r *userRepository) GetUsers(ctx context.Context, offset, limit int) ([]*mo
 		return nil, 0, fmt.Errorf("failed to count users: %w", err)
 	}
 
-	// Get paginated records
-	err = r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&users).Error
+	// Get paginated records with profile
+	err = r.db.WithContext(ctx).Preload("Profile").Offset(offset).Limit(limit).Find(&users).Error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get users: %w", err)
 	}
@@ -175,7 +175,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.U
 
 func (r *userRepository) GetByUsername(ctx context.Context, username string) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
+	err := r.db.WithContext(ctx).Preload("Profile").Where("username = ?", username).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrUserNotFound

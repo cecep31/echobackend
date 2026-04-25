@@ -44,6 +44,36 @@ func (h *UserHandler) GetByID(c *echo.Context) error {
 	return response.Success(c, "Successfully retrieved user", userResponse)
 }
 
+func (h *UserHandler) GetByUsername(c *echo.Context) error {
+	username := c.Param("username")
+
+	// Get current user ID from JWT if authenticated
+	var currentUserID string
+	if userClaims := c.Get("user"); userClaims != nil {
+		if claims, ok := userClaims.(map[string]interface{}); ok {
+			if uid, exists := claims["user_id"]; exists {
+				if uidStr, ok := uid.(string); ok {
+					currentUserID = uidStr
+				}
+			}
+		}
+	}
+
+	// Get user by username first to get the ID
+	user, err := h.userService.GetByUsername(c.Request().Context(), username)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to retrieve user", err)
+	}
+
+	// Get user with follow status using the ID
+	userResponse, err := h.userFollowService.GetUserWithFollowStatus(c.Request().Context(), user.ID, currentUserID)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to retrieve user", err)
+	}
+
+	return response.Success(c, "Successfully retrieved user", userResponse)
+}
+
 func (h *UserHandler) GetUsers(c *echo.Context) error {
 	// Validate and sanitize pagination parameters
 	limit, offset, err := validator.ValidatePaginationWithDefaults(c.QueryParam("limit"), c.QueryParam("offset"))
