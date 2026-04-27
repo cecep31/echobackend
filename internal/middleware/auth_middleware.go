@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"context"
 	"echobackend/config"
+	"echobackend/internal/repository"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,12 +14,16 @@ import (
 
 // AuthMiddleware provides authentication middleware for Echo
 type AuthMiddleware struct {
-	conf *config.Config
+	conf     *config.Config
+	userRepo repository.UserRepository
 }
 
 // NewAuthMiddleware creates a new instance of AuthMiddleware
-func NewAuthMiddleware(conf *config.Config) *AuthMiddleware {
-	return &AuthMiddleware{conf: conf}
+func NewAuthMiddleware(conf *config.Config, userRepo repository.UserRepository) *AuthMiddleware {
+	return &AuthMiddleware{
+		conf:     conf,
+		userRepo: userRepo,
+	}
 }
 
 // Auth validates JWT tokens and sets user claims in the context
@@ -59,7 +65,17 @@ func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized: invalid user context")
 			}
 
-			if !isAdmin(claims) {
+			userID, err := getUserIDFromClaims(claims)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+			}
+
+			isSuperAdmin, err := a.isSuperAdminFromDB(c.Request().Context(), userID)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized: failed to validate user privileges")
+			}
+
+			if !isSuperAdmin {
 				return echo.NewHTTPError(http.StatusForbidden, "forbidden: insufficient privileges")
 			}
 
@@ -102,20 +118,32 @@ func validateToken(tokenString, jwtSecret string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-// isAdmin checks if the user has admin privileges
-func isAdmin(claims jwt.MapClaims) bool {
-	isSuperAdmin, exists := claims["is_super_admin"]
+func getUserIDFromClaims(claims jwt.MapClaims) (string, error) {
+	userID, exists := claims["user_id"]
 	if !exists {
-		return false
+		return "", fmt.Errorf("unauthorized: user ID not found in token")
 	}
 
-	// Check for both string and boolean representations
-	switch v := isSuperAdmin.(type) {
+	switch v := userID.(type) {
 	case string:
-		return v == "true"
-	case bool:
-		return v
+		if v == "" {
+			return "", fmt.Errorf("unauthorized: invalid user ID in token")
+		}
+		return v, nil
 	default:
-		return false
+		return "", fmt.Errorf("unauthorized: invalid user ID format in token")
 	}
+}
+
+func (a *AuthMiddleware) isSuperAdminFromDB(ctx context.Context, userID string) (bool, error) {
+	user, err := a.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+
+	if user.IsSuperAdmin == nil {
+		return false, nil
+	}
+
+	return *user.IsSuperAdmin, nil
 }

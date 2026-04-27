@@ -27,3 +27,5 @@ tmp/
 bin/echobackend
 bin/echobackend.exe
 bin/main
+
+.codex

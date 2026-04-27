@@ -64,7 +64,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	userFollowHandler := handler.NewUserFollowHandler(userFollowService)
 	chatConversationHandler := handler.NewChatConversationHandler(chatConversationService)
 
-	authMiddleware := middleware.NewAuthMiddleware(cfg)
+	authMiddleware := middleware.NewAuthMiddleware(cfg, userRepo)
 	appRoutes := routes.NewRoutes(
 		cfg,
 		userHandler,
