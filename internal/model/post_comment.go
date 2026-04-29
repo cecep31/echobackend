@@ -8,19 +8,19 @@ import (
 
 // PostComment represents a comment on a post
 type PostComment struct {
-	ID               string         `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()" json:"id"`
-	CreatedAt        *time.Time     `json:"created_at"`
-	UpdatedAt        *time.Time     `json:"updated_at"`
-	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index"`
-	Text             string         `json:"text" gorm:"type:text;not null"`
-	PostID           string         `json:"post_id" gorm:"type:uuid;not null"`
-	ParentCommentID  *string        `json:"parent_comment_id" gorm:"type:uuid;index"`
-	CreatedBy        string         `json:"created_by" gorm:"type:uuid;not null"`
+	ID              string         `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()" json:"id"`
+	CreatedAt       *time.Time     `json:"created_at"`
+	UpdatedAt       *time.Time     `json:"updated_at"`
+	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index"`
+	Text            string         `json:"text" gorm:"type:text;not null"`
+	PostID          string         `json:"post_id" gorm:"type:uuid;not null"`
+	ParentCommentID *string        `json:"parent_comment_id" gorm:"type:uuid;index"`
+	CreatedBy       string         `json:"created_by" gorm:"type:uuid;not null"`
 
 	// Relationships
-	User           *User        `gorm:"foreignKey:CreatedBy" json:"user,omitempty"`
-	Posts          *Post        `gorm:"foreignKey:PostID" json:"posts,omitempty"`
-	ParentComment  *PostComment `gorm:"foreignKey:ParentCommentID" json:"parent_comment,omitempty"`
+	User          *User        `gorm:"foreignKey:CreatedBy" json:"user,omitempty"`
+	Posts         *Post        `gorm:"foreignKey:PostID" json:"posts,omitempty"`
+	ParentComment *PostComment `gorm:"foreignKey:ParentCommentID" json:"parent_comment,omitempty"`
 }
 
 func (PostComment) TableName() string {

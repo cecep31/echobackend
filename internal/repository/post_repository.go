@@ -251,7 +251,7 @@ func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug stri
 	var post model.Post
 	// We need to find a post with a given slug AND created by a user with the given username.
 	err := r.db.WithContext(ctx).
-		Preload("User").                                 // Preload the User
+		Preload("User").                                    // Preload the User
 		Preload("Tags").                                    // Preload Tags
 		Joins("JOIN users ON users.id = posts.created_by"). // Join with users table
 		Where("posts.slug = ? AND users.username = ?", slug, username).
@@ -274,7 +274,7 @@ func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug stri
 func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Post, error) {
 	var post model.Post
 	err := r.db.WithContext(ctx).
-		Preload("User").              // Assuming Post model has a User field (struct or ID)
+		Preload("User").                 // Assuming Post model has a User field (struct or ID)
 		Preload("Tags").                 // Assuming Post model has a Tags field (slice of Tag)
 		First(&post, "id = ?", id).Error // GORM uses primary key by default if just `id` is passed to First
 
@@ -342,7 +342,7 @@ func (r *postRepository) GetPostsByCreatedBy(ctx context.Context, createdBy stri
 	// Get paginated records
 	err = r.db.WithContext(ctx).
 		Preload("User"). // Preload user details
-		Preload("Tags").    // Preload tags
+		Preload("Tags"). // Preload tags
 		Where("created_by = ?", createdBy).
 		Order("created_at DESC").
 		Offset(offset).

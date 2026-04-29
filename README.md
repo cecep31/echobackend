@@ -1,151 +1,120 @@
 # Echo Backend API
 
-A modern REST API for a blog/content management system built with Go, Echo framework, and PostgreSQL. Features include user management, posts, comments, chat functionality, file uploads, and more.
+A modern REST API built with Go, Echo v5, GORM, and PostgreSQL.
 
-## Features
+## Tech Stack
 
-- **User Management**: Complete user system with authentication, profiles, and following
-- **Content Management**: Posts with rich text, images, tags, and versioning
-- **Social Features**: User follows, post likes, comments, and bookmarks
-- **Real-time Chat**: Conversational AI with message history and token tracking
-- **File Storage**: MinIO/S3 integration for file uploads and management
-- **Analytics**: Post view tracking and statistics
-- **Security**: JWT authentication, rate limiting, and input validation
-- **Performance**: Database connection pooling, caching, and optimized queries
-- **Deployment**: Docker support with multi-stage builds
-- **Monitoring**: Comprehensive logging and metrics
+- **Go** 1.25+
+- **Echo** v5 (web framework)
+- **GORM** v1 (ORM)
+- **PostgreSQL** 14+
+- **MinIO/S3** (file storage)
+- **JWT** (authentication)
+- **Docker** (deployment)
 
 ## Quick Start
 
-### Prerequisites
-- Go 1.25+
-- PostgreSQL 14+
-- Docker (optional, for containerized deployment)
-
-### Setup
-
-1. **Clone and setup:**
-   ```bash
-   git clone <your-repo-url>
-   cd echobackend
-   cp .env.example .env
-   ```
-
-2. **Configure environment:**
-   Edit `.env` file with your configuration:
-   ```env
-   # Server
-   PORT=8080
-   
-   # Database
-   DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
-   MAX_OPEN_CONNS=30
-   MAX_IDLE_CONNS=2
-   CONN_MAX_LIFETIME=30m
-   
-   # Authentication
-   JWT_SECRET=your-secret-key
-   
-   # File Storage (MinIO/S3)
-   MINIO_ENDPOINT=localhost:9000
-   MINIO_ACCESS_KEY=minioadmin
-   MINIO_SECRET_KEY=minioadmin
-   MINIO_BUCKET=minio-bucket
-   
-   # Rate Limiting
-   RATE_LIMITER_MAX=0
-   RATE_LIMITER_TTL=60
-   
-   # Debug
-   DEBUG=false
-   ```
-
-3. **Run:**
-   ```bash
-   # Install dependencies
-   go mod download
-   
-   # Run migrations (if using migration tool)
-   # psql -d your_database_name -f migrations/*.sql
-   
-   # Start the server
-   go run cmd/main.go
-   ```
-
-   Server starts at `http://localhost:8080`
-
-### Development
-
 ```bash
-# Build and run
-make build
+# Clone and setup
+cp .env.example .env
+
+# Edit .env with your config
+
+# Run with hot reload
 make dev
 
-# Run tests
-make test
-
-# Code quality
-make fmt
-make vet
-make lint
+# Or run normally
+make run
 ```
 
-### Docker
+Server starts at `http://localhost:8080`
 
-```bash
-# Build and run
-docker build -t echobackend .
-docker run -p 8080:8080 echobackend
-```
+## Makefile Commands
 
-## API Documentation
+| Command | Description |
+|---------|-------------|
+| `make build` | Build binary to `bin/echobackend` |
+| `make run` | Run with `go run` |
+| `make dev` | Run with **air** (hot reload) |
+| `make test` | Run all tests |
+| `make test-race` | Run with race detection |
+| `make test-coverage` | Generate coverage HTML report |
+| `make test-coverage-func` | Show coverage by function |
+| `make fmt` | Format code |
+| `make vet` | Run go vet |
+| `make lint` | Run golangci-lint |
+| `make check` | Run fmt → vet → test-race → test-coverage-func |
+| `make docker-build` | Build Docker image |
+| `make docker-run` | Run Docker container |
 
-For detailed API endpoints and examples, see [api_doc.md](api_doc.md).
+## Environment Variables
+
+Key environment variables (with fallback aliases):
+
+| Variable | Fallback | Description |
+|----------|----------|-------------|
+| `S3_ENDPOINT` | `MINIO_ENDPOINT` | S3/MinIO endpoint |
+| `S3_ACCESS_KEY` | `MINIO_ACCESS_KEY` | Access key |
+| `S3_SECRET_KEY` | `MINIO_SECRET_KEY` | Secret key |
+| `S3_BUCKET` | `MINIO_BUCKET` | Bucket name |
+| `DB_POOL_MAX_OPEN` | `MAX_OPEN_CONNS` | Max open DB connections |
+| `HTTP_TRUST_PROXY` | `TRUST_PROXY` | Trust X-Forwarded-For |
+| `APP_DEBUG` | `DEBUG` | Enable debug mode |
+
+For full config, see `.env.example`.
 
 ## Project Structure
 
 ```
-├── cmd/                    # Application entry point
-├── config/                 # Configuration management
-├── internal/               # Private application code
-│   ├── handler/            # HTTP handlers
-│   ├── service/            # Business logic
-│   ├── repository/         # Data access
-│   ├── model/              # Database models
-│   ├── middleware/         # HTTP middleware
-│   └── routes/             # Route definitions
-├── migrations/             # Database migrations
-├── test/                   # Test files
-└── pkg/                    # Shared utilities
+├── cmd/main.go           # Entry point
+├── internal/
+│   ├── di/               # Dependency injection (container.go)
+│   ├── handler/          # HTTP handlers
+│   ├── service/          # Business logic
+│   ├── repository/       # Data access
+│   ├── model/            # GORM models
+│   ├── middleware/       # Echo middleware
+│   └── routes/           # Route definitions
+├── pkg/
+│   ├── response/         # API response helpers
+│   └── database/         # DB setup & pooling
+├── migrations/           # Raw SQL migrations (manual)
+├── .air.toml             # Air hot reload config
+└── Makefile
 ```
 
-This project follows a clean architecture pattern with separation of concerns between handlers, services, repositories, and models.
+## Development
 
-## Contributing
+### Cross-Platform Support
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit changes: `git commit -am 'Add feature'`
-4. Push to branch: `git push origin feature/my-feature`
-5. Submit a pull request
+`.air.toml` sudah dikonfigurasi untuk:
+- **Linux/macOS**: gunakan `[build]` section
+- **Windows**: gunakan `[build.windows]` section
 
-Please follow existing code style and include tests for new features.
+### Manual Migrations
+
+Migrations adalah raw SQL di folder `migrations/`. Tidak ada migration runner bawaan. Apply manual:
+
+```bash
+psql -d your_database -f migrations/*.sql
+```
+
+## API Documentation
+
+See `api_doc.md` for detailed endpoints.
+
+## Deployment
+
+Docker image di-deploy ke Fly.io via GitHub Actions (`.github/workflows/main.yml`).
+
+```bash
+# Build locally
+docker build -t echobackend .
+
+# Run
+docker run -p 8080:8080 echobackend
+```
 
 ## License
 
-MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/your-repo/echobackend/issues)
-- **Documentation**: [API Documentation](api_doc.md)
-
-## Technologies
-
-- **Go**: 1.25+
-- **Echo Framework**: v4.13.4
-- **GORM**: v1.31.1
-- **PostgreSQL**: 14+
-- **JWT Authentication**: github.com/golang-jwt/jwt/v5
-- **File Storage**: MinIO/S3 compatible
-- **Docker**: Containerization support
+MIT
