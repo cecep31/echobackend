@@ -28,10 +28,18 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 - **Validation:** Echo uses a custom validator wrapping `go-playground/validator/v10`. Use `validate` struct tags.
 - **Debug routes** (`/v1/debug/pprof/*`) are registered only when `APP_DEBUG=true`.
 
+## Echo v5 Quirks
+
+- Handler signature uses **pointer receiver**: `func(c *echo.Context) error` — not value receiver like Echo v4.
+- **All routes under `/v1` prefix** (e.g., `POST /v1/posts`, `GET /v1/users/:id`).
+- Auth middleware is passed as last arg to route registration, not chained separately: `posts.POST("", handler.Create, r.authMiddleware.Auth())`.
+- **Admin middleware** (`r.authMiddleware.AuthAdmin()`) queries DB for `is_super_admin` — must chain after `Auth()`.
+- **Per-route rate limits**: `/v1/auth/login` and `/v1/auth/forgot-password` have separate rate limits (5 req / 5 min), independent of global `HTTP_RATE_LIMIT_RPS`.
+
 ## Environment / Config
 
 - Loaded from `.env` via `godotenv`, then env vars. See `.env.example` for the full schema.
-- **Key env vars with fallback aliases:**
+- **Key env vars with fallback aliases** (first-match wins in `config/config.go`):
   - `S3_ENDPOINT` → falls back to `MINIO_ENDPOINT`
   - `S3_ACCESS_KEY` → `MINIO_ACCESS_KEY`
   - `S3_SECRET_KEY` → `MINIO_SECRET_KEY`
@@ -46,6 +54,7 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 
 - GORM with `pgx/v5` driver. Connection pooling and retry logic live in `pkg/database/setup.go`.
 - **Migrations are raw SQL** in `migrations/`. There is no migration runner in the app; apply them manually or with an external tool (e.g., `migrate`, `psql`).
+- **UUID v7** is used for primary keys (see `pkg/validator.IsValidUUID` and migrations).
 
 ## CI / Deploy
 
