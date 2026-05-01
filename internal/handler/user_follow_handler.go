@@ -48,7 +48,7 @@ func (h *UserFollowHandler) FollowUser(c *echo.Context) error {
 	}
 
 	if err := c.Validate(followReq); err != nil {
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	// Follow the user

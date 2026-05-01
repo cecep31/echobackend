@@ -4,8 +4,6 @@ import (
 	"echobackend/internal/model"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"echobackend/pkg/validator"
-	"net/http"
 
 	"github.com/labstack/echo/v5"
 )
@@ -58,24 +56,12 @@ func (h *AuthHandler) Register(c *echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	user, err := h.authService.Register(c.Request().Context(), req.Email, req.Username, req.Password)
 	if err == service.ErrUserExists {
-		return c.JSON(http.StatusConflict, response.APIResponse{
-			Success: false,
-			Message: "Registration failed",
-			Error:   "Email or username already exists",
-		})
+		return response.Conflict(c, "Registration failed", "Email or username already exists")
 	}
 	if err != nil {
 		return response.InternalServerError(c, "Registration failed", err)
@@ -95,15 +81,7 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 	}
 
 	if err := c.Validate(loginReq); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	token, refreshToken, user, err := h.authService.Login(c.Request().Context(), loginReq.Email, loginReq.Password)
@@ -132,15 +110,7 @@ func (h *AuthHandler) CheckUsername(c *echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	isAvailable, err := h.authService.CheckUsernameAvailability(c.Request().Context(), req.Username)
@@ -161,15 +131,7 @@ func (h *AuthHandler) ForgotPassword(c *echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	err := h.authService.ForgotPassword(c.Request().Context(), req.Email)
@@ -191,15 +153,7 @@ func (h *AuthHandler) ResetPassword(c *echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	err := h.authService.ResetPassword(c.Request().Context(), req.Token, req.Password)
@@ -220,15 +174,7 @@ func (h *AuthHandler) RefreshToken(c *echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	token, refreshToken, user, err := h.authService.RefreshToken(c.Request().Context(), req.RefreshToken)
@@ -259,15 +205,7 @@ func (h *AuthHandler) ChangePassword(c *echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	err := h.authService.ChangePassword(c.Request().Context(), user.ID, req.CurrentPassword, req.NewPassword)

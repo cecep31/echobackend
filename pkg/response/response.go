@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	"echobackend/pkg/validator"
+
 	"github.com/labstack/echo/v5"
 )
 
@@ -141,6 +143,32 @@ func ValidationError(c *echo.Context, message string, err error) error {
 		Success: false,
 		Message: message,
 		Error:   errorMsg,
+	})
+}
+
+// FromValidateError maps Echo validation errors to a unified response:
+// structured field errors use 422 with Data populated; otherwise ValidationError fallback.
+func FromValidateError(c *echo.Context, err error) error {
+	if errs, ok := err.(validator.ValidationErrors); ok {
+		errMsg := errs.Error()
+		log.Printf("Validation error request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), "Validation failed", errMsg)
+		return c.JSON(http.StatusUnprocessableEntity, APIResponse{
+			Success: false,
+			Message: "Validation failed",
+			Error:   errMsg,
+			Data:    errs.Errors,
+		})
+	}
+	return ValidationError(c, "Validation failed", err)
+}
+
+// Conflict sends a 409 Conflict response (e.g. duplicate resource).
+func Conflict(c *echo.Context, message string, conflictError string) error {
+	log.Printf("Conflict request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
+	return c.JSON(http.StatusConflict, APIResponse{
+		Success: false,
+		Message: message,
+		Error:   conflictError,
 	})
 }
 

@@ -4,8 +4,6 @@ import (
 	"echobackend/internal/model"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"echobackend/pkg/validator"
-	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
@@ -34,15 +32,7 @@ func (h *CommentHandler) CreateComment(c *echo.Context) error {
 	}
 
 	if err := c.Validate(dto); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	// Get user ID from JWT token
@@ -86,15 +76,7 @@ func (h *CommentHandler) UpdateComment(c *echo.Context) error {
 	}
 
 	if err := c.Validate(dto); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	// Get user ID from JWT token

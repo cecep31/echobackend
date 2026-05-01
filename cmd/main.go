@@ -5,6 +5,7 @@ import (
 	"echobackend/config"
 	"echobackend/internal/di"
 	"echobackend/internal/middleware"
+	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
 	"net/http"
 	"os"
@@ -95,8 +96,5 @@ func main() {
 }
 
 func helloWorld(c *echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]any{
-		"message": "Hello, World!",
-		"success": true,
-	})
+	return response.Success(c, "Hello, World!", nil)
 }

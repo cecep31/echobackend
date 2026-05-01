@@ -4,8 +4,6 @@ import (
 	"echobackend/internal/model"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"echobackend/pkg/validator"
-	"net/http"
 	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -29,15 +27,7 @@ func (h *ChatConversationHandler) CreateConversation(c *echo.Context) error {
 	}
 
 	if err := c.Validate(conversationReq); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	// Get the user ID from the JWT token
@@ -111,15 +101,7 @@ func (h *ChatConversationHandler) UpdateConversation(c *echo.Context) error {
 	}
 
 	if err := c.Validate(updateDTO); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			return c.JSON(http.StatusBadRequest, response.APIResponse{
-				Success: false,
-				Message: "Validation failed",
-				Error:   validationErrors.Error(),
-				Data:    validationErrors.Errors,
-			})
-		}
-		return response.ValidationError(c, "Validation failed", err)
+		return response.FromValidateError(c, err)
 	}
 
 	// Get the user ID from the JWT token
