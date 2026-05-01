@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"strings"
 	"time"
 
 	"echobackend/config"
@@ -67,5 +68,14 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 	}
 
 	e.Use(middleware.Recover())
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}}))
+
+	allowOrigins := []string{"*"}
+	if config.HTTPAllowOrigins != "" {
+		parts := strings.Split(config.HTTPAllowOrigins, ",")
+		for i := range parts {
+			parts[i] = strings.TrimSpace(parts[i])
+		}
+		allowOrigins = parts
+	}
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: allowOrigins}))
 }

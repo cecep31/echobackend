@@ -13,6 +13,7 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 ## Testing
 
 - **All tests:** `make test` (timeout 30s)
+- **Short tests:** `make test-short`
 - **Race check:** `make test-race`
 - **Coverage:** `make test-coverage` or `make test-coverage-func`
 - There are currently no unit tests in the project.
@@ -38,22 +39,29 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 
 ## Environment / Config
 
+- Config package is at **root-level** `config/config.go` (imported as `echobackend/config`), not `internal/config`.
 - Loaded from `.env` via `godotenv`, then env vars. See `.env.example` for the full schema.
 - **Key env vars with fallback aliases** (first-match wins in `config/config.go`):
-  - `S3_ENDPOINT` → falls back to `MINIO_ENDPOINT`
+  - `S3_ENDPOINT` → `MINIO_ENDPOINT`
   - `S3_ACCESS_KEY` → `MINIO_ACCESS_KEY`
   - `S3_SECRET_KEY` → `MINIO_SECRET_KEY`
   - `S3_BUCKET` → `MINIO_BUCKET`
+  - `S3_USE_SSL` → `MINIO_USE_SSL`
   - `DB_POOL_MAX_OPEN` → `MAX_OPEN_CONNS`
+  - `DB_POOL_MAX_IDLE` → `MAX_IDLE_CONNS`
+  - `DB_POOL_CONN_LIFETIME` → `CONN_MAX_LIFETIME`
+  - `HTTP_RATE_LIMIT_RPS` → `RATE_LIMITER_MAX`
+  - `HTTP_RATE_LIMIT_WINDOW_SEC` → `RATE_LIMITER_TTL`
   - `HTTP_TRUST_PROXY` → `TRUST_PROXY`
   - `APP_DEBUG` → `DEBUG`
 - **Postgres default DSN requires TLS** (`sslmode=require`). For local dev without SSL, override `DATABASE_URL` (see `.env.example`).
 - `HTTP_TRUST_PROXY=true` switches Echo IP extraction to `X-Forwarded-For` (use behind a trusted reverse proxy only).
+- `APP_DEBUG=true` also enables GORM `Info` logging (vs `Error`) and registers pprof debug routes.
 
 ## Database
 
 - GORM with `pgx/v5` driver. Connection pooling and retry logic live in `pkg/database/setup.go`.
-- **Migrations are raw SQL** in `migrations/`. There is no migration runner in the app; apply them manually or with an external tool (e.g., `migrate`, `psql`).
+- **Migrations are raw SQL** in `migrations/`. There is no migration runner in the app; apply them manually or with an external tool (e.g., `migrate`, `psql`). See `migrations/README.md` for details on specific migrations.
 - **UUID v7** is used for primary keys (see `pkg/validator.IsValidUUID` and migrations).
 
 ## CI / Deploy

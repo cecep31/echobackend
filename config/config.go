@@ -43,6 +43,9 @@ type Config struct {
 	// HTTPTrustProxy when true sets Echo IP extraction from X-Forwarded-For with trust rules (typical behind nginx/ALB).
 	// When false, only the direct TCP peer address is used (safer when the app faces the internet without a trusted proxy).
 	HTTPTrustProxy bool
+	// HTTPAllowOrigins is the value(s) for the Access-Control-Allow-Origin CORS header.
+	// Comma-separated list of origins, or "*" to allow any origin.
+	HTTPAllowOrigins string
 	// S3 contains S3-compatible object storage (MinIO, AWS S3, etc.).
 	S3 S3Config
 	// AppDebug enables verbose logging, GORM info logs, and debug routes.
@@ -68,6 +71,7 @@ func Load() (*Config, error) {
 		HTTPRateLimitRPS:       envInt([]string{"HTTP_RATE_LIMIT_RPS", "RATE_LIMITER_MAX"}, 0),
 		HTTPRateLimitWindowSec: envInt([]string{"HTTP_RATE_LIMIT_WINDOW_SEC", "RATE_LIMITER_TTL"}, 0),
 		HTTPTrustProxy:         envBool([]string{"HTTP_TRUST_PROXY", "TRUST_PROXY"}, false),
+		HTTPAllowOrigins:       envString([]string{"HTTP_ALLOW_ORIGINS"}, "*"),
 		S3: S3Config{
 			Endpoint:  envString([]string{"S3_ENDPOINT", "MINIO_ENDPOINT"}, "localhost:9000"),
 			AccessKey: envString([]string{"S3_ACCESS_KEY", "MINIO_ACCESS_KEY"}, "minioadmin"),
