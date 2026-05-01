@@ -7,8 +7,8 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func (r *Routes) setupDebugRoutes(v1 *echo.Group) {
-	debug := v1.Group("/debug")
+func (r *Routes) setupDebugRoutes(api *echo.Group) {
+	debug := api.Group("/debug")
 	debug.GET("/pprof/*", echo.WrapHandler(http.HandlerFunc(pprof.Index)))
 	debug.GET("/pprof/cmdline", echo.WrapHandler(http.HandlerFunc(pprof.Cmdline)))
 	debug.GET("/pprof/profile", echo.WrapHandler(http.HandlerFunc(pprof.Profile)))

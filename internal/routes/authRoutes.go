@@ -7,8 +7,8 @@ import (
 	echomidleware "github.com/labstack/echo/v5/middleware"
 )
 
-func (r *Routes) setupAuthRoutes(v1 *echo.Group) {
-	auth := v1.Group("/auth")
+func (r *Routes) setupAuthRoutes(api *echo.Group) {
+	auth := api.Group("/auth")
 	confratelimit := echomidleware.RateLimiterMemoryStoreConfig{Rate: 5, ExpiresIn: 5 * time.Minute, Burst: 5}
 	{
 		auth.POST("/register", r.authHandler.Register)

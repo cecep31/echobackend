@@ -2,8 +2,8 @@ package routes
 
 import "github.com/labstack/echo/v5"
 
-func (r *Routes) setupUserRoutes(v1 *echo.Group) {
-	users := v1.Group("/users")
+func (r *Routes) setupUserRoutes(api *echo.Group) {
+	users := api.Group("/users")
 	{
 		// Public routes
 		users.GET("/:id", r.userHandler.GetByID)

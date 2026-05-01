@@ -52,23 +52,23 @@ func NewRoutes(
 
 func (r *Routes) Setup(e *echo.Echo) {
 	// API Group
-	v1 := e.Group("/v1")
-	r.setupV1Routes(v1)
+	api := e.Group("/api")
+	r.setupAPIRoutes(api)
 }
 
-func (r *Routes) setupV1Routes(v1 *echo.Group) {
-	r.setupUserRoutes(v1)
-	r.setupPostRoutes(v1)
-	r.setupAuthRoutes(v1)
-	r.setupTagRoutes(v1)
-	r.setupChatConversationRoutes(v1)
+func (r *Routes) setupAPIRoutes(api *echo.Group) {
+	r.setupUserRoutes(api)
+	r.setupPostRoutes(api)
+	r.setupAuthRoutes(api)
+	r.setupTagRoutes(api)
+	r.setupChatConversationRoutes(api)
 	if r.config.AppDebug {
-		r.setupDebugRoutes(v1)
+		r.setupDebugRoutes(api)
 	}
 }
 
-func (r *Routes) setupChatConversationRoutes(v1 *echo.Group) {
-	conversations := v1.Group("/chat/conversations")
+func (r *Routes) setupChatConversationRoutes(api *echo.Group) {
+	conversations := api.Group("/chat/conversations")
 	{
 		conversations.POST("", r.chatConversationHandler.CreateConversation, r.authMiddleware.Auth())
 		conversations.GET("", r.chatConversationHandler.GetConversations, r.authMiddleware.Auth())
