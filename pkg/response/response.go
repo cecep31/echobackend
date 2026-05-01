@@ -15,6 +15,7 @@ type APIResponse struct {
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
 	Error   string `json:"error,omitempty"`
+	Errors  any    `json:"errors,omitempty"`
 	Meta    any    `json:"meta,omitempty"`
 }
 
@@ -147,7 +148,7 @@ func ValidationError(c *echo.Context, message string, err error) error {
 }
 
 // FromValidateError maps Echo validation errors to a unified response:
-// structured field errors use 422 with Data populated; otherwise ValidationError fallback.
+// structured field errors use 422 with Errors populated; otherwise ValidationError fallback.
 func FromValidateError(c *echo.Context, err error) error {
 	if errs, ok := err.(validator.ValidationErrors); ok {
 		errMsg := errs.Error()
@@ -156,7 +157,7 @@ func FromValidateError(c *echo.Context, err error) error {
 			Success: false,
 			Message: "Validation failed",
 			Error:   errMsg,
-			Data:    errs.Errors,
+			Errors:  errs.Errors,
 		})
 	}
 	return ValidationError(c, "Validation failed", err)
