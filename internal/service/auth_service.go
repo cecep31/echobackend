@@ -110,7 +110,7 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 		"email":          user.Email,
 		"is_super_admin": user.IsSuperAdmin,
 		"iat":            time.Now().Unix(),
-		"exp":            time.Now().Add(6 * time.Hour).Unix(), // Token expires after 6 hours
+		"exp":            time.Now().Add(3 * time.Hour).Unix(), // Token expires after 3 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -208,7 +208,7 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken string) (st
 		"email":          user.Email,
 		"is_super_admin": user.IsSuperAdmin,
 		"iat":            time.Now().Unix(),
-		"exp":            time.Now().Add(6 * time.Hour).Unix(), // Token expires after 6 hours
+		"exp":            time.Now().Add(3 * time.Hour).Unix(), // Token expires after 3 hours
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
