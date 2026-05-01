@@ -23,9 +23,8 @@ go.work
 # Temporary files
 tmp/
 
-
-bin/echobackend
-bin/echobackend.exe
-bin/main
+# Build output / coverage (see Makefile)
+bin/
+coverage/
 
 .codex
