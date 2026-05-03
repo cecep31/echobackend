@@ -27,15 +27,15 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 - **Graceful shutdown:** `CleanupManager` (LIFO) in `internal/di/cleanup.go`. Register closable resources in `container.go`.
 - **Handlers MUST** use `pkg/response` helpers (`Success`, `BadRequest`, `ValidationError`, `NotFound`, etc.). Never return raw `c.JSON` with ad-hoc maps.
 - **Validation:** Echo uses a custom validator wrapping `go-playground/validator/v10`. Use `validate` struct tags.
-- **Debug routes** (`/v1/debug/pprof/*`) are registered only when `APP_DEBUG=true`.
+- **Debug routes** (`/api/debug/pprof/*`) are registered only when `APP_DEBUG=true`.
 
 ## Echo v5 Quirks
 
 - Handler signature uses **pointer receiver**: `func(c *echo.Context) error` — not value receiver like Echo v4.
-- **All routes under `/v1` prefix** (e.g., `POST /v1/posts`, `GET /v1/users/:id`).
+- **All routes under `/api` prefix** (e.g., `POST /api/auth/register`, `GET /api/posts/:id`).
 - Auth middleware is passed as last arg to route registration, not chained separately: `posts.POST("", handler.Create, r.authMiddleware.Auth())`.
 - **Admin middleware** (`r.authMiddleware.AuthAdmin()`) queries DB for `is_super_admin` — must chain after `Auth()`.
-- **Per-route rate limits**: `/v1/auth/login` and `/v1/auth/forgot-password` have separate rate limits (5 req / 5 min), independent of global `HTTP_RATE_LIMIT_RPS`.
+- **Per-route rate limits**: `/api/auth/login` and `/api/auth/forgot-password` have 5 req / 5 min (independent of global `HTTP_RATE_LIMIT_RPS`).
 
 ## Environment / Config
 
