@@ -1,5 +1,5 @@
 # --- Builder Stage ---
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26 AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -17,10 +17,10 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/main cmd/main.go
 
 # --- Final Stage ---
-FROM alpine:latest
+FROM debian:trixie-slim
 
 # Create a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
 # Set the working directory
 WORKDIR /app
