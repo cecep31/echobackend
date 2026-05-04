@@ -50,23 +50,20 @@ type UserResponse struct {
 	Name           string     `json:"name"`
 	Username       *string    `json:"username"`
 	Image          *string    `json:"image"`
-	IsSuperAdmin   *bool      `json:"is_super_admin"`
 	FirstName      *string    `json:"first_name"`
 	LastName       *string    `json:"last_name"`
-	GithubID       *int64     `json:"github_id"`
 	FollowersCount int64      `json:"followers_count"`
 	FollowingCount int64      `json:"following_count"`
-	LastLoggedAt   *time.Time `json:"last_logged_at,omitempty"`
 	IsFollowing    *bool      `json:"is_following,omitempty"` // Whether current user follows this user
 	Profile        *Profile   `json:"profile,omitempty"`
 	CreatedAt      *time.Time `json:"created_at"`
 	UpdatedAt      *time.Time `json:"updated_at"`
-	DeletedAt      *time.Time `json:"deleted_at,omitempty"` // Keep as *time.Time for response flexibility
 }
 
-// PublicUserResponse represents user data for public endpoints (hides sensitive fields)
+// PublicUserResponse represents user data for public endpoints
 type PublicUserResponse struct {
 	ID             string     `json:"id"`
+	Email          string     `json:"email"`
 	Name           string     `json:"name"`
 	Username       *string    `json:"username"`
 	Image          *string    `json:"image"`
@@ -88,6 +85,7 @@ func (u *User) ToPublicResponse() *PublicUserResponse {
 	}
 	return &PublicUserResponse{
 		ID:             u.ID,
+		Email:          u.Email,
 		Name:           name,
 		Username:       u.Username,
 		Image:          u.Image,
@@ -113,25 +111,12 @@ func (u *User) ToResponse() *UserResponse {
 		Name:           name,
 		Username:       u.Username,
 		Image:          u.Image,
-		IsSuperAdmin:   u.IsSuperAdmin,
 		FirstName:      u.FirstName,
 		LastName:       u.LastName,
-		GithubID:       u.GithubID,
 		FollowersCount: u.FollowersCount,
 		FollowingCount: u.FollowingCount,
-		LastLoggedAt:   u.LastLoggedAt,
 		Profile:        u.Profile,
 		CreatedAt:      u.CreatedAt,
 		UpdatedAt:      u.UpdatedAt,
-		// Convert gorm.DeletedAt to *time.Time for the response
-		DeletedAt: convertDeletedAtToTime(u.DeletedAt),
 	}
-}
-
-// convertDeletedAtToTime helper function
-func convertDeletedAtToTime(deletedAt gorm.DeletedAt) *time.Time {
-	if deletedAt.Valid {
-		return &deletedAt.Time
-	}
-	return nil
 }
