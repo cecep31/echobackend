@@ -16,7 +16,9 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 - **Short tests:** `make test-short`
 - **Race check:** `make test-race`
 - **Coverage:** `make test-coverage` or `make test-coverage-func`
-- There are currently no unit tests in the project.
+- **No unit tests exist.** `glob **/*_test.go` returns nothing.
+- **Benchmarks:** `make bench`
+- **Security scan:** `make security` (requires `gosec`)
 
 ## Architecture
 
@@ -25,7 +27,7 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
   2. Register in `Container` and `NewContainer`.
   3. Thread it through `routes.NewRoutes` and the route setup methods.
 - **Graceful shutdown:** `CleanupManager` (LIFO) in `internal/di/cleanup.go`. Register closable resources in `container.go`.
-- **Handlers MUST** use `pkg/response` helpers (`Success`, `BadRequest`, `ValidationError`, `NotFound`, etc.). Never return raw `c.JSON` with ad-hoc maps.
+- **Handlers MUST** use `pkg/response` helpers (`Success`, `Created`, `BadRequest`, `Conflict`, `ValidationError`, `NotFound`, `InternalServerError`, `FromValidateError`). Never return raw `c.JSON` with ad-hoc maps.
 - **Validation:** Echo uses a custom validator wrapping `go-playground/validator/v10`. Use `validate` struct tags.
 - **Debug routes** (`/api/debug/pprof/*`) are registered only when `APP_DEBUG=true`.
 
@@ -54,6 +56,7 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
   - `HTTP_RATE_LIMIT_WINDOW_SEC` → `RATE_LIMITER_TTL`
   - `HTTP_TRUST_PROXY` → `TRUST_PROXY`
   - `APP_DEBUG` → `DEBUG`
+- **`HTTP_ALLOW_ORIGINS`** controls CORS (`Access-Control-Allow-Origin`). Defaults to `"*"`. Comma-separated list or `"*"`.
 - **Postgres default DSN requires TLS** (`sslmode=require`). For local dev without SSL, override `DATABASE_URL` (see `.env.example`).
 - `HTTP_TRUST_PROXY=true` switches Echo IP extraction to `X-Forwarded-For` (use behind a trusted reverse proxy only).
 - `APP_DEBUG=true` also enables GORM `Info` logging (vs `Error`) and registers pprof debug routes.
@@ -63,11 +66,14 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 - GORM with `pgx/v5` driver. Connection pooling and retry logic live in `pkg/database/setup.go`.
 - **Migrations are raw SQL** in `migrations/`. There is no migration runner in the app; apply them manually or with an external tool (e.g., `migrate`, `psql`). See `migrations/README.md` for details on specific migrations.
 - **UUID v7** is used for primary keys (see `pkg/validator.IsValidUUID` and migrations).
+- `make migrate-up` / `make migrate-down` are stubs — they just echo placeholder messages.
 
 ## CI / Deploy
 
-- GitHub Actions (`.github/workflows/main.yml`) builds a Docker image, pushes to Docker Hub (`cecep31/echobackend:latest`), then deploys to Fly.io.
-- `fly.toml` references the pre-built image; it does not build from source.
+- GitHub Actions (`.github/workflows/main.yml`) triggers on push to `main` only.
+- Builds a Docker image, pushes to Docker Hub (`cecep31/echobackend:latest`), then deploys to Fly.io.
+- `fly.toml` references the pre-built image; it does not build from source. Primary region: `sin` (Singapore).
+- **Dockerfile uses `golang:1.26`** while `go.mod` specifies `go 1.25.0`. This works because Go is backward-compatible, but be aware of the mismatch.
 
 ## Linting
 
