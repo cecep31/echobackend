@@ -27,9 +27,12 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
   2. Register in `Container` and `NewContainer`.
   3. Thread it through `routes.NewRoutes` and the route setup methods.
 - **Graceful shutdown:** `CleanupManager` (LIFO) in `internal/di/cleanup.go`. Register closable resources in `container.go`.
-- **Handlers MUST** use `pkg/response` helpers (`Success`, `Created`, `BadRequest`, `Conflict`, `ValidationError`, `NotFound`, `InternalServerError`, `FromValidateError`). Never return raw `c.JSON` with ad-hoc maps.
+- **Handlers MUST** use `pkg/response` helpers (`Success`, `Created`, `BadRequest`, `Conflict`, `Unauthorized`, `Forbidden`, `NotFound`, `ValidationError`, `InternalServerError`, `FromValidateError`, `SuccessWithMeta`). Never return raw `c.JSON` with ad-hoc maps.
 - **Validation:** Echo uses a custom validator wrapping `go-playground/validator/v10`. Use `validate` struct tags.
 - **Debug routes** (`/api/debug/pprof/*`) are registered only when `APP_DEBUG=true`.
+- **Domain errors** are defined in `internal/errors/errors.go`. Handlers branch on these sentinel errors (e.g., `apperrors.ErrUserExists` → `response.Conflict`) — always add new domain errors here.
+- **Shared handler helpers** in `internal/handler/helper.go`: `GetUserIDFromClaims` extracts user ID from 3 JWT claim formats (MapClaims, Token, map); `ParsePaginationParams` parses limit/offset and caps limit at 100.
+- **S3Storage** (`pkg/storage/s3_storage.go`): `NewS3Storage` can return `nil` if the MinIO client fails to initialize. Services using it must nil-check.
 
 ## Echo v5 Quirks
 
