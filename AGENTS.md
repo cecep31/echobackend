@@ -79,3 +79,17 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 
 - `make lint` requires `golangci-lint` installed separately.
 - `make fmt` + `make vet` are always available.
+
+## Error Handling Convention
+
+- **Repositories** return raw errors or custom domain errors.
+- **Services** wrap/transform repository errors into business-meaningful errors.
+- **Handlers** map errors to HTTP status codes using `pkg/response` helpers. Never map errors inline — always push that responsibility to the handler layer.
+
+## Request Body Limit
+
+- Echo middleware enforces **10 MB** body limit (`middleware.BodyLimit(10 * 1024 * 1024)` in `internal/middleware/setup.go:24`). Requests exceeding this return 413.
+
+## Database Quirks
+
+- `pgx.QueryExecModeSimpleProtocol` is set in `pkg/database/setup.go:37`. This disables the extended query protocol — **prepared statements are not used**. Any code relying on prepared statement semantics will not work as expected.
