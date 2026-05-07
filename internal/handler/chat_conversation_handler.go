@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"echobackend/internal/model"
+	"echobackend/internal/dto"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"strconv"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 )
 
@@ -21,7 +19,7 @@ func NewChatConversationHandler(chatConversationService service.ChatConversation
 }
 
 func (h *ChatConversationHandler) CreateConversation(c *echo.Context) error {
-	var conversationReq model.CreateChatConversationDTO
+	var conversationReq dto.CreateChatConversationRequest
 	if err := c.Bind(&conversationReq); err != nil {
 		return response.BadRequest(c, "Failed to create conversation", err)
 	}
@@ -30,9 +28,10 @@ func (h *ChatConversationHandler) CreateConversation(c *echo.Context) error {
 		return response.FromValidateError(c, err)
 	}
 
-	// Get the user ID from the JWT token
-	claims := c.Get("user").(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
 	newConversation, err := h.chatConversationService.CreateConversation(c.Request().Context(), userID, &conversationReq)
 	if err != nil {
@@ -45,9 +44,10 @@ func (h *ChatConversationHandler) CreateConversation(c *echo.Context) error {
 func (h *ChatConversationHandler) GetConversation(c *echo.Context) error {
 	id := c.Param("id")
 
-	// Get the user ID from the JWT token
-	claims := c.Get("user").(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
 	conversation, err := h.chatConversationService.GetConversationByID(c.Request().Context(), id, userID)
 	if err != nil {
@@ -58,36 +58,26 @@ func (h *ChatConversationHandler) GetConversation(c *echo.Context) error {
 }
 
 func (h *ChatConversationHandler) GetConversations(c *echo.Context) error {
-	offset := c.QueryParam("offset")
-	limit := c.QueryParam("limit")
+	limit, offset := ParsePaginationParams(c, 10)
 
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		offsetInt = 0 // Default offset if not provided or invalid
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
 	}
 
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 10 // Default limit if not provided or invalid
-	}
-
-	// Get the user ID from the JWT token
-	claims := c.Get("user").(jwt.MapClaims)
-	userID := claims["user_id"].(string)
-
-	conversations, total, err := h.chatConversationService.GetUserConversations(c.Request().Context(), userID, offsetInt, limitInt)
+	conversations, total, err := h.chatConversationService.GetUserConversations(c.Request().Context(), userID, offset, limit)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get conversations", err)
 	}
 
 	meta := response.PaginationMeta{
 		TotalItems: int(total),
-		Offset:     offsetInt,
-		Limit:      limitInt,
-		TotalPages: int(total)/limitInt + 1,
+		Offset:     offset,
+		Limit:      limit,
+		TotalPages: int(total)/limit + 1,
 	}
-	if int(total)%limitInt == 0 {
-		meta.TotalPages = int(total) / limitInt
+	if int(total)%limit == 0 {
+		meta.TotalPages = int(total) / limit
 	}
 
 	return response.SuccessWithMeta(c, "Successfully retrieved conversations", conversations, meta)
@@ -95,7 +85,7 @@ func (h *ChatConversationHandler) GetConversations(c *echo.Context) error {
 
 func (h *ChatConversationHandler) UpdateConversation(c *echo.Context) error {
 	id := c.Param("id")
-	var updateDTO model.UpdateChatConversationDTO
+	var updateDTO dto.UpdateChatConversationRequest
 	if err := c.Bind(&updateDTO); err != nil {
 		return response.BadRequest(c, "Failed to update conversation", err)
 	}
@@ -104,9 +94,10 @@ func (h *ChatConversationHandler) UpdateConversation(c *echo.Context) error {
 		return response.FromValidateError(c, err)
 	}
 
-	// Get the user ID from the JWT token
-	claims := c.Get("user").(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
 	updatedConversation, err := h.chatConversationService.UpdateConversation(c.Request().Context(), id, userID, &updateDTO)
 	if err != nil {
@@ -119,9 +110,10 @@ func (h *ChatConversationHandler) UpdateConversation(c *echo.Context) error {
 func (h *ChatConversationHandler) DeleteConversation(c *echo.Context) error {
 	id := c.Param("id")
 
-	// Get the user ID from the JWT token
-	claims := c.Get("user").(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
 	err := h.chatConversationService.DeleteConversation(c.Request().Context(), id, userID)
 	if err != nil {

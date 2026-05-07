@@ -1,0 +1,33 @@
+package errors
+
+import "errors"
+
+var (
+	ErrUserNotFound             = errors.New("user not found")
+	ErrUserExists               = errors.New("user already exists")
+	ErrPostNotFound             = errors.New("post not found")
+	ErrTagNotFound              = errors.New("tag not found")
+	ErrChatConversationNotFound = errors.New("chat conversation not found")
+	ErrInvalidCredentials       = errors.New("invalid credentials")
+	ErrInvalidToken             = errors.New("invalid or expired token")
+	ErrTokenExpired             = errors.New("token has expired")
+	ErrAlreadyFollowing         = errors.New("already following this user")
+	ErrCannotFollowSelf         = errors.New("cannot follow yourself")
+	ErrNotFollowing             = errors.New("not following this user")
+	ErrNotAuthor                = errors.New("not author")
+	ErrAlreadyLiked             = errors.New("user has already liked this post")
+	ErrNotLiked                 = errors.New("user has not liked this post")
+	ErrCommentNotOwned          = errors.New("not authorized to modify this comment")
+	ErrPostNotOwned             = errors.New("not authorized to modify this post")
+	ErrConversationNotOwned     = errors.New("access denied: conversation does not belong to user")
+	ErrInvalidPostID            = errors.New("invalid post ID format")
+	ErrInvalidUserID            = errors.New("invalid user ID format")
+	ErrEmptyPostID              = errors.New("post ID cannot be empty")
+	ErrTagNameRequired          = errors.New("tag name is required")
+	ErrTagNameEmpty             = errors.New("tag name cannot be empty")
+	ErrInvalidTagID             = errors.New("invalid tag ID")
+	ErrInvalidPaginationLimit   = errors.New("limit must be greater than 0")
+	ErrPaginationLimitExceeded  = errors.New("limit must not exceed 100")
+	ErrPaginationOffsetNegative = errors.New("offset must be non-negative")
+	ErrFileNil                  = errors.New("file cannot be nil")
+)

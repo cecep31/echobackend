@@ -1,7 +1,8 @@
 package handler
 
 import (
-	"echobackend/internal/model"
+	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
 
@@ -12,45 +13,12 @@ type AuthHandler struct {
 	authService service.AuthService
 }
 
-type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
-}
-
-type RegisterRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Username string `json:"username" validate:"required,min=3,max=30"`
-	Password string `json:"password" validate:"required,min=6"`
-}
-
-type CheckUsernameRequest struct {
-	Username string `json:"username" validate:"required,min=3,max=30"`
-}
-
-type ForgotPasswordRequest struct {
-	Email string `json:"email" validate:"required,email"`
-}
-
-type ResetPasswordRequest struct {
-	Token    string `json:"token" validate:"required"`
-	Password string `json:"password" validate:"required,min=6"`
-}
-
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
-}
-
-type ChangePasswordRequest struct {
-	CurrentPassword string `json:"current_password" validate:"required,min=6"`
-	NewPassword     string `json:"new_password" validate:"required,min=6"`
-}
-
 func NewAuthHandler(authService service.AuthService) *AuthHandler {
 	return &AuthHandler{authService: authService}
 }
 
 func (h *AuthHandler) Register(c *echo.Context) error {
-	var req RegisterRequest
+	var req dto.RegisterRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
 	}
@@ -60,7 +28,7 @@ func (h *AuthHandler) Register(c *echo.Context) error {
 	}
 
 	user, err := h.authService.Register(c.Request().Context(), req.Email, req.Username, req.Password)
-	if err == service.ErrUserExists {
+	if err == apperrors.ErrUserExists {
 		return response.Conflict(c, "Registration failed", "Email or username already exists")
 	}
 	if err != nil {
@@ -75,7 +43,7 @@ func (h *AuthHandler) Register(c *echo.Context) error {
 }
 
 func (h *AuthHandler) Login(c *echo.Context) error {
-	var loginReq LoginRequest
+	var loginReq dto.LoginRequest
 	if err := c.Bind(&loginReq); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
 	}
@@ -85,7 +53,7 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 	}
 
 	token, refreshToken, user, err := h.authService.Login(c.Request().Context(), loginReq.Email, loginReq.Password)
-	if err == service.ErrInvalidCredentials {
+	if err == apperrors.ErrInvalidCredentials {
 		return response.Unauthorized(c, "Invalid email or password")
 	}
 	if err != nil {
@@ -104,7 +72,7 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 }
 
 func (h *AuthHandler) CheckUsername(c *echo.Context) error {
-	var req CheckUsernameRequest
+	var req dto.CheckUsernameRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
 	}
@@ -125,7 +93,7 @@ func (h *AuthHandler) CheckUsername(c *echo.Context) error {
 }
 
 func (h *AuthHandler) ForgotPassword(c *echo.Context) error {
-	var req ForgotPasswordRequest
+	var req dto.ForgotPasswordRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
 	}
@@ -135,19 +103,15 @@ func (h *AuthHandler) ForgotPassword(c *echo.Context) error {
 	}
 
 	err := h.authService.ForgotPassword(c.Request().Context(), req.Email)
-	if err == service.ErrUserNotFound {
-		// Return success even if email doesn't exist for security reasons
-		return response.Success(c, "If the email exists, a password reset link has been sent", nil)
-	}
 	if err != nil {
-		return response.InternalServerError(c, "Failed to process password reset request", err)
+		return response.Success(c, "If the email exists, a password reset link has been sent", nil)
 	}
 
 	return response.Success(c, "If the email exists, a password reset link has been sent", nil)
 }
 
 func (h *AuthHandler) ResetPassword(c *echo.Context) error {
-	var req ResetPasswordRequest
+	var req dto.ResetPasswordRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
 	}
@@ -157,7 +121,7 @@ func (h *AuthHandler) ResetPassword(c *echo.Context) error {
 	}
 
 	err := h.authService.ResetPassword(c.Request().Context(), req.Token, req.Password)
-	if err == service.ErrInvalidToken {
+	if err == apperrors.ErrInvalidToken {
 		return response.BadRequest(c, "Invalid or expired reset token", err)
 	}
 	if err != nil {
@@ -168,7 +132,7 @@ func (h *AuthHandler) ResetPassword(c *echo.Context) error {
 }
 
 func (h *AuthHandler) RefreshToken(c *echo.Context) error {
-	var req RefreshTokenRequest
+	var req dto.RefreshTokenRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
 	}
@@ -178,7 +142,7 @@ func (h *AuthHandler) RefreshToken(c *echo.Context) error {
 	}
 
 	token, refreshToken, user, err := h.authService.RefreshToken(c.Request().Context(), req.RefreshToken)
-	if err == service.ErrInvalidToken {
+	if err == apperrors.ErrInvalidToken {
 		return response.Unauthorized(c, "Invalid or expired refresh token")
 	}
 	if err != nil {
@@ -197,9 +161,12 @@ func (h *AuthHandler) RefreshToken(c *echo.Context) error {
 }
 
 func (h *AuthHandler) ChangePassword(c *echo.Context) error {
-	user := c.Get("user").(*model.User)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
-	var req ChangePasswordRequest
+	var req dto.ChangePasswordRequest
 	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request format", err)
 	}
@@ -208,8 +175,8 @@ func (h *AuthHandler) ChangePassword(c *echo.Context) error {
 		return response.FromValidateError(c, err)
 	}
 
-	err := h.authService.ChangePassword(c.Request().Context(), user.ID, req.CurrentPassword, req.NewPassword)
-	if err == service.ErrInvalidCredentials {
+	err := h.authService.ChangePassword(c.Request().Context(), userID, req.CurrentPassword, req.NewPassword)
+	if err == apperrors.ErrInvalidCredentials {
 		return response.Unauthorized(c, "Current password is incorrect")
 	}
 	if err != nil {

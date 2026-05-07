@@ -2,22 +2,19 @@ package service
 
 import (
 	"context"
-	"echobackend/internal/model"
-	"echobackend/internal/repository"
-	"errors"
 	"fmt"
 	"time"
+
+	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
+	"echobackend/internal/model"
+	"echobackend/internal/repository"
 )
 
-// PostViewService defines the interface for post view operations
 type PostViewService interface {
-	// RecordView records a view for a post with optional IP address and user agent
 	RecordView(ctx context.Context, postID, userID string, ipAddress, userAgent *string) error
-	// GetViewsByPostID retrieves paginated views for a specific post
 	GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostView, int64, error)
-	// GetViewStats retrieves aggregated view statistics for a post
-	GetViewStats(ctx context.Context, postID string) (*model.PostViewStats, error)
-	// HasUserViewedPost checks if a user has viewed a specific post
+	GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error)
 	HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error)
 }
 
@@ -26,7 +23,6 @@ type postViewService struct {
 	postRepo     repository.PostRepository
 }
 
-// NewPostViewService creates a new instance of PostViewService
 func NewPostViewService(
 	postViewRepo repository.PostViewRepository,
 	postRepo repository.PostRepository,
@@ -37,31 +33,25 @@ func NewPostViewService(
 	}
 }
 
-// RecordView records a view for a post, preventing duplicate views from authenticated users
 func (s *postViewService) RecordView(ctx context.Context, postID, userID string, ipAddress, userAgent *string) error {
-	// Validate input
 	if postID == "" {
-		return errors.New("post ID cannot be empty")
+		return apperrors.ErrEmptyPostID
 	}
 
-	// Check if post exists
 	if _, err := s.postRepo.GetPostByID(ctx, postID); err != nil {
 		return fmt.Errorf("failed to verify post existence: %w", err)
 	}
 
-	// For authenticated users, check if they already viewed this post
 	if userID != "" {
 		hasViewed, err := s.postViewRepo.HasUserViewedPost(ctx, postID, userID)
 		if err != nil {
 			return fmt.Errorf("failed to check if user viewed post: %w", err)
 		}
-		// If user already viewed, don't record another view (idempotent operation)
 		if hasViewed {
 			return nil
 		}
 	}
 
-	// Create view record
 	now := time.Now()
 	view := &model.PostView{
 		PostID:    postID,
@@ -69,7 +59,6 @@ func (s *postViewService) RecordView(ctx context.Context, postID, userID string,
 		UpdatedAt: &now,
 	}
 
-	// Set optional fields
 	if userID != "" {
 		view.UserID = &userID
 	}
@@ -80,12 +69,10 @@ func (s *postViewService) RecordView(ctx context.Context, postID, userID string,
 		view.UserAgent = userAgent
 	}
 
-	// Record the view
 	if err := s.postViewRepo.CreateView(ctx, view); err != nil {
 		return fmt.Errorf("failed to create view record: %w", err)
 	}
 
-	// Increment post view count
 	if err := s.postViewRepo.IncrementPostViewCount(ctx, postID); err != nil {
 		return fmt.Errorf("failed to increment post view count: %w", err)
 	}
@@ -93,18 +80,16 @@ func (s *postViewService) RecordView(ctx context.Context, postID, userID string,
 	return nil
 }
 
-// GetViewsByPostID retrieves paginated views for a specific post
 func (s *postViewService) GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostView, int64, error) {
 	if postID == "" {
-		return nil, 0, errors.New("post ID cannot be empty")
+		return nil, 0, apperrors.ErrEmptyPostID
 	}
 
-	// Validate pagination parameters
 	if limit <= 0 {
-		limit = 10 // Default limit
+		limit = 10
 	}
 	if limit > 100 {
-		limit = 100 // Max limit to prevent excessive data retrieval
+		limit = 100
 	}
 	if offset < 0 {
 		offset = 0
@@ -118,10 +103,9 @@ func (s *postViewService) GetViewsByPostID(ctx context.Context, postID string, l
 	return views, total, nil
 }
 
-// GetViewStats retrieves aggregated view statistics for a post
-func (s *postViewService) GetViewStats(ctx context.Context, postID string) (*model.PostViewStats, error) {
+func (s *postViewService) GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error) {
 	if postID == "" {
-		return nil, errors.New("post ID cannot be empty")
+		return nil, apperrors.ErrEmptyPostID
 	}
 
 	stats, err := s.postViewRepo.GetViewStats(ctx, postID)
@@ -132,10 +116,9 @@ func (s *postViewService) GetViewStats(ctx context.Context, postID string) (*mod
 	return stats, nil
 }
 
-// HasUserViewedPost checks if a user has viewed a specific post
 func (s *postViewService) HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error) {
 	if postID == "" {
-		return false, errors.New("post ID cannot be empty")
+		return false, apperrors.ErrEmptyPostID
 	}
 	if userID == "" {
 		return false, nil

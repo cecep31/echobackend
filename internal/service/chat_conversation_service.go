@@ -2,17 +2,18 @@ package service
 
 import (
 	"context"
-	"errors"
 
+	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
 )
 
 type ChatConversationService interface {
-	CreateConversation(ctx context.Context, userID string, conversation *model.CreateChatConversationDTO) (*model.ChatConversationResponse, error)
-	GetConversationByID(ctx context.Context, id string, userID string) (*model.ChatConversationResponse, error)
-	GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversationResponse, int64, error)
-	UpdateConversation(ctx context.Context, id string, userID string, conversation *model.UpdateChatConversationDTO) (*model.ChatConversationResponse, error)
+	CreateConversation(ctx context.Context, userID string, conversation *dto.CreateChatConversationRequest) (*dto.ChatConversationResponse, error)
+	GetConversationByID(ctx context.Context, id string, userID string) (*dto.ChatConversationResponse, error)
+	GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*dto.ChatConversationResponse, int64, error)
+	UpdateConversation(ctx context.Context, id string, userID string, conversation *dto.UpdateChatConversationRequest) (*dto.ChatConversationResponse, error)
 	DeleteConversation(ctx context.Context, id string, userID string) error
 }
 
@@ -26,8 +27,7 @@ func NewChatConversationService(conversationRepo repository.ChatConversationRepo
 	}
 }
 
-func (s *chatConversationService) CreateConversation(ctx context.Context, userID string, conversation *model.CreateChatConversationDTO) (*model.ChatConversationResponse, error) {
-	// Create the conversation entity
+func (s *chatConversationService) CreateConversation(ctx context.Context, userID string, conversation *dto.CreateChatConversationRequest) (*dto.ChatConversationResponse, error) {
 	chatConversation := &model.ChatConversation{
 		Title:  conversation.Title,
 		UserID: userID,
@@ -38,66 +38,67 @@ func (s *chatConversationService) CreateConversation(ctx context.Context, userID
 		return nil, err
 	}
 
-	return createdConversation.ToResponse(), nil
+	return dto.ChatConversationToResponse(createdConversation), nil
 }
 
-func (s *chatConversationService) GetConversationByID(ctx context.Context, id string, userID string) (*model.ChatConversationResponse, error) {
+func (s *chatConversationService) GetConversationByID(ctx context.Context, id string, userID string) (*dto.ChatConversationResponse, error) {
 	conversation, err := s.conversationRepo.GetConversationByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if the conversation belongs to the user
 	if conversation.UserID != userID {
-		return nil, errors.New("access denied: conversation does not belong to user")
+		return nil, apperrors.ErrConversationNotOwned
 	}
 
-	return conversation.ToResponse(), nil
+	return dto.ChatConversationToResponse(conversation), nil
 }
 
-func (s *chatConversationService) GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversationResponse, int64, error) {
+func (s *chatConversationService) GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*dto.ChatConversationResponse, int64, error) {
 	conversations, total, err := s.conversationRepo.GetUserConversations(ctx, userID, offset, limit)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Convert to response format
-	var responses []*model.ChatConversationResponse
+	var responses []*dto.ChatConversationResponse
 	for _, conversation := range conversations {
-		responses = append(responses, conversation.ToResponse())
+		responses = append(responses, dto.ChatConversationToResponse(conversation))
 	}
 
 	return responses, total, nil
 }
 
-func (s *chatConversationService) UpdateConversation(ctx context.Context, id string, userID string, conversation *model.UpdateChatConversationDTO) (*model.ChatConversationResponse, error) {
-	// First, verify that the conversation belongs to the user
+func (s *chatConversationService) UpdateConversation(ctx context.Context, id string, userID string, conversation *dto.UpdateChatConversationRequest) (*dto.ChatConversationResponse, error) {
 	existingConversation, err := s.conversationRepo.GetConversationByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if existingConversation.UserID != userID {
-		return nil, errors.New("access denied: conversation does not belong to user")
+		return nil, apperrors.ErrConversationNotOwned
 	}
 
-	updatedConversation, err := s.conversationRepo.UpdateConversation(ctx, id, conversation)
+	updates := make(map[string]interface{})
+	if conversation.Title != "" {
+		updates["title"] = conversation.Title
+	}
+
+	updatedConversation, err := s.conversationRepo.UpdateConversation(ctx, id, updates)
 	if err != nil {
 		return nil, err
 	}
 
-	return updatedConversation.ToResponse(), nil
+	return dto.ChatConversationToResponse(updatedConversation), nil
 }
 
 func (s *chatConversationService) DeleteConversation(ctx context.Context, id string, userID string) error {
-	// First, verify that the conversation belongs to the user
 	existingConversation, err := s.conversationRepo.GetConversationByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	if existingConversation.UserID != userID {
-		return errors.New("access denied: conversation does not belong to user")
+		return apperrors.ErrConversationNotOwned
 	}
 
 	return s.conversationRepo.DeleteConversation(ctx, id)

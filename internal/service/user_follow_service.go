@@ -2,20 +2,21 @@ package service
 
 import (
 	"context"
-	"echobackend/internal/model"
+
+	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/repository"
-	"errors"
 )
 
 type UserFollowService interface {
-	FollowUser(ctx context.Context, followerID, followingID string) (*model.FollowResponse, error)
-	UnfollowUser(ctx context.Context, followerID, followingID string) (*model.FollowResponse, error)
+	FollowUser(ctx context.Context, followerID, followingID string) (*dto.FollowResponse, error)
+	UnfollowUser(ctx context.Context, followerID, followingID string) (*dto.FollowResponse, error)
 	IsFollowing(ctx context.Context, followerID, followingID string) (bool, error)
-	GetFollowers(ctx context.Context, userID string, limit, offset int) ([]*model.UserResponse, int64, error)
-	GetFollowing(ctx context.Context, userID string, limit, offset int) ([]*model.UserResponse, int64, error)
-	GetFollowStats(ctx context.Context, userID string) (*model.UserFollowStats, error)
-	GetMutualFollows(ctx context.Context, userID1, userID2 string) ([]*model.UserResponse, error)
-	GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string) (*model.UserResponse, error)
+	GetFollowers(ctx context.Context, userID string, limit, offset int) ([]*dto.UserResponse, int64, error)
+	GetFollowing(ctx context.Context, userID string, limit, offset int) ([]*dto.UserResponse, int64, error)
+	GetFollowStats(ctx context.Context, userID string) (*dto.UserFollowStats, error)
+	GetMutualFollows(ctx context.Context, userID1, userID2 string) ([]*dto.UserResponse, error)
+	GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string) (*dto.UserResponse, error)
 }
 
 type userFollowService struct {
@@ -33,38 +34,35 @@ func NewUserFollowService(
 	}
 }
 
-func (s *userFollowService) FollowUser(ctx context.Context, followerID, followingID string) (*model.FollowResponse, error) {
-	// Check if both users exist
+func (s *userFollowService) FollowUser(ctx context.Context, followerID, followingID string) (*dto.FollowResponse, error) {
 	_, err := s.userRepo.GetByID(ctx, followerID)
 	if err != nil {
-		return nil, errors.New("follower user not found")
+		return nil, apperrors.ErrUserNotFound
 	}
 
 	_, err = s.userRepo.GetByID(ctx, followingID)
 	if err != nil {
-		return nil, errors.New("user to follow not found")
+		return nil, apperrors.ErrUserNotFound
 	}
 
-	// Follow the user
 	err = s.userFollowRepo.Follow(ctx, followerID, followingID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.FollowResponse{
+	return &dto.FollowResponse{
 		IsFollowing: true,
 		Message:     "Successfully followed user",
 	}, nil
 }
 
-func (s *userFollowService) UnfollowUser(ctx context.Context, followerID, followingID string) (*model.FollowResponse, error) {
-	// Unfollow the user
+func (s *userFollowService) UnfollowUser(ctx context.Context, followerID, followingID string) (*dto.FollowResponse, error) {
 	err := s.userFollowRepo.Unfollow(ctx, followerID, followingID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &model.FollowResponse{
+	return &dto.FollowResponse{
 		IsFollowing: false,
 		Message:     "Successfully unfollowed user",
 	}, nil
@@ -74,65 +72,60 @@ func (s *userFollowService) IsFollowing(ctx context.Context, followerID, followi
 	return s.userFollowRepo.IsFollowing(ctx, followerID, followingID)
 }
 
-func (s *userFollowService) GetFollowers(ctx context.Context, userID string, limit, offset int) ([]*model.UserResponse, int64, error) {
+func (s *userFollowService) GetFollowers(ctx context.Context, userID string, limit, offset int) ([]*dto.UserResponse, int64, error) {
 	users, total, err := s.userFollowRepo.GetFollowers(ctx, userID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Convert to response format
-	userResponses := make([]*model.UserResponse, len(users))
+	userResponses := make([]*dto.UserResponse, len(users))
 	for i, user := range users {
-		userResponses[i] = user.ToResponse()
+		userResponses[i] = dto.UserToResponse(user)
 	}
 
 	return userResponses, total, nil
 }
 
-func (s *userFollowService) GetFollowing(ctx context.Context, userID string, limit, offset int) ([]*model.UserResponse, int64, error) {
+func (s *userFollowService) GetFollowing(ctx context.Context, userID string, limit, offset int) ([]*dto.UserResponse, int64, error) {
 	users, total, err := s.userFollowRepo.GetFollowing(ctx, userID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Convert to response format
-	userResponses := make([]*model.UserResponse, len(users))
+	userResponses := make([]*dto.UserResponse, len(users))
 	for i, user := range users {
-		userResponses[i] = user.ToResponse()
+		userResponses[i] = dto.UserToResponse(user)
 	}
 
 	return userResponses, total, nil
 }
 
-func (s *userFollowService) GetFollowStats(ctx context.Context, userID string) (*model.UserFollowStats, error) {
+func (s *userFollowService) GetFollowStats(ctx context.Context, userID string) (*dto.UserFollowStats, error) {
 	return s.userFollowRepo.GetFollowStats(ctx, userID)
 }
 
-func (s *userFollowService) GetMutualFollows(ctx context.Context, userID1, userID2 string) ([]*model.UserResponse, error) {
+func (s *userFollowService) GetMutualFollows(ctx context.Context, userID1, userID2 string) ([]*dto.UserResponse, error) {
 	users, err := s.userFollowRepo.GetMutualFollows(ctx, userID1, userID2)
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert to response format
-	userResponses := make([]*model.UserResponse, len(users))
+	userResponses := make([]*dto.UserResponse, len(users))
 	for i, user := range users {
-		userResponses[i] = user.ToResponse()
+		userResponses[i] = dto.UserToResponse(user)
 	}
 
 	return userResponses, nil
 }
 
-func (s *userFollowService) GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string) (*model.UserResponse, error) {
-	// Get user
+func (s *userFollowService) GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string) (*dto.UserResponse, error) {
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	userResponse := user.ToResponse()
+	userResponse := dto.UserToResponse(user)
 
-	// If current user is provided and different from target user, check follow status
 	if currentUserID != "" && currentUserID != userID {
 		isFollowing, err := s.userFollowRepo.IsFollowing(ctx, currentUserID, userID)
 		if err != nil {

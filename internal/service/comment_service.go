@@ -2,16 +2,18 @@ package service
 
 import (
 	"context"
+
+	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
-	"errors"
 )
 
 type CommentService interface {
-	CreateComment(ctx context.Context, postID string, dto *model.CreatePostCommentDTO, createdBy string) (*model.PostComment, error)
-	GetCommentsByPostID(ctx context.Context, postID string) ([]*model.PostCommentResponse, error)
-	GetCommentByID(ctx context.Context, id string) (*model.PostCommentResponse, error)
-	UpdateComment(ctx context.Context, id string, content string, userID string) (*model.PostComment, error)
+	CreateComment(ctx context.Context, postID string, req *dto.CreateCommentRequest, createdBy string) (*dto.CommentResponse, error)
+	GetCommentsByPostID(ctx context.Context, postID string) ([]*dto.CommentResponse, error)
+	GetCommentByID(ctx context.Context, id string) (*dto.CommentResponse, error)
+	UpdateComment(ctx context.Context, id string, content string, userID string) (*dto.CommentResponse, error)
 	DeleteComment(ctx context.Context, id string, userID string) error
 	IsCommentAuthor(ctx context.Context, commentID string, userID string) error
 }
@@ -28,16 +30,15 @@ func NewCommentService(commentRepo repository.CommentRepository, postRepo reposi
 	}
 }
 
-func (s *commentService) CreateComment(ctx context.Context, postID string, dto *model.CreatePostCommentDTO, createdBy string) (*model.PostComment, error) {
-	// Verify post exists
+func (s *commentService) CreateComment(ctx context.Context, postID string, req *dto.CreateCommentRequest, createdBy string) (*dto.CommentResponse, error) {
 	_, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
-		return nil, errors.New("post not found")
+		return nil, apperrors.ErrPostNotFound
 	}
 
 	comment := &model.PostComment{
 		PostID:    postID,
-		Text:      dto.Text,
+		Text:      req.Text,
 		CreatedBy: createdBy,
 	}
 
@@ -45,14 +46,18 @@ func (s *commentService) CreateComment(ctx context.Context, postID string, dto *
 		return nil, err
 	}
 
-	return comment, nil
+	created, err := s.commentRepo.GetCommentByID(ctx, comment.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.CommentToResponse(created), nil
 }
 
-func (s *commentService) GetCommentsByPostID(ctx context.Context, postID string) ([]*model.PostCommentResponse, error) {
-	// Verify post exists
+func (s *commentService) GetCommentsByPostID(ctx context.Context, postID string) ([]*dto.CommentResponse, error) {
 	_, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
-		return nil, errors.New("post not found")
+		return nil, apperrors.ErrPostNotFound
 	}
 
 	comments, err := s.commentRepo.GetCommentsByPostID(ctx, postID)
@@ -60,30 +65,30 @@ func (s *commentService) GetCommentsByPostID(ctx context.Context, postID string)
 		return nil, err
 	}
 
-	responses := make([]*model.PostCommentResponse, len(comments))
+	responses := make([]*dto.CommentResponse, len(comments))
 	for i, comment := range comments {
-		responses[i] = comment.ToResponse()
+		responses[i] = dto.CommentToResponse(comment)
 	}
 
 	return responses, nil
 }
 
-func (s *commentService) GetCommentByID(ctx context.Context, id string) (*model.PostCommentResponse, error) {
+func (s *commentService) GetCommentByID(ctx context.Context, id string) (*dto.CommentResponse, error) {
 	comment, err := s.commentRepo.GetCommentByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return comment.ToResponse(), nil
+	return dto.CommentToResponse(comment), nil
 }
 
-func (s *commentService) UpdateComment(ctx context.Context, id string, text string, userID string) (*model.PostComment, error) {
+func (s *commentService) UpdateComment(ctx context.Context, id string, text string, userID string) (*dto.CommentResponse, error) {
 	comment, err := s.commentRepo.GetCommentByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if comment.CreatedBy != userID {
-		return nil, errors.New("not authorized to update this comment")
+		return nil, apperrors.ErrCommentNotOwned
 	}
 
 	comment.Text = text
@@ -91,7 +96,12 @@ func (s *commentService) UpdateComment(ctx context.Context, id string, text stri
 		return nil, err
 	}
 
-	return comment, nil
+	updated, err := s.commentRepo.GetCommentByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.CommentToResponse(updated), nil
 }
 
 func (s *commentService) DeleteComment(ctx context.Context, id string, userID string) error {
@@ -101,7 +111,7 @@ func (s *commentService) DeleteComment(ctx context.Context, id string, userID st
 	}
 
 	if comment.CreatedBy != userID {
-		return errors.New("not authorized to delete this comment")
+		return apperrors.ErrCommentNotOwned
 	}
 
 	return s.commentRepo.DeleteComment(ctx, id)
@@ -113,7 +123,7 @@ func (s *commentService) IsCommentAuthor(ctx context.Context, commentID string, 
 		return err
 	}
 	if comment.CreatedBy != userID {
-		return errors.New("not author")
+		return apperrors.ErrNotAuthor
 	}
 	return nil
 }

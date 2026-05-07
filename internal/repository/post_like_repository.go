@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"echobackend/internal/dto"
 	"echobackend/internal/model"
 
 	"gorm.io/gorm"
@@ -11,7 +12,7 @@ type PostLikeRepository interface {
 	CreateLike(ctx context.Context, like *model.PostLike) error
 	DeleteLike(ctx context.Context, postID, userID string) error
 	GetLikesByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostLike, int64, error)
-	GetLikeStats(ctx context.Context, postID string) (*model.PostLikeStats, error)
+	GetLikeStats(ctx context.Context, postID string) (*dto.PostLikeStats, error)
 	HasUserLikedPost(ctx context.Context, postID, userID string) (bool, error)
 	GetLikeByUserAndPost(ctx context.Context, postID, userID string) (*model.PostLike, error)
 }
@@ -55,8 +56,8 @@ func (r *postLikeRepository) GetLikesByPostID(ctx context.Context, postID string
 	return likes, total, err
 }
 
-func (r *postLikeRepository) GetLikeStats(ctx context.Context, postID string) (*model.PostLikeStats, error) {
-	var stats model.PostLikeStats
+func (r *postLikeRepository) GetLikeStats(ctx context.Context, postID string) (*dto.PostLikeStats, error) {
+	var stats dto.PostLikeStats
 	stats.PostID = postID
 
 	// Count total likes

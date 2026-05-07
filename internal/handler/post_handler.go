@@ -1,13 +1,12 @@
 package handler
 
 import (
-	"echobackend/internal/model"
+	"echobackend/internal/dto"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
 	"strconv"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 )
 
@@ -24,10 +23,9 @@ func NewPostHandler(postService service.PostService, postViewService service.Pos
 }
 
 func (h *PostHandler) GetPosts(c *echo.Context) error {
-	// Parse query parameters into filter struct
-	filter := &model.PostQueryFilter{
-		Limit:     10, // Default limit
-		Offset:    0,  // Default offset
+	filter := &dto.PostQueryFilter{
+		Limit:     10,
+		Offset:    0,
 		Search:    c.QueryParam("search"),
 		SortBy:    c.QueryParam("sort_by"),
 		SortOrder: c.QueryParam("sort_order"),
@@ -36,7 +34,6 @@ func (h *PostHandler) GetPosts(c *echo.Context) error {
 		CreatedBy: c.QueryParam("created_by"),
 	}
 
-	// Parse limit and offset
 	if limit := c.QueryParam("limit"); limit != "" {
 		if limitInt, err := strconv.Atoi(limit); err == nil && limitInt > 0 {
 			filter.Limit = limitInt
@@ -49,17 +46,14 @@ func (h *PostHandler) GetPosts(c *echo.Context) error {
 		}
 	}
 
-	// Parse published filter
 	if published := c.QueryParam("published"); published != "" {
 		if pubBool, err := strconv.ParseBool(published); err == nil {
 			filter.Published = &pubBool
 		}
 	}
 
-	// Parse tags filter
 	if tags := c.QueryParam("tags"); tags != "" {
 		filter.Tags = strings.Split(tags, ",")
-		// Trim whitespace from each tag
 		for i, tag := range filter.Tags {
 			filter.Tags[i] = strings.TrimSpace(tag)
 		}
@@ -91,7 +85,7 @@ func (h *PostHandler) GetPosts(c *echo.Context) error {
 }
 
 func (h *PostHandler) CreatePost(c *echo.Context) error {
-	var postReq model.CreatePostDTO
+	var postReq dto.CreatePostRequest
 	if err := c.Bind(&postReq); err != nil {
 		return response.BadRequest(c, "Failed to create post", err)
 	}
@@ -100,11 +94,12 @@ func (h *PostHandler) CreatePost(c *echo.Context) error {
 		return response.FromValidateError(c, err)
 	}
 
-	claims := c.Get("user").(jwt.MapClaims)
-	userID := (claims)["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
 	newpost, err := h.postService.CreatePost(c.Request().Context(), &postReq, userID)
-
 	if err != nil {
 		return response.InternalServerError(c, "Failed to create post", err)
 	}
@@ -115,7 +110,7 @@ func (h *PostHandler) CreatePost(c *echo.Context) error {
 
 func (h *PostHandler) UpdatePost(c *echo.Context) error {
 	id := c.Param("id")
-	var updateDTO model.UpdatePostDTO
+	var updateDTO dto.UpdatePostRequest
 	if err := c.Bind(&updateDTO); err != nil {
 		return response.BadRequest(c, "Failed to update post", err)
 	}
@@ -124,12 +119,11 @@ func (h *PostHandler) UpdatePost(c *echo.Context) error {
 		return response.FromValidateError(c, err)
 	}
 
-	// Get the user ID from the JWT token
-	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
-	// Check if the user is the author of the post
 	err := h.postService.IsAuthor(c.Request().Context(), id, userID)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to check post ownership", err)
@@ -175,16 +169,11 @@ func (h *PostHandler) DeletePost(c *echo.Context) error {
 }
 
 func (h *PostHandler) GetPostsRandom(c *echo.Context) error {
-	limit := c.QueryParam("limit") // Default limit if not provided or invalid
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 9 // Default limit if not provided or invalid
+	limit, _ := ParsePaginationParams(c, 9)
+	if limit > 20 {
+		limit = 20
 	}
-	// Ensure limit doesn't exceed 20
-	if limitInt > 20 {
-		limitInt = 20 // Limit to 20
-	}
-	posts, err := h.postService.GetPostsRandom(c.Request().Context(), limitInt)
+	posts, err := h.postService.GetPostsRandom(c.Request().Context(), limit)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get posts", err)
 	}
@@ -200,18 +189,9 @@ func (h *PostHandler) GetPostsRandom(c *echo.Context) error {
 }
 
 func (h *PostHandler) GetPostsTrending(c *echo.Context) error {
-	offset := c.QueryParam("offset")
-	limit := c.QueryParam("limit")
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		offsetInt = 0
-	}
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 10
-	}
+	limit, offset := ParsePaginationParams(c, 10)
 
-	posts, total, err := h.postService.GetPostsTrending(c.Request().Context(), offsetInt, limitInt)
+	posts, total, err := h.postService.GetPostsTrending(c.Request().Context(), offset, limit)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get trending posts", err)
 	}
@@ -223,7 +203,7 @@ func (h *PostHandler) GetPostsTrending(c *echo.Context) error {
 		}
 	}
 
-	metaLimit := limitInt
+	metaLimit := limit
 	if metaLimit <= 0 {
 		metaLimit = 10
 	}
@@ -233,7 +213,7 @@ func (h *PostHandler) GetPostsTrending(c *echo.Context) error {
 
 	meta := response.PaginationMeta{
 		TotalItems: int(total),
-		Offset:     offsetInt,
+		Offset:     offset,
 		Limit:      metaLimit,
 		TotalPages: int(total)/metaLimit + 1,
 	}
@@ -245,19 +225,14 @@ func (h *PostHandler) GetPostsTrending(c *echo.Context) error {
 }
 
 func (h *PostHandler) GetMyPosts(c *echo.Context) error {
-	offset := c.QueryParam("offset")
-	limit := c.QueryParam("limit")
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		offsetInt = 0 // Default offset if not provided or invalid
+	limit, offset := ParsePaginationParams(c, 10)
+
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
 	}
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 10 // Default limit if not provided or invalid
-	}
-	claims := c.Get("user").(jwt.MapClaims)
-	userID := (claims)["user_id"].(string)
-	posts, total, err := h.postService.GetPostsByCreatedBy(c.Request().Context(), userID, offsetInt, limitInt)
+
+	posts, total, err := h.postService.GetPostsByCreatedBy(c.Request().Context(), userID, offset, limit)
 
 	for _, post := range posts {
 		if post.Body != nil && len(*post.Body) > 250 {
@@ -272,38 +247,31 @@ func (h *PostHandler) GetMyPosts(c *echo.Context) error {
 
 	meta := response.PaginationMeta{
 		TotalItems: int(total),
-		Offset:     offsetInt,
-		Limit:      limitInt,
-		TotalPages: int(total)/limitInt + 1,
+		Offset:     offset,
+		Limit:      limit,
+		TotalPages: int(total)/limit + 1,
 	}
-	if int(total)%limitInt == 0 {
-		meta.TotalPages = int(total) / limitInt
+	if int(total)%limit == 0 {
+		meta.TotalPages = int(total) / limit
 	}
 
 	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
 }
 
 func (h *PostHandler) GetPostsForYou(c *echo.Context) error {
-	offset := c.QueryParam("offset")
-	limit := c.QueryParam("limit")
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		offsetInt = 0
-	}
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 10
+	limit, offset := ParsePaginationParams(c, 10)
+
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
 	}
 
-	claims := c.Get("user").(jwt.MapClaims)
-	userID := claims["user_id"].(string)
-
-	posts, total, err := h.postService.GetPostsForYou(c.Request().Context(), userID, offsetInt, limitInt)
+	posts, total, err := h.postService.GetPostsForYou(c.Request().Context(), userID, offset, limit)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
-	metaLimit := limitInt
+	metaLimit := limit
 	if metaLimit <= 0 {
 		metaLimit = 10
 	}
@@ -320,7 +288,7 @@ func (h *PostHandler) GetPostsForYou(c *echo.Context) error {
 
 	meta := response.PaginationMeta{
 		TotalItems: int(total),
-		Offset:     offsetInt,
+		Offset:     offset,
 		Limit:      metaLimit,
 		TotalPages: int(total)/metaLimit + 1,
 	}
@@ -333,17 +301,9 @@ func (h *PostHandler) GetPostsForYou(c *echo.Context) error {
 
 func (h *PostHandler) GetPostsByUsername(c *echo.Context) error {
 	username := c.Param("username")
-	offset := c.QueryParam("offset")
-	limit := c.QueryParam("limit")
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		offsetInt = 0 // Default offset if not provided or invalid
-	}
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 10 // Default limit if not provided or invalid
-	}
-	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offsetInt, limitInt)
+	limit, offset := ParsePaginationParams(c, 10)
+
+	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offset, limit)
 
 	for _, post := range posts {
 		if post.Body != nil && len(*post.Body) > 250 {
@@ -358,12 +318,12 @@ func (h *PostHandler) GetPostsByUsername(c *echo.Context) error {
 
 	meta := response.PaginationMeta{
 		TotalItems: int(total),
-		Offset:     offsetInt,
-		Limit:      limitInt,
-		TotalPages: int(total)/limitInt + 1,
+		Offset:     offset,
+		Limit:      limit,
+		TotalPages: int(total)/limit + 1,
 	}
-	if int(total)%limitInt == 0 {
-		meta.TotalPages = int(total) / limitInt
+	if int(total)%limit == 0 {
+		meta.TotalPages = int(total) / limit
 	}
 
 	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
@@ -371,17 +331,9 @@ func (h *PostHandler) GetPostsByUsername(c *echo.Context) error {
 
 func (h *PostHandler) GetPostsByAuthor(c *echo.Context) error {
 	username := c.Param("username")
-	offset := c.QueryParam("offset")
-	limit := c.QueryParam("limit")
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		offsetInt = 0 // Default offset if not provided or invalid
-	}
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 10 // Default limit if not provided or invalid
-	}
-	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offsetInt, limitInt)
+	limit, offset := ParsePaginationParams(c, 10)
+
+	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offset, limit)
 
 	for _, post := range posts {
 		if post.Body != nil && len(*post.Body) > 250 {
@@ -396,12 +348,12 @@ func (h *PostHandler) GetPostsByAuthor(c *echo.Context) error {
 
 	meta := response.PaginationMeta{
 		TotalItems: int(total),
-		Offset:     offsetInt,
-		Limit:      limitInt,
-		TotalPages: int(total)/limitInt + 1,
+		Offset:     offset,
+		Limit:      limit,
+		TotalPages: int(total)/limit + 1,
 	}
-	if int(total)%limitInt == 0 {
-		meta.TotalPages = int(total) / limitInt
+	if int(total)%limit == 0 {
+		meta.TotalPages = int(total) / limit
 	}
 
 	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
@@ -409,17 +361,9 @@ func (h *PostHandler) GetPostsByAuthor(c *echo.Context) error {
 
 func (h *PostHandler) GetPostsByTag(c *echo.Context) error {
 	tag := c.Param("tag")
-	offset := c.QueryParam("offset")
-	limit := c.QueryParam("limit")
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		offsetInt = 0 // Default offset if not provided or invalid
-	}
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		limitInt = 10 // Default limit if not provided or invalid
-	}
-	posts, total, err := h.postService.GetPostsByTag(c.Request().Context(), tag, limitInt, offsetInt)
+	limit, offset := ParsePaginationParams(c, 10)
+
+	posts, total, err := h.postService.GetPostsByTag(c.Request().Context(), tag, limit, offset)
 
 	for _, post := range posts {
 		if post.Body != nil && len(*post.Body) > 250 {
@@ -434,12 +378,12 @@ func (h *PostHandler) GetPostsByTag(c *echo.Context) error {
 
 	meta := response.PaginationMeta{
 		TotalItems: int(total),
-		Offset:     offsetInt,
-		Limit:      limitInt,
-		TotalPages: int(total)/limitInt + 1,
+		Offset:     offset,
+		Limit:      limit,
+		TotalPages: int(total)/limit + 1,
 	}
-	if int(total)%limitInt == 0 {
-		meta.TotalPages = int(total) / limitInt
+	if int(total)%limit == 0 {
+		meta.TotalPages = int(total) / limit
 	}
 
 	return response.SuccessWithMeta(c, "success retrieving posts by tag", posts, meta)

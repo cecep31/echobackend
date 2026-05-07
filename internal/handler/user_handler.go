@@ -3,7 +3,6 @@ package handler
 import (
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"echobackend/pkg/validator"
 
 	"github.com/labstack/echo/v5"
 )
@@ -23,19 +22,11 @@ func NewUserHandler(userService service.UserService, userFollowService service.U
 func (h *UserHandler) GetByID(c *echo.Context) error {
 	userID := c.Param("id")
 
-	// Get current user ID from JWT if authenticated
 	var currentUserID string
-	if userClaims := c.Get("user"); userClaims != nil {
-		if claims, ok := userClaims.(map[string]interface{}); ok {
-			if uid, exists := claims["user_id"]; exists {
-				if uidStr, ok := uid.(string); ok {
-					currentUserID = uidStr
-				}
-			}
-		}
+	if uid, ok := GetUserIDFromClaims(c); ok {
+		currentUserID = uid
 	}
 
-	// Get user with follow status
 	userResponse, err := h.userFollowService.GetUserWithFollowStatus(c.Request().Context(), userID, currentUserID)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve user", err)
@@ -47,25 +38,16 @@ func (h *UserHandler) GetByID(c *echo.Context) error {
 func (h *UserHandler) GetByUsername(c *echo.Context) error {
 	username := c.Param("username")
 
-	// Get current user ID from JWT if authenticated
 	var currentUserID string
-	if userClaims := c.Get("user"); userClaims != nil {
-		if claims, ok := userClaims.(map[string]interface{}); ok {
-			if uid, exists := claims["user_id"]; exists {
-				if uidStr, ok := uid.(string); ok {
-					currentUserID = uidStr
-				}
-			}
-		}
+	if uid, ok := GetUserIDFromClaims(c); ok {
+		currentUserID = uid
 	}
 
-	// Get user by username first to get the ID
 	user, err := h.userService.GetByUsername(c.Request().Context(), username)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve user", err)
 	}
 
-	// Get user with follow status using the ID
 	userResponse, err := h.userFollowService.GetUserWithFollowStatus(c.Request().Context(), user.ID, currentUserID)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve user", err)
@@ -75,11 +57,7 @@ func (h *UserHandler) GetByUsername(c *echo.Context) error {
 }
 
 func (h *UserHandler) GetUsers(c *echo.Context) error {
-	// Validate and sanitize pagination parameters
-	limit, offset, err := validator.ValidatePaginationWithDefaults(c.QueryParam("limit"), c.QueryParam("offset"))
-	if err != nil {
-		return response.BadRequest(c, "Invalid pagination parameters", err)
-	}
+	limit, offset := ParsePaginationParams(c, 10)
 
 	users, total, err := h.userService.GetUsers(c.Request().Context(), offset, limit)
 	if err != nil {
@@ -90,7 +68,6 @@ func (h *UserHandler) GetUsers(c *echo.Context) error {
 	return response.SuccessWithMeta(c, "Successfully retrieved users", users, meta)
 }
 
-// delete user
 func (h *UserHandler) DeleteUser(c *echo.Context) error {
 	id := c.Param("id")
 	err := h.userService.Delete(c.Request().Context(), id)
@@ -101,29 +78,13 @@ func (h *UserHandler) DeleteUser(c *echo.Context) error {
 	return response.Success(c, "Successfully deleted user", nil)
 }
 
-// GetMe returns the current authenticated user's information
 func (h *UserHandler) GetMe(c *echo.Context) error {
-	userClaims := c.Get("user")
-	if userClaims == nil {
-		return response.InternalServerError(c, "User context not found", nil)
-	}
-
-	claims, ok := userClaims.(map[string]interface{})
+	userID, ok := GetUserIDFromClaims(c)
 	if !ok {
-		return response.InternalServerError(c, "Invalid user context", nil)
+		return response.Unauthorized(c, "User not authenticated")
 	}
 
-	userID, exists := claims["user_id"]
-	if !exists {
-		return response.InternalServerError(c, "User ID not found in token", nil)
-	}
-
-	userIDStr, ok := userID.(string)
-	if !ok {
-		return response.InternalServerError(c, "Invalid user ID format", nil)
-	}
-
-	userResponse, err := h.userService.GetByID(c.Request().Context(), userIDStr)
+	userResponse, err := h.userService.GetByID(c.Request().Context(), userID)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve user", err)
 	}

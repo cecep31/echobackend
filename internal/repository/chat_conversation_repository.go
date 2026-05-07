@@ -1,24 +1,21 @@
 package repository
 
 import (
-	"context"
-	"errors"
 	"fmt"
 
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 
-	"gorm.io/gorm"
-)
+	"context"
 
-var (
-	ErrChatConversationNotFound = errors.New("chat conversation not found")
+	"gorm.io/gorm"
 )
 
 type ChatConversationRepository interface {
 	CreateConversation(ctx context.Context, conversation *model.ChatConversation) (*model.ChatConversation, error)
 	GetConversationByID(ctx context.Context, id string) (*model.ChatConversation, error)
 	GetConversationsByUserID(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversation, int64, error)
-	UpdateConversation(ctx context.Context, id string, conversation *model.UpdateChatConversationDTO) (*model.ChatConversation, error)
+	UpdateConversation(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error)
 	DeleteConversation(ctx context.Context, id string) error
 	GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversation, int64, error)
 }
@@ -46,8 +43,8 @@ func (r *chatConversationRepository) GetConversationByID(ctx context.Context, id
 		First(&conversation, "id = ?", id).Error
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrChatConversationNotFound
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperrors.ErrChatConversationNotFound
 		}
 		return nil, fmt.Errorf("failed to get chat conversation: %w", err)
 	}
@@ -62,13 +59,11 @@ func (r *chatConversationRepository) GetUserConversations(ctx context.Context, u
 	var conversations []*model.ChatConversation
 	var count int64
 
-	// Count total records
 	err := r.db.WithContext(ctx).Model(&model.ChatConversation{}).Where("user_id = ?", userID).Count(&count).Error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count chat conversations: %w", err)
 	}
 
-	// Get paginated records
 	err = r.db.WithContext(ctx).
 		Preload("Messages").
 		Where("user_id = ?", userID).
@@ -84,38 +79,28 @@ func (r *chatConversationRepository) GetUserConversations(ctx context.Context, u
 	return conversations, count, nil
 }
 
-func (r *chatConversationRepository) UpdateConversation(ctx context.Context, id string, conversation *model.UpdateChatConversationDTO) (*model.ChatConversation, error) {
-	// Check if the conversation exists first
+func (r *chatConversationRepository) UpdateConversation(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error) {
 	var existingConversation model.ChatConversation
 	err := r.db.WithContext(ctx).First(&existingConversation, "id = ?", id).Error
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrChatConversationNotFound
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperrors.ErrChatConversationNotFound
 		}
 		return nil, fmt.Errorf("error checking conversation existence: %w", err)
 	}
 
-	// Build updates map
-	updates := make(map[string]interface{})
-	if conversation.Title != "" {
-		updates["title"] = conversation.Title
-	}
-
 	if len(updates) == 0 {
-		// No fields to update, return current conversation
 		return &existingConversation, nil
 	}
 
-	// Update the conversation
 	result := r.db.WithContext(ctx).Model(&model.ChatConversation{}).Where("id = ?", id).Updates(updates)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to update chat conversation: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
-		return nil, ErrChatConversationNotFound
+		return nil, apperrors.ErrChatConversationNotFound
 	}
 
-	// Fetch and return the updated conversation
 	err = r.db.WithContext(ctx).
 		Preload("Messages").
 		First(&existingConversation, "id = ?", id).Error
@@ -133,7 +118,7 @@ func (r *chatConversationRepository) DeleteConversation(ctx context.Context, id 
 		return fmt.Errorf("failed to delete chat conversation: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
-		return ErrChatConversationNotFound
+		return apperrors.ErrChatConversationNotFound
 	}
 	return nil
 }

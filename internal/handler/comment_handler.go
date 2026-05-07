@@ -1,11 +1,10 @@
 package handler
 
 import (
-	"echobackend/internal/model"
+	"echobackend/internal/dto"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 )
 
@@ -19,28 +18,27 @@ func NewCommentHandler(commentService service.CommentService) *CommentHandler {
 	}
 }
 
-// CreateComment handles creating a new comment on a post
 func (h *CommentHandler) CreateComment(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
 		return response.BadRequest(c, "Post ID is required", nil)
 	}
 
-	var dto model.CreatePostCommentDTO
-	if err := c.Bind(&dto); err != nil {
+	var commentDTO dto.CreateCommentRequest
+	if err := c.Bind(&commentDTO); err != nil {
 		return response.BadRequest(c, "Invalid request payload", err)
 	}
 
-	if err := c.Validate(dto); err != nil {
+	if err := c.Validate(commentDTO); err != nil {
 		return response.FromValidateError(c, err)
 	}
 
-	// Get user ID from JWT token
-	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
-	comment, err := h.commentService.CreateComment(c.Request().Context(), postID, &dto, userID)
+	comment, err := h.commentService.CreateComment(c.Request().Context(), postID, &commentDTO, userID)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to create comment", err)
 	}
@@ -48,7 +46,6 @@ func (h *CommentHandler) CreateComment(c *echo.Context) error {
 	return response.Created(c, "Comment created successfully", comment)
 }
 
-// GetCommentsByPostID handles getting all comments for a specific post
 func (h *CommentHandler) GetCommentsByPostID(c *echo.Context) error {
 	postID := c.Param("id")
 	if postID == "" {
@@ -63,28 +60,27 @@ func (h *CommentHandler) GetCommentsByPostID(c *echo.Context) error {
 	return response.Success(c, "Comments fetched successfully", comments)
 }
 
-// UpdateComment handles updating a comment
 func (h *CommentHandler) UpdateComment(c *echo.Context) error {
 	commentID := c.Param("comment_id")
 	if commentID == "" {
 		return response.BadRequest(c, "Comment ID is required", nil)
 	}
 
-	var dto model.CreatePostCommentDTO
-	if err := c.Bind(&dto); err != nil {
+	var commentDTO dto.CreateCommentRequest
+	if err := c.Bind(&commentDTO); err != nil {
 		return response.BadRequest(c, "Invalid request payload", err)
 	}
 
-	if err := c.Validate(dto); err != nil {
+	if err := c.Validate(commentDTO); err != nil {
 		return response.FromValidateError(c, err)
 	}
 
-	// Get user ID from JWT token
-	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
-	comment, err := h.commentService.UpdateComment(c.Request().Context(), commentID, dto.Text, userID)
+	comment, err := h.commentService.UpdateComment(c.Request().Context(), commentID, commentDTO.Text, userID)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to update comment", err)
 	}
@@ -92,17 +88,16 @@ func (h *CommentHandler) UpdateComment(c *echo.Context) error {
 	return response.Success(c, "Comment updated successfully", comment)
 }
 
-// DeleteComment handles deleting a comment
 func (h *CommentHandler) DeleteComment(c *echo.Context) error {
 	commentID := c.Param("comment_id")
 	if commentID == "" {
 		return response.BadRequest(c, "Comment ID is required", nil)
 	}
 
-	// Get user ID from JWT token
-	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userID := claims["user_id"].(string)
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
 
 	if err := h.commentService.DeleteComment(c.Request().Context(), commentID, userID); err != nil {
 		return response.InternalServerError(c, "Failed to delete comment", err)

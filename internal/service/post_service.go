@@ -2,30 +2,32 @@ package service
 
 import (
 	"context"
+	"mime/multipart"
+
+	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
 	"echobackend/pkg/storage"
-	"errors"
-	"mime/multipart"
 )
 
 type PostService interface {
-	GetPosts(ctx context.Context, limit int, offset int) ([]*model.PostResponse, int64, error)
-	GetPostsFiltered(ctx context.Context, filter *model.PostQueryFilter) ([]*model.PostResponse, int64, error)
-	GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.PostResponse, int64, error)
-	GetPostsRandom(ctx context.Context, limit int) ([]*model.PostResponse, error)
-	GetPostsTrending(ctx context.Context, offset int, limit int) ([]*model.PostResponse, int64, error)
-	GetPostByID(ctx context.Context, id string) (*model.PostResponse, error)
-	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error)
-	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error)
-	GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.PostResponse, int64, error)
-	GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*model.PostResponse, int64, error)
+	GetPosts(ctx context.Context, limit int, offset int) ([]*dto.PostResponse, int64, error)
+	GetPostsFiltered(ctx context.Context, filter *dto.PostQueryFilter) ([]*dto.PostResponse, int64, error)
+	GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*dto.PostResponse, int64, error)
+	GetPostsRandom(ctx context.Context, limit int) ([]*dto.PostResponse, error)
+	GetPostsTrending(ctx context.Context, offset int, limit int) ([]*dto.PostResponse, int64, error)
+	GetPostByID(ctx context.Context, id string) (*dto.PostResponse, error)
+	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*dto.PostResponse, error)
+	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*dto.PostResponse, int64, error)
+	GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*dto.PostResponse, int64, error)
+	GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*dto.PostResponse, int64, error)
 	DeletePostByID(ctx context.Context, id string) error
 	UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error
-	CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error)
-	UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error)
+	CreatePost(ctx context.Context, req *dto.CreatePostRequest, creatorID string) (*dto.PostResponse, error)
+	UpdatePost(ctx context.Context, id string, req *dto.UpdatePostRequest) (*dto.PostResponse, error)
 	IsAuthor(ctx context.Context, id string, userid string) error
-	GetPostsForSitemap(ctx context.Context, limit int) ([]*model.SitemapPost, error)
+	GetPostsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapPost, error)
 }
 
 type postService struct {
@@ -44,13 +46,12 @@ func (s *postService) IsAuthor(ctx context.Context, id string, userid string) er
 		return err
 	}
 	if post.CreatedBy == nil || *post.CreatedBy != userid {
-		return errors.New("not author")
+		return apperrors.ErrNotAuthor
 	}
 	return nil
 }
 
-func (s *postService) GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.PostResponse, int64, error) {
-	// Input validation
+func (s *postService) GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*dto.PostResponse, int64, error) {
 	if limit < 0 {
 		limit = 0
 	}
@@ -58,7 +59,7 @@ func (s *postService) GetPostsByUsername(ctx context.Context, username string, o
 		offset = 0
 	}
 	if username == "" {
-		return []*model.PostResponse{}, 0, nil
+		return []*dto.PostResponse{}, 0, nil
 	}
 
 	posts, total, err := s.postRepo.GetPostByUsername(ctx, username, offset, limit)
@@ -66,26 +67,22 @@ func (s *postService) GetPostsByUsername(ctx context.Context, username string, o
 		return nil, 0, err
 	}
 
-	// Pre-allocate slice with known capacity to reduce memory allocations
-	postsResponse := make([]*model.PostResponse, 0, len(posts))
-
+	postsResponse := make([]*dto.PostResponse, 0, len(posts))
 	for _, post := range posts {
-		postsResponse = append(postsResponse, post.ToResponse())
+		postsResponse = append(postsResponse, dto.PostToResponse(post))
 	}
 
 	return postsResponse, total, nil
 }
 
-func (s *postService) CreatePost(ctx context.Context, post *model.CreatePostDTO, creator_id string) (*model.Post, error) {
-	// Handle tags if they exist
+func (s *postService) CreatePost(ctx context.Context, req *dto.CreatePostRequest, creatorID string) (*dto.PostResponse, error) {
 	var tags []model.Tag
-	if len(post.Tags) > 0 {
-		for _, tagName := range post.Tags {
+	if len(req.Tags) > 0 {
+		for _, tagName := range req.Tags {
 			if tagName == "" {
-				continue // Skip empty tag names
+				continue
 			}
 
-			// Try to find existing tag by name
 			tag, err := s.findOrCreateTagByName(ctx, tagName)
 			if err != nil {
 				return nil, err
@@ -94,38 +91,79 @@ func (s *postService) CreatePost(ctx context.Context, post *model.CreatePostDTO,
 		}
 	}
 
-	// Create the post with tags
-	return s.postRepo.CreatePostWithTags(ctx, post, creator_id, tags)
+	post := &model.Post{
+		Title:     &req.Title,
+		Slug:      &req.Slug,
+		Body:      &req.Body,
+		CreatedBy: &creatorID,
+		Photo_url: &req.PhotoURL,
+		Published: &req.Published,
+	}
+
+	created, err := s.postRepo.CreatePostWithTags(ctx, post, tags)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto.PostToResponse(created), nil
 }
 
-func (s *postService) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.PostResponse, error) {
+func (s *postService) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*dto.PostResponse, error) {
 	post, err := s.postRepo.GetPostBySlugAndUsername(ctx, slug, username)
 	if err != nil {
 		return nil, err
 	}
 
-	return post.ToResponse(), nil
+	return dto.PostToResponse(post), nil
 }
 
 func (s *postService) DeletePostByID(ctx context.Context, id string) error {
 	return s.postRepo.DeletePostByID(ctx, id)
 }
 
-func (s *postService) UpdatePost(ctx context.Context, id string, post *model.UpdatePostDTO) (*model.Post, error) {
-	return s.postRepo.UpdatePost(ctx, id, post)
+func (s *postService) UpdatePost(ctx context.Context, id string, req *dto.UpdatePostRequest) (*dto.PostResponse, error) {
+	updates := make(map[string]interface{})
+	if req.Title != "" {
+		updates["title"] = req.Title
+	}
+	if req.Body != "" {
+		updates["body"] = req.Body
+	}
+	if req.Slug != "" {
+		updates["slug"] = req.Slug
+	}
+	if req.PhotoURL != "" {
+		updates["photo_url"] = req.PhotoURL
+	}
+	if req.Published != nil {
+		updates["published"] = *req.Published
+	}
+
+	if len(updates) == 0 && len(req.Tags) == 0 {
+		post, err := s.postRepo.GetPostByID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		return dto.PostToResponse(post), nil
+	}
+
+	updatedPost, err := s.postRepo.UpdatePost(ctx, id, updates)
+	if err != nil {
+		return nil, err
+	}
+	return dto.PostToResponse(updatedPost), nil
 }
 
-func (s *postService) GetPostByID(ctx context.Context, id string) (*model.PostResponse, error) {
+func (s *postService) GetPostByID(ctx context.Context, id string) (*dto.PostResponse, error) {
 	post, err := s.postRepo.GetPostByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return post.ToResponse(), nil
+	return dto.PostToResponse(post), nil
 }
 
-func (s *postService) GetPosts(ctx context.Context, limit int, offset int) ([]*model.PostResponse, int64, error) {
-	// Input validation
+func (s *postService) GetPosts(ctx context.Context, limit int, offset int) ([]*dto.PostResponse, int64, error) {
 	if limit < 0 {
 		limit = 0
 	}
@@ -138,19 +176,16 @@ func (s *postService) GetPosts(ctx context.Context, limit int, offset int) ([]*m
 		return nil, 0, err
 	}
 
-	// Pre-allocate slice with known capacity to reduce memory allocations
-	postsResponse := make([]*model.PostResponse, 0, len(posts))
-
+	postsResponse := make([]*dto.PostResponse, 0, len(posts))
 	for _, post := range posts {
-		postResponse := post.ToResponse()
+		postResponse := dto.PostToResponse(post)
 		postsResponse = append(postsResponse, postResponse)
 	}
 
 	return postsResponse, total, nil
 }
 
-func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*model.PostResponse, error) {
-	// Input validation
+func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*dto.PostResponse, error) {
 	if limit < 0 {
 		limit = 0
 	}
@@ -160,18 +195,16 @@ func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*model.P
 		return nil, err
 	}
 
-	// Pre-allocate slice with known capacity to reduce memory allocations
-	postsResponse := make([]*model.PostResponse, 0, len(posts))
-
+	postsResponse := make([]*dto.PostResponse, 0, len(posts))
 	for _, post := range posts {
-		postResponse := post.ToResponse()
+		postResponse := dto.PostToResponse(post)
 		postsResponse = append(postsResponse, postResponse)
 	}
 
 	return postsResponse, nil
 }
 
-func (s *postService) GetPostsTrending(ctx context.Context, offset int, limit int) ([]*model.PostResponse, int64, error) {
+func (s *postService) GetPostsTrending(ctx context.Context, offset int, limit int) ([]*dto.PostResponse, int64, error) {
 	if limit < 0 {
 		limit = 10
 	}
@@ -190,16 +223,15 @@ func (s *postService) GetPostsTrending(ctx context.Context, offset int, limit in
 		return nil, 0, err
 	}
 
-	postsResponse := make([]*model.PostResponse, 0, len(posts))
+	postsResponse := make([]*dto.PostResponse, 0, len(posts))
 	for _, post := range posts {
-		postsResponse = append(postsResponse, post.ToResponse())
+		postsResponse = append(postsResponse, dto.PostToResponse(post))
 	}
 
 	return postsResponse, total, nil
 }
 
-func (s *postService) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.PostResponse, int64, error) {
-	// Input validation
+func (s *postService) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*dto.PostResponse, int64, error) {
 	if limit < 0 {
 		limit = 0
 	}
@@ -207,7 +239,7 @@ func (s *postService) GetPostsByCreatedBy(ctx context.Context, createdBy string,
 		offset = 0
 	}
 	if createdBy == "" {
-		return []*model.PostResponse{}, 0, nil
+		return []*dto.PostResponse{}, 0, nil
 	}
 
 	posts, total, err := s.postRepo.GetPostsByCreatedBy(ctx, createdBy, offset, limit)
@@ -215,17 +247,15 @@ func (s *postService) GetPostsByCreatedBy(ctx context.Context, createdBy string,
 		return nil, 0, err
 	}
 
-	// Pre-allocate slice with known capacity to reduce memory allocations
-	postsResponse := make([]*model.PostResponse, 0, len(posts))
+	postsResponse := make([]*dto.PostResponse, 0, len(posts))
 	for _, post := range posts {
-		postsResponse = append(postsResponse, post.ToResponse())
+		postsResponse = append(postsResponse, dto.PostToResponse(post))
 	}
 
 	return postsResponse, total, nil
 }
 
-func (s *postService) GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.PostResponse, int64, error) {
-	// Input validation
+func (s *postService) GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*dto.PostResponse, int64, error) {
 	if limit < 0 {
 		limit = 0
 	}
@@ -233,7 +263,7 @@ func (s *postService) GetPostsByTag(ctx context.Context, tag string, limit int, 
 		offset = 0
 	}
 	if tag == "" {
-		return []*model.PostResponse{}, 0, nil
+		return []*dto.PostResponse{}, 0, nil
 	}
 
 	posts, total, err := s.postRepo.GetPostsByTag(ctx, tag, limit, offset)
@@ -241,22 +271,20 @@ func (s *postService) GetPostsByTag(ctx context.Context, tag string, limit int, 
 		return nil, 0, err
 	}
 
-	// Pre-allocate slice with known capacity to reduce memory allocations
-	postsResponse := make([]*model.PostResponse, 0, len(posts))
+	postsResponse := make([]*dto.PostResponse, 0, len(posts))
 	for _, post := range posts {
-		postsResponse = append(postsResponse, post.ToResponse())
+		postsResponse = append(postsResponse, dto.PostToResponse(post))
 	}
 
 	return postsResponse, total, nil
 }
 
-func (s *postService) GetPostsFiltered(ctx context.Context, filter *model.PostQueryFilter) ([]*model.PostResponse, int64, error) {
-	// Input validation and defaults
+func (s *postService) GetPostsFiltered(ctx context.Context, filter *dto.PostQueryFilter) ([]*dto.PostResponse, int64, error) {
 	if filter.Limit < 0 {
 		filter.Limit = 10
 	}
 	if filter.Limit > 100 {
-		filter.Limit = 100 // Maximum limit
+		filter.Limit = 100
 	}
 	if filter.Offset < 0 {
 		filter.Offset = 0
@@ -267,18 +295,16 @@ func (s *postService) GetPostsFiltered(ctx context.Context, filter *model.PostQu
 		return nil, 0, err
 	}
 
-	// Pre-allocate slice with known capacity to reduce memory allocations
-	postsResponse := make([]*model.PostResponse, 0, len(posts))
-
+	postsResponse := make([]*dto.PostResponse, 0, len(posts))
 	for _, post := range posts {
-		postResponse := post.ToResponse()
+		postResponse := dto.PostToResponse(post)
 		postsResponse = append(postsResponse, postResponse)
 	}
 
 	return postsResponse, total, nil
 }
 
-func (s *postService) GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*model.PostResponse, int64, error) {
+func (s *postService) GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*dto.PostResponse, int64, error) {
 	if limit < 0 {
 		limit = 10
 	}
@@ -292,7 +318,7 @@ func (s *postService) GetPostsForYou(ctx context.Context, userID string, offset 
 		offset = 0
 	}
 	if userID == "" {
-		return []*model.PostResponse{}, 0, nil
+		return []*dto.PostResponse{}, 0, nil
 	}
 
 	posts, total, err := s.postRepo.GetPostsForYou(ctx, userID, offset, limit)
@@ -300,18 +326,17 @@ func (s *postService) GetPostsForYou(ctx context.Context, userID string, offset 
 		return nil, 0, err
 	}
 
-	postsResponse := make([]*model.PostResponse, 0, len(posts))
+	postsResponse := make([]*dto.PostResponse, 0, len(posts))
 	for _, post := range posts {
-		postsResponse = append(postsResponse, post.ToResponse())
+		postsResponse = append(postsResponse, dto.PostToResponse(post))
 	}
 
 	return postsResponse, total, nil
 }
 
 func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error {
-	// Input validation
 	if file == nil {
-		return errors.New("file cannot be nil")
+		return apperrors.ErrFileNil
 	}
 
 	src, err := file.Open()
@@ -320,16 +345,14 @@ func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.File
 	}
 	defer src.Close()
 
-	// Use the passed context instead of context.Background() to respect cancellation/timeout
 	return s.s3storage.Save(ctx, file.Filename, src)
 }
 
-// findOrCreateTagByName finds an existing tag by name or creates a new one
 func (s *postService) findOrCreateTagByName(ctx context.Context, tagName string) (*model.Tag, error) {
 	return s.tagService.FindOrCreateByName(ctx, tagName)
 }
 
-func (s *postService) GetPostsForSitemap(ctx context.Context, limit int) ([]*model.SitemapPost, error) {
+func (s *postService) GetPostsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapPost, error) {
 	if limit < 0 {
 		limit = 0
 	}

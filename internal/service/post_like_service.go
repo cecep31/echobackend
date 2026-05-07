@@ -2,19 +2,21 @@ package service
 
 import (
 	"context"
+	"fmt"
+
+	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
 	"echobackend/pkg/validator"
-	"errors"
-	"fmt"
 	"time"
 )
 
 type PostLikeService interface {
 	LikePost(ctx context.Context, postID, userID string) error
 	UnlikePost(ctx context.Context, postID, userID string) error
-	GetLikesByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostLike, int64, error)
-	GetLikeStats(ctx context.Context, postID string) (*model.PostLikeStats, error)
+	GetLikesByPostID(ctx context.Context, postID string, limit, offset int) ([]*dto.PostLikeResponse, int64, error)
+	GetLikeStats(ctx context.Context, postID string) (*dto.PostLikeStats, error)
 	HasUserLikedPost(ctx context.Context, postID, userID string) (bool, error)
 }
 
@@ -34,29 +36,24 @@ func NewPostLikeService(
 }
 
 func (s *postLikeService) LikePost(ctx context.Context, postID, userID string) error {
-	// Validate input parameters
 	if err := validator.ValidatePostLikeInput(postID, userID); err != nil {
 		return fmt.Errorf("validation error: %w", err)
 	}
 
-	// Check if post exists
 	_, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
 		return fmt.Errorf("failed to check post existence: %w", err)
 	}
 
-	// Check if user already liked this post
 	hasLiked, err := s.postLikeRepo.HasUserLikedPost(ctx, postID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to check like status: %w", err)
 	}
 
-	// If user already liked, return error
 	if hasLiked {
-		return errors.New("user has already liked this post")
+		return apperrors.ErrAlreadyLiked
 	}
 
-	// Create new like
 	now := time.Now()
 	like := &model.PostLike{
 		PostID:    postID,
@@ -68,56 +65,58 @@ func (s *postLikeService) LikePost(ctx context.Context, postID, userID string) e
 }
 
 func (s *postLikeService) UnlikePost(ctx context.Context, postID, userID string) error {
-	// Validate input parameters
 	if err := validator.ValidatePostLikeInput(postID, userID); err != nil {
 		return fmt.Errorf("validation error: %w", err)
 	}
 
-	// Check if post exists
 	_, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
 		return fmt.Errorf("failed to check post existence: %w", err)
 	}
 
-	// Check if user has liked this post
 	hasLiked, err := s.postLikeRepo.HasUserLikedPost(ctx, postID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to check like status: %w", err)
 	}
 
-	// If user hasn't liked, return error
 	if !hasLiked {
-		return errors.New("user has not liked this post")
+		return apperrors.ErrNotLiked
 	}
 
 	return s.postLikeRepo.DeleteLike(ctx, postID, userID)
 }
 
-func (s *postLikeService) GetLikesByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostLike, int64, error) {
-	// Validate post ID
+func (s *postLikeService) GetLikesByPostID(ctx context.Context, postID string, limit, offset int) ([]*dto.PostLikeResponse, int64, error) {
 	if !validator.IsValidUUID(postID) {
-		return nil, 0, fmt.Errorf("invalid post ID format")
+		return nil, 0, apperrors.ErrInvalidPostID
 	}
 
-	// Validate pagination parameters
 	if err := validator.ValidatePagination(limit, offset); err != nil {
 		return nil, 0, fmt.Errorf("validation error: %w", err)
 	}
 
-	return s.postLikeRepo.GetLikesByPostID(ctx, postID, limit, offset)
+	likes, total, err := s.postLikeRepo.GetLikesByPostID(ctx, postID, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	responses := make([]*dto.PostLikeResponse, len(likes))
+	for i, like := range likes {
+		responses[i] = dto.PostLikeToResponse(like)
+	}
+
+	return responses, total, nil
 }
 
-func (s *postLikeService) GetLikeStats(ctx context.Context, postID string) (*model.PostLikeStats, error) {
-	// Validate post ID
+func (s *postLikeService) GetLikeStats(ctx context.Context, postID string) (*dto.PostLikeStats, error) {
 	if !validator.IsValidUUID(postID) {
-		return nil, fmt.Errorf("invalid post ID format")
+		return nil, apperrors.ErrInvalidPostID
 	}
 
 	return s.postLikeRepo.GetLikeStats(ctx, postID)
 }
 
 func (s *postLikeService) HasUserLikedPost(ctx context.Context, postID, userID string) (bool, error) {
-	// Validate input parameters
 	if err := validator.ValidatePostLikeInput(postID, userID); err != nil {
 		return false, fmt.Errorf("validation error: %w", err)
 	}

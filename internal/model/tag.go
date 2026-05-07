@@ -11,30 +11,6 @@ type Tag struct {
 	Posts     []Post     `gorm:"many2many:posts_to_tags;"`
 }
 
-// TableName specifies the table name for GORM
 func (Tag) TableName() string {
 	return "tags"
-}
-
-// TagResponse represents the tag data that can be safely sent to clients
-type TagResponse struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-// ToResponse converts a Tag model to a TagResponse
-func (t *Tag) ToResponse() *TagResponse {
-	if t == nil {
-		return nil
-	}
-	return &TagResponse{
-		ID:   t.ID,
-		Name: t.Name,
-	}
-}
-
-// SitemapTag is minimal tag data for sitemap URL generation
-type SitemapTag struct {
-	Name      string     `json:"name"`
-	CreatedAt *time.Time `json:"created_at"`
 }

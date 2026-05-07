@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"echobackend/internal/dto"
 	"echobackend/internal/model"
 
 	"gorm.io/gorm"
@@ -10,7 +11,7 @@ import (
 type PostViewRepository interface {
 	CreateView(ctx context.Context, view *model.PostView) error
 	GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostView, int64, error)
-	GetViewStats(ctx context.Context, postID string) (*model.PostViewStats, error)
+	GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error)
 	HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error)
 	GetViewByUserAndPost(ctx context.Context, postID, userID string) (*model.PostView, error)
 	IncrementPostViewCount(ctx context.Context, postID string) error
@@ -49,8 +50,8 @@ func (r *postViewRepository) GetViewsByPostID(ctx context.Context, postID string
 	return views, total, err
 }
 
-func (r *postViewRepository) GetViewStats(ctx context.Context, postID string) (*model.PostViewStats, error) {
-	stats := &model.PostViewStats{PostID: postID}
+func (r *postViewRepository) GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error) {
+	stats := &dto.PostViewStats{PostID: postID}
 
 	// Total views
 	if err := r.db.WithContext(ctx).Model(&model.PostView{}).Where("post_id = ?", postID).Count(&stats.TotalViews).Error; err != nil {
