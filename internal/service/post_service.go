@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"mime/multipart"
 
 	"echobackend/internal/dto"
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
+	"echobackend/pkg/cache"
 	"echobackend/pkg/storage"
 )
 
@@ -34,10 +36,11 @@ type postService struct {
 	postRepo   repository.PostRepository
 	tagService TagService
 	s3storage  *storage.S3Storage
+	cache      *cache.ValkeyCache
 }
 
-func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage) PostService {
-	return &postService{postRepo: postRepo, tagService: tagService, s3storage: storageclient}
+func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage, valkeyCache *cache.ValkeyCache) PostService {
+	return &postService{postRepo: postRepo, tagService: tagService, s3storage: storageclient, cache: valkeyCache}
 }
 
 func (s *postService) IsAuthor(ctx context.Context, id string, userid string) error {
@@ -190,6 +193,16 @@ func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*dto.Pos
 		limit = 0
 	}
 
+	cacheKey := ""
+	if s.cache != nil {
+		cacheKey = s.cache.BuildKey("posts", "random", fmt.Sprintf("limit:%d", limit))
+		var cachedPosts []*dto.PostResponse
+		found, err := s.cache.GetJSON(ctx, cacheKey, &cachedPosts)
+		if err == nil && found {
+			return cachedPosts, nil
+		}
+	}
+
 	posts, err := s.postRepo.GetPostsRandom(ctx, limit)
 	if err != nil {
 		return nil, err
@@ -199,6 +212,10 @@ func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*dto.Pos
 	for _, post := range posts {
 		postResponse := dto.PostToResponse(post)
 		postsResponse = append(postsResponse, postResponse)
+	}
+
+	if cacheKey != "" {
+		_ = s.cache.SetJSON(ctx, cacheKey, postsResponse)
 	}
 
 	return postsResponse, nil

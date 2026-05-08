@@ -7,6 +7,7 @@ import (
 	"echobackend/internal/repository"
 	"echobackend/internal/routes"
 	"echobackend/internal/service"
+	"echobackend/pkg/cache"
 	"echobackend/pkg/database"
 	"echobackend/pkg/storage"
 )
@@ -31,6 +32,13 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return sqlDB.Close()
 	})
 
+	valkeyCache := cache.NewValkeyCache(cfg)
+	if valkeyCache != nil {
+		cleanup.Register(func() error {
+			return valkeyCache.Close()
+		})
+	}
+
 	s3Storage := storage.NewS3Storage(cfg)
 
 	userRepo := repository.NewUserRepository(db)
@@ -46,7 +54,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 
 	userService := service.NewUserService(userRepo)
 	tagService := service.NewTagService(tagRepo)
-	postService := service.NewPostService(postRepo, tagService, s3Storage)
+	postService := service.NewPostService(postRepo, tagService, s3Storage, valkeyCache)
 	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, cfg)
 	commentService := service.NewCommentService(commentRepo, postRepo)
 	postViewService := service.NewPostViewService(postViewRepo, postRepo)

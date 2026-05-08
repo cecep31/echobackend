@@ -22,6 +22,17 @@ type S3Config struct {
 	UseSSL bool
 }
 
+type CacheConfig struct {
+	// ValkeyURL is the connection URL for Valkey/Redis (for example redis://localhost:6379/0).
+	ValkeyURL string
+	// KeyPrefix is prepended to cache keys to avoid collisions across apps/environments.
+	KeyPrefix string
+	// TTL is the default cache lifetime.
+	TTL time.Duration
+	// ConnectTimeout is used when establishing a new cache connection.
+	ConnectTimeout time.Duration
+}
+
 // Config represents the application configuration.
 type Config struct {
 	// HTTPPort is the TCP port the HTTP server listens on (e.g. "8080").
@@ -48,6 +59,8 @@ type Config struct {
 	HTTPAllowOrigins string
 	// S3 contains S3-compatible object storage (MinIO, AWS S3, etc.).
 	S3 S3Config
+	// Cache contains Valkey/Redis configuration.
+	Cache CacheConfig
 	// AppDebug enables verbose logging, GORM info logs, and debug routes.
 	AppDebug bool
 }
@@ -79,6 +92,12 @@ func Load() (*Config, error) {
 			Bucket:    envString([]string{"S3_BUCKET", "MINIO_BUCKET"}, "minio-bucket"),
 			UseSSL:    envBool([]string{"S3_USE_SSL", "MINIO_USE_SSL"}, false),
 		},
+		Cache: CacheConfig{
+			ValkeyURL:      envString([]string{"VALKEY_URL"}, ""),
+			KeyPrefix:      envString([]string{"CACHE_KEY_PREFIX"}, "pilput"),
+			TTL:            time.Duration(envInt([]string{"CACHE_TTL_SECONDS"}, 60)) * time.Second,
+			ConnectTimeout: time.Duration(envInt([]string{"VALKEY_CONNECT_TIMEOUT_MS"}, 5000)) * time.Millisecond,
+		},
 		AppDebug: envBool([]string{"APP_DEBUG", "DEBUG"}, false),
 	}
 
@@ -97,6 +116,12 @@ func (c *Config) validate() error {
 	}
 	if c.PostgresDSN == "" {
 		return fmt.Errorf("DATABASE_URL is required")
+	}
+	if c.Cache.TTL < 0 {
+		return fmt.Errorf("CACHE_TTL_SECONDS must be >= 0")
+	}
+	if c.Cache.ConnectTimeout < 0 {
+		return fmt.Errorf("VALKEY_CONNECT_TIMEOUT_MS must be >= 0")
 	}
 	return nil
 }
