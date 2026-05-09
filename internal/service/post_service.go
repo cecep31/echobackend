@@ -355,6 +355,9 @@ func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.File
 	if file == nil {
 		return apperrors.ErrFileNil
 	}
+	if s.s3storage == nil {
+		return apperrors.ErrStorageUnavailable
+	}
 
 	src, err := file.Open()
 	if err != nil {

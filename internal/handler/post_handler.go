@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"errors"
+
 	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
 	"strconv"
@@ -13,6 +16,19 @@ import (
 type PostHandler struct {
 	postService     service.PostService
 	postViewService service.PostViewService
+}
+
+func (h *PostHandler) respondPostError(c *echo.Context, message string, err error) error {
+	switch {
+	case errors.Is(err, apperrors.ErrPostNotFound):
+		return response.NotFound(c, message, err)
+	case errors.Is(err, apperrors.ErrNotAuthor), errors.Is(err, apperrors.ErrPostNotOwned):
+		return response.Forbidden(c, message)
+	case errors.Is(err, apperrors.ErrFileNil), errors.Is(err, apperrors.ErrStorageUnavailable):
+		return response.BadRequest(c, message, err)
+	default:
+		return response.InternalServerError(c, message, err)
+	}
 }
 
 func NewPostHandler(postService service.PostService, postViewService service.PostViewService) *PostHandler {
@@ -101,7 +117,7 @@ func (h *PostHandler) CreatePost(c *echo.Context) error {
 
 	newpost, err := h.postService.CreatePost(c.Request().Context(), &postReq, userID)
 	if err != nil {
-		return response.InternalServerError(c, "Failed to create post", err)
+		return h.respondPostError(c, "Failed to create post", err)
 	}
 	return response.Created(c, "Successfully created post", map[string]any{
 		"id": newpost.ID,
@@ -126,12 +142,12 @@ func (h *PostHandler) UpdatePost(c *echo.Context) error {
 
 	err := h.postService.IsAuthor(c.Request().Context(), id, userID)
 	if err != nil {
-		return response.InternalServerError(c, "Failed to check post ownership", err)
+		return h.respondPostError(c, "Failed to check post ownership", err)
 	}
 
 	updatedPost, err := h.postService.UpdatePost(c.Request().Context(), id, &updateDTO)
 	if err != nil {
-		return response.InternalServerError(c, "Failed to update post", err)
+		return h.respondPostError(c, "Failed to update post", err)
 	}
 
 	return response.Success(c, "Post updated successfully", updatedPost)
@@ -142,7 +158,7 @@ func (h *PostHandler) GetPostBySlugAndUsername(c *echo.Context) error {
 	username := c.Param("username")
 	post, err := h.postService.GetPostBySlugAndUsername(c.Request().Context(), slug, username)
 	if err != nil {
-		return response.InternalServerError(c, "Failed to get post", err)
+		return h.respondPostError(c, "Failed to get post", err)
 	}
 
 	return response.Success(c, "Successfully retrieved post", post)
@@ -152,7 +168,7 @@ func (h *PostHandler) GetPost(c *echo.Context) error {
 	id := c.Param("id")
 	post, err := h.postService.GetPostByID(c.Request().Context(), id)
 	if err != nil {
-		return response.InternalServerError(c, "Failed to get post", err)
+		return h.respondPostError(c, "Failed to get post", err)
 	}
 
 	return response.Success(c, "Successfully retrieved post", post)
@@ -162,7 +178,7 @@ func (h *PostHandler) DeletePost(c *echo.Context) error {
 	id := c.Param("id")
 	err := h.postService.DeletePostByID(c.Request().Context(), id)
 	if err != nil {
-		return response.InternalServerError(c, "Failed to delete post", err)
+		return h.respondPostError(c, "Failed to delete post", err)
 	}
 
 	return response.Success(c, "Successfully deleted post", nil)
@@ -400,7 +416,7 @@ func (h *PostHandler) UploadImagePosts(c *echo.Context) error {
 	}
 
 	if err := h.postService.UploadImagePosts(c.Request().Context(), file); err != nil {
-		return response.InternalServerError(c, "Failed to upload image", err)
+		return h.respondPostError(c, "Failed to upload image", err)
 	}
 	return response.Success(c, "success uploading image", nil)
 }

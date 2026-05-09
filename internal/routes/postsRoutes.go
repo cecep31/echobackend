@@ -6,6 +6,12 @@ func (r *Routes) setupPostRoutes(api *echo.Group) {
 	posts := api.Group("/posts")
 	{
 		posts.POST("", r.postHandler.CreatePost, r.authMiddleware.Auth())
+		posts.GET("/random", r.postHandler.GetPostsRandom)
+		posts.GET("/trending", r.postHandler.GetPostsTrending)
+		posts.GET("/mine", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
+		posts.GET("/for-you", r.postHandler.GetPostsForYou, r.authMiddleware.Auth())
+		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
+		posts.GET("/sitemap", r.postHandler.GetPostsForSitemap)
 		posts.GET("/username/:username", r.postHandler.GetPostsByUsername)
 		posts.GET("/author/:username", r.postHandler.GetPostsByAuthor)
 		posts.GET("/u/:username/:slug", r.postHandler.GetPostBySlugAndUsername)
@@ -13,13 +19,7 @@ func (r *Routes) setupPostRoutes(api *echo.Group) {
 		posts.GET("", r.postHandler.GetPosts)
 		posts.PUT("/:id", r.postHandler.UpdatePost, r.authMiddleware.Auth())
 		posts.DELETE("/:id", r.postHandler.DeletePost, r.authMiddleware.Auth())
-		posts.GET("/random", r.postHandler.GetPostsRandom)
-		posts.GET("/trending", r.postHandler.GetPostsTrending)
 		posts.GET("/:id", r.postHandler.GetPost)
-		posts.GET("/mine", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
-		posts.GET("/for-you", r.postHandler.GetPostsForYou, r.authMiddleware.Auth())
-		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
-		posts.GET("/sitemap", r.postHandler.GetPostsForSitemap)
 
 		// Comment routes
 		posts.GET("/:id/comments", r.commentHandler.GetCommentsByPostID)

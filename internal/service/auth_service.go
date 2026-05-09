@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
+	"log"
 	"time"
 
 	"echobackend/config"
@@ -47,11 +47,11 @@ func (s *authService) Register(ctx context.Context, email, username, password st
 	if err == nil {
 		return nil, apperrors.ErrUserExists
 	}
+	if err != nil && err != apperrors.ErrUserNotFound {
+		return nil, err
+	}
 
 	err = s.userRepo.CheckUserByUsername(ctx, username)
-	if err == nil {
-		return nil, apperrors.ErrUserExists
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +79,6 @@ func (s *authService) Register(ctx context.Context, email, username, password st
 func (s *authService) Login(ctx context.Context, email, password string) (string, string, *model.User, error) {
 	user, err := s.authRepo.FindUserByEmail(ctx, email)
 	if err != nil {
-		fmt.Println("email not found")
-		fmt.Println(err)
 		return "", "", nil, apperrors.ErrInvalidCredentials
 	}
 
@@ -127,19 +125,19 @@ func (s *authService) Login(ctx context.Context, email, password string) (string
 func (s *authService) CheckUsernameAvailability(ctx context.Context, username string) (bool, error) {
 	err := s.userRepo.CheckUserByUsername(ctx, username)
 	if err == nil {
+		return true, nil
+	}
+	if err == apperrors.ErrUserExists {
 		return false, nil
 	}
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return false, err
 }
 
 func (s *authService) ForgotPassword(ctx context.Context, email string) error {
 	resetToken := "pr_" + base64.RawURLEncoding.EncodeToString(generateRandomBytes(32))
 	expiresAt := time.Now().Add(1 * time.Hour)
 
-	fmt.Printf("Password reset token for %s: %s (expires at %s)\n", email, resetToken, expiresAt.Format(time.RFC3339))
+	log.Printf("Password reset token for %s: %s (expires at %s)", email, resetToken, expiresAt.Format(time.RFC3339))
 
 	return nil
 }

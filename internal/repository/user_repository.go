@@ -62,7 +62,7 @@ func (r *userRepository) Create(ctx context.Context, user *model.User) error {
 
 func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 	result := r.db.WithContext(ctx).Model(user).
-		Select("Email", "FirstName", "LastName", "Username", "IsSuperAdmin").
+		Select("Email", "FirstName", "LastName", "Username", "IsSuperAdmin", "Password").
 		Where("id = ?", user.ID).
 		Updates(user)
 
