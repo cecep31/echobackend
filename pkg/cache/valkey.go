@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -44,9 +45,16 @@ func NewValkeyCache(cfg *config.Config) *ValkeyCache {
 	}
 
 	if err := client.Ping(pingCtx).Err(); err != nil {
+		slog.Warn("cache: failed to connect to Valkey/Redis, caching disabled", "error", err)
 		_ = client.Close()
 		return nil
 	}
+
+	if cfg.Cache.TTL <= 0 {
+		slog.Warn("cache: CACHE_TTL_SECONDS is 0 — SetJSON will be skipped, caching effectively disabled")
+	}
+
+	slog.Info("cache: connected to Valkey/Redis", "url", cfg.Cache.ValkeyURL, "ttl", cfg.Cache.TTL, "key_prefix", strings.TrimSpace(cfg.Cache.KeyPrefix))
 
 	return &ValkeyCache{
 		client:    client,
@@ -84,10 +92,12 @@ func (c *ValkeyCache) GetJSON(ctx context.Context, key string, dest any) (bool, 
 		if err == redis.Nil {
 			return false, nil
 		}
+		slog.Warn("cache: GetJSON error", "key", key, "error", err)
 		return false, err
 	}
 
 	if err := json.Unmarshal(value, dest); err != nil {
+		slog.Warn("cache: GetJSON unmarshal error", "key", key, "error", err)
 		return false, err
 	}
 
@@ -101,8 +111,13 @@ func (c *ValkeyCache) SetJSON(ctx context.Context, key string, value any) error 
 
 	payload, err := json.Marshal(value)
 	if err != nil {
+		slog.Warn("cache: SetJSON marshal error", "key", key, "error", err)
 		return err
 	}
 
-	return c.client.Set(ctx, key, payload, c.ttl).Err()
+	if err := c.client.Set(ctx, key, payload, c.ttl).Err(); err != nil {
+		slog.Warn("cache: SetJSON write error", "key", key, "error", err)
+		return err
+	}
+	return nil
 }
