@@ -205,9 +205,9 @@ func (h *PostHandler) GetPostsRandom(c *echo.Context) error {
 }
 
 func (h *PostHandler) GetPostsTrending(c *echo.Context) error {
-	limit, offset := ParsePaginationParams(c, 10)
+	limit, _ := ParsePaginationParams(c, 10)
 
-	posts, total, err := h.postService.GetPostsTrending(c.Request().Context(), offset, limit)
+	posts, err := h.postService.GetPostsTrending(c.Request().Context(), limit)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get trending posts", err)
 	}
@@ -219,25 +219,7 @@ func (h *PostHandler) GetPostsTrending(c *echo.Context) error {
 		}
 	}
 
-	metaLimit := limit
-	if metaLimit <= 0 {
-		metaLimit = 10
-	}
-	if metaLimit > 100 {
-		metaLimit = 100
-	}
-
-	meta := response.PaginationMeta{
-		TotalItems: int(total),
-		Offset:     offset,
-		Limit:      metaLimit,
-		TotalPages: int(total)/metaLimit + 1,
-	}
-	if int(total)%metaLimit == 0 {
-		meta.TotalPages = int(total) / metaLimit
-	}
-
-	return response.SuccessWithMeta(c, "Successfully retrieved trending posts", posts, meta)
+	return response.Success(c, "Successfully retrieved trending posts", posts)
 }
 
 func (h *PostHandler) GetMyPosts(c *echo.Context) error {

@@ -18,7 +18,7 @@ type PostService interface {
 	GetPostsFiltered(ctx context.Context, filter *dto.PostQueryFilter) ([]*dto.PostResponse, int64, error)
 	GetPostsByUsername(ctx context.Context, username string, offset int, limit int) ([]*dto.PostResponse, int64, error)
 	GetPostsRandom(ctx context.Context, limit int) ([]*dto.PostResponse, error)
-	GetPostsTrending(ctx context.Context, offset int, limit int) ([]*dto.PostResponse, int64, error)
+	GetPostsTrending(ctx context.Context, limit int) ([]*dto.PostResponse, error)
 	GetPostByID(ctx context.Context, id string) (*dto.PostResponse, error)
 	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*dto.PostResponse, error)
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*dto.PostResponse, int64, error)
@@ -37,6 +37,10 @@ type postService struct {
 	tagService TagService
 	s3storage  *storage.S3Storage
 	cache      *cache.ValkeyCache
+}
+
+type trendingPostsCacheEntry struct {
+	Posts []*dto.PostResponse `json:"posts"`
 }
 
 func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage, valkeyCache *cache.ValkeyCache) PostService {
@@ -195,7 +199,7 @@ func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*dto.Pos
 
 	cacheKey := ""
 	if s.cache != nil {
-		cacheKey = s.cache.BuildKey("posts", "random", fmt.Sprintf("limit:%d", limit))
+		cacheKey = s.cache.BuildKey("posts", "random", fmt.Sprintf("%d", limit))
 		var cachedPosts []*dto.PostResponse
 		found, err := s.cache.GetJSON(ctx, cacheKey, &cachedPosts)
 		if err == nil && found {
@@ -221,7 +225,7 @@ func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*dto.Pos
 	return postsResponse, nil
 }
 
-func (s *postService) GetPostsTrending(ctx context.Context, offset int, limit int) ([]*dto.PostResponse, int64, error) {
+func (s *postService) GetPostsTrending(ctx context.Context, limit int) ([]*dto.PostResponse, error) {
 	if limit < 0 {
 		limit = 10
 	}
@@ -231,13 +235,24 @@ func (s *postService) GetPostsTrending(ctx context.Context, offset int, limit in
 	if limit > 100 {
 		limit = 100
 	}
-	if offset < 0 {
-		offset = 0
+
+	cacheKey := ""
+	if s.cache != nil {
+		cacheKey = s.cache.BuildKey(
+			"posts",
+			"trending",
+			fmt.Sprintf("%d", limit),
+		)
+		var cachedTrending trendingPostsCacheEntry
+		found, err := s.cache.GetJSON(ctx, cacheKey, &cachedTrending)
+		if err == nil && found {
+			return cachedTrending.Posts, nil
+		}
 	}
 
-	posts, total, err := s.postRepo.GetPostsTrending(ctx, offset, limit)
+	posts, err := s.postRepo.GetPostsTrending(ctx, limit)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	postsResponse := make([]*dto.PostResponse, 0, len(posts))
@@ -245,7 +260,13 @@ func (s *postService) GetPostsTrending(ctx context.Context, offset int, limit in
 		postsResponse = append(postsResponse, dto.PostToResponse(post))
 	}
 
-	return postsResponse, total, nil
+	if cacheKey != "" {
+		_ = s.cache.SetJSON(ctx, cacheKey, trendingPostsCacheEntry{
+			Posts: postsResponse,
+		})
+	}
+
+	return postsResponse, nil
 }
 
 func (s *postService) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*dto.PostResponse, int64, error) {

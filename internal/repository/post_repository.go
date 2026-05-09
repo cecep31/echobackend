@@ -18,7 +18,7 @@ type PostRepository interface {
 	GetPostsFiltered(ctx context.Context, filter *dto.PostQueryFilter) ([]*model.Post, int64, error)
 	GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error)
 	GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error)
-	GetPostsTrending(ctx context.Context, offset int, limit int) ([]*model.Post, int64, error)
+	GetPostsTrending(ctx context.Context, limit int) ([]*model.Post, error)
 	GetPostByID(ctx context.Context, id string) (*model.Post, error)
 	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error)
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error)
@@ -204,28 +204,21 @@ func (r *postRepository) GetPostsRandom(ctx context.Context, limit int) ([]*mode
 	return randomPosts, nil
 }
 
-func (r *postRepository) GetPostsTrending(ctx context.Context, offset int, limit int) ([]*model.Post, int64, error) {
+func (r *postRepository) GetPostsTrending(ctx context.Context, limit int) ([]*model.Post, error) {
 	var posts []*model.Post
-	var count int64
 
-	err := r.db.WithContext(ctx).Model(&model.Post{}).Where("published = ?", true).Count(&count).Error
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to count trending posts: %w", err)
-	}
-
-	err = r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).
 		Preload("User").
 		Preload("Tags").
 		Where("published = ?", true).
 		Order("like_count * 2 + bookmark_count * 2 + view_count DESC").
-		Offset(offset).
 		Limit(limit).
 		Find(&posts).Error
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get trending posts: %w", err)
+		return nil, fmt.Errorf("failed to get trending posts: %w", err)
 	}
 
-	return posts, count, nil
+	return posts, nil
 }
 
 func (r *postRepository) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error) {
