@@ -8,6 +8,7 @@
 - **Web Framework:** [Echo v5](https://github.com/labstack/echo)
 - **ORM:** [GORM](https://gorm.io/) with PostgreSQL driver
 - **Database:** PostgreSQL 14+
+- **Cache:** [Valkey](https://valkey.io/) (Redis-compatible)
 - **Authentication:** JWT (via `github.com/golang-jwt/jwt/v5`)
 - **Storage:** MinIO/S3 compatible storage (via `github.com/minio/minio-go/v7`)
 - **Validation:** Go Playground Validator v10
@@ -22,10 +23,15 @@ The project follows a layered "Clean Architecture" pattern with strict separatio
     - **`repository/`**: Data access layer using GORM.
     - **`model/`**: GORM database entities and common structs.
     - **`di/`**: Manual dependency injection container (`container.go`) and resource cleanup.
-    - **`middleware/`**: Custom Echo middlewares (Auth, Logging, etc.).
+    - **`middleware/`**: Custom Echo middlewares (Auth, Logging, setup, etc.).
     - **`routes/`**: Centralized route definitions.
-- **`pkg/`**: Shared utility packages (database setup, custom validator, standard response formatters).
-- **`migrations/`**: SQL-based database migrations.
+- **`pkg/`**: Shared utility packages.
+    - **`response/`**: API response helpers.
+    - **`database/`**: DB setup & pooling.
+    - **`cache/`**: Valkey cache implementation.
+    - **`storage/`**: S3 storage implementation.
+    - **`validator/`**: Custom Echo validator wrapper.
+- **`migrations/`**: Raw SQL-based database migrations (applied manually).
 
 ## Building and Running
 
@@ -40,11 +46,13 @@ The project follows a layered "Clean Architecture" pattern with strict separatio
 - **Run All Tests:** `make test`
 - **Run with Race Detection:** `make test-race`
 - **Generate Coverage:** `make test-coverage`
+- **Show Coverage by Function:** `make test-coverage-func`
 
 ### Code Quality
 - **Format Code:** `make fmt`
 - **Run Vet:** `make vet`
 - **Run Linter:** `make lint` (requires `golangci-lint`)
+- **Security Audit:** `make security` (requires `gosec`)
 - **Full Quality Check:** `make check`
 
 ### Docker
@@ -54,23 +62,30 @@ The project follows a layered "Clean Architecture" pattern with strict separatio
 ## Development Conventions
 
 ### 1. API Responses
-All handlers MUST use the standard response utilities in `pkg/response`. Never return `c.JSON` directly with raw maps.
+All handlers MUST use the standard response utilities in `pkg/response`. This ensures a consistent JSON structure (`success`, `message`, `data`, `error`, `errors`, `meta`).
 - `response.Success(c, message, data)`
+- `response.Created(c, message, data)`
 - `response.BadRequest(c, message, err)`
-- `response.ValidationError(c, message, err)`
+- `response.Unauthorized(c, message)`
+- `response.Forbidden(c, message)`
 - `response.NotFound(c, message, err)`
+- `response.ValidationError(c, message, err)`
+- `response.FromValidateError(c, err)`: Specialized helper for Echo validation errors.
+- `response.InternalServerError(c, message, err)`
+- `response.Conflict(c, message, conflictError)`
 
 ### 2. Dependency Injection
 Dependencies are manually wired in `internal/di/container.go`. When adding a new service or repository:
 1. Create the new struct and constructor.
 2. Register it in the `Container` struct and `NewContainer` function.
 3. Pass it through to the relevant handler and routes.
+4. If the dependency requires cleanup (e.g., closing a connection), register it with the `CleanupManager`.
 
 ### 3. Resource Cleanup
-The project uses a `CleanupManager` to ensure database connections and other resources are closed gracefully during shutdown. Register new closable resources in `internal/di/container.go`.
+The project uses a `CleanupManager` in `internal/di` to ensure database connections, cache connections, and other resources are closed gracefully during shutdown. Register new closable resources in `internal/di/container.go`.
 
 ### 4. Validation
-Use struct tags with the `validate` key for input validation. Echo is configured to use a custom validator that wraps `go-playground/validator`.
+Use struct tags with the `validate` key for input validation. The project uses `go-playground/validator`. Handlers should use `c.Bind` and `c.Validate` (which is automatically called if configured in Echo).
 
 ### 5. Error Handling
 - Repositories should return raw database errors or custom domain errors.
@@ -78,4 +93,9 @@ Use struct tags with the `validate` key for input validation. Echo is configured
 - Handlers are responsible for mapping errors to the appropriate HTTP status codes using `pkg/response`.
 
 ### 6. Environment Variables
-Always use `.env` for local configuration. Reference `config/config.go` for the schema of available environment variables.
+Local configuration uses `.env`. Refer to `config/config.go` for the schema of available environment variables and their fallbacks (e.g., `S3_ENDPOINT` fallbacks to `MINIO_ENDPOINT`).
+- `PORT`: HTTP server port (default: 8080).
+- `DATABASE_URL`: Postgres DSN.
+- `VALKEY_URL`: Connection URL for Valkey/Redis.
+- `JWT_SECRET`: Secret for signing JWTs.
+- `APP_DEBUG` or `DEBUG`: Enables verbose logging and GORM info logs.
