@@ -1,9 +1,10 @@
+-- +goose Up
 -- Add view_count column to posts table
-ALTER TABLE posts ADD COLUMN view_count BIGINT DEFAULT 0;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS view_count BIGINT DEFAULT 0;
 
 -- Add follower/following counts to users table
-ALTER TABLE users ADD COLUMN followers_count BIGINT DEFAULT 0;
-ALTER TABLE users ADD COLUMN following_count BIGINT DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS followers_count BIGINT DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS following_count BIGINT DEFAULT 0;
 
 -- Create post_views table
 CREATE TABLE IF NOT EXISTS post_views (
@@ -132,3 +133,25 @@ CREATE TRIGGER trigger_update_view_count_delete
     AFTER DELETE ON post_views
     FOR EACH ROW
     EXECUTE FUNCTION update_post_view_count();
+
+-- +goose Down
+DROP TRIGGER IF EXISTS trigger_update_view_count_delete ON post_views;
+DROP TRIGGER IF EXISTS trigger_update_view_count_insert ON post_views;
+DROP FUNCTION IF EXISTS update_post_view_count();
+
+DROP TRIGGER IF EXISTS trigger_update_follow_counts_delete ON user_follows;
+DROP TRIGGER IF EXISTS trigger_update_follow_counts_insert ON user_follows;
+DROP FUNCTION IF EXISTS update_user_follow_counts();
+
+ALTER TABLE user_follows DROP CONSTRAINT IF EXISTS chk_user_follows_no_self_follow;
+ALTER TABLE user_follows DROP CONSTRAINT IF EXISTS fk_user_follows_following_id;
+ALTER TABLE user_follows DROP CONSTRAINT IF EXISTS fk_user_follows_follower_id;
+ALTER TABLE post_views DROP CONSTRAINT IF EXISTS fk_post_views_user_id;
+ALTER TABLE post_views DROP CONSTRAINT IF EXISTS fk_post_views_post_id;
+
+DROP TABLE IF EXISTS user_follows;
+DROP TABLE IF EXISTS post_views;
+
+ALTER TABLE users DROP COLUMN IF EXISTS following_count;
+ALTER TABLE users DROP COLUMN IF EXISTS followers_count;
+ALTER TABLE posts DROP COLUMN IF EXISTS view_count;

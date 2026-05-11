@@ -1,78 +1,37 @@
 # Database Migrations
 
-This directory contains database migration scripts for the Echo Backend application.
-
-## Available Migrations
-
-### 001_add_post_views_and_user_follows.sql
-
-This migration adds support for:
-- **Post View Tracking**: Records when users view posts, including anonymous views
-- **User Following System**: Allows users to follow/unfollow each other
-
-#### Features Added:
-
-**Post Views:**
-- `post_views` table to track individual post views
-- `view_count` column added to `posts` table
-- Support for both authenticated and anonymous views
-- IP address and user agent tracking
-- Automatic view count updates via database triggers
-
-**User Following:**
-- `user_follows` table to track follower/following relationships
-- `followers_count` and `following_count` columns added to `users` table
-- Prevention of self-following via database constraints
-- Automatic follower/following count updates via database triggers
-
-#### Database Objects Created:
-
-**Tables:**
-- `post_views` - Records individual post views
-- `user_follows` - Records user following relationships
-
-**Indexes:**
-- Optimized indexes for query performance
-- Unique constraints to prevent duplicate views/follows
-
-**Functions & Triggers:**
-- `update_user_follow_counts()` - Maintains follower/following counts
-- `update_post_view_count()` - Maintains post view counts
-- Automatic triggers for count updates
+Managed via [goose](https://github.com/pressly/goose). Env vars configured in `.env`.
 
 ## Running Migrations
 
-To apply the migration, run the SQL script against your PostgreSQL database:
-
 ```bash
-# Using psql
-psql -d your_database_name -f migrations/001_add_post_views_and_user_follows.sql
+# Apply all pending migrations
+goose up
 
-# Or using a migration tool like migrate
-migrate -path migrations -database "postgres://user:password@localhost/dbname?sslmode=disable" up
+# Rollback one migration
+goose down
+
+# Check current status
+goose status
+
+# Create a new migration
+goose create nama_migration sql
 ```
 
-## API Endpoints Added
+## Migration Order
 
-### Post View Endpoints
-- `POST /api/posts/:id/view` - Record a post view
-- `GET /api/posts/:id/views` - Get post views (paginated)
-- `GET /api/posts/:id/view-stats` - Get post view statistics
-- `GET /api/posts/:id/viewed` - Check if current user viewed the post
-
-### User Follow Endpoints
-- `POST /api/users/:id/follow` - Follow a user
-- `DELETE /api/users/:id/follow` - Unfollow a user
-- `GET /api/users/:id/followers` - Get user's followers (paginated)
-- `GET /api/users/:id/following` - Get users that user is following (paginated)
-- `GET /api/users/:id/follow-status` - Check if current user follows the user
-- `GET /api/users/:id/mutual-follows` - Get mutual follows (paginated)
-- `GET /api/users/:id/follow-stats` - Get follow statistics
+| # | File | Description |
+|---|------|-------------|
+| 001 | `001_init_schema.sql` | Core tables: users, posts, tags, posts_to_tags, profiles, sessions, post_comments, files |
+| 002 | `002_add_post_views_and_user_follows.sql` | post_views table, user_follows table, view/follow count triggers |
+| 003 | `003_add_post_likes.sql` | post_likes table, like_count trigger |
+| 004 | `004_add_bookmark_folders_and_post_bookmarks.sql` | bookmark_folders, post_bookmarks, bookmark_count trigger |
+| 005 | `005_add_chat_conversations_and_messages.sql` | chat_conversations, chat_messages |
 
 ## Notes
 
-- All migrations use `IF NOT EXISTS` clauses to be safely re-runnable
-- Foreign key constraints ensure data integrity
-- Database triggers automatically maintain count fields
+- All `CREATE TABLE` and `ADD COLUMN` statements use `IF NOT EXISTS` / `IF NOT EXISTS` for idempotency
+- Foreign key constraints with `ON DELETE CASCADE` ensure data integrity
+- Database triggers automatically maintain count fields (view_count, like_count, bookmark_count, followers_count, following_count)
 - Soft deletes are supported via `deleted_at` timestamps
-- UUID v7 is used for primary keys for better performance
+- UUID v4 (`uuid_generate_v4()`) is used for primary keys

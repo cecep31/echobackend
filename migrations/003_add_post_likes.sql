@@ -1,5 +1,6 @@
+-- +goose Up
 -- Add like_count column to posts table
-ALTER TABLE posts ADD COLUMN like_count BIGINT DEFAULT 0;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS like_count BIGINT DEFAULT 0;
 
 -- Create post_likes table
 CREATE TABLE IF NOT EXISTS post_likes (
@@ -81,3 +82,16 @@ CREATE TRIGGER trigger_update_post_like_count_update
     AFTER UPDATE ON post_likes
     FOR EACH ROW
     EXECUTE FUNCTION update_post_like_count();
+
+-- +goose Down
+DROP TRIGGER IF EXISTS trigger_update_post_like_count_update ON post_likes;
+DROP TRIGGER IF EXISTS trigger_update_post_like_count_delete ON post_likes;
+DROP TRIGGER IF EXISTS trigger_update_post_like_count_insert ON post_likes;
+DROP FUNCTION IF EXISTS update_post_like_count();
+
+ALTER TABLE post_likes DROP CONSTRAINT IF EXISTS fk_post_likes_user_id;
+ALTER TABLE post_likes DROP CONSTRAINT IF EXISTS fk_post_likes_post_id;
+
+DROP TABLE IF EXISTS post_likes;
+
+ALTER TABLE posts DROP COLUMN IF EXISTS like_count;
