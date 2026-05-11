@@ -169,7 +169,10 @@ func (r *holdingRepository) FindHoldingTypeByID(ctx context.Context, id int) (*m
 func (r *holdingRepository) FindForSync(ctx context.Context, userID string, month, year int) ([]model.Holding, error) {
 	var holdings []model.Holding
 	err := r.db.WithContext(ctx).
-		Where("user_id = ? AND month = ? AND year = ? AND symbol IS NOT NULL AND symbol != ''", userID, month, year).
+		Where(
+			"user_id = ? AND month = ? AND year = ? AND symbol IS NOT NULL AND symbol != '' AND units IS NOT NULL AND units > 0",
+			userID, month, year,
+		).
 		Find(&holdings).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to find holdings for sync: %w", err)

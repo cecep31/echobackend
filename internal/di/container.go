@@ -10,6 +10,7 @@ import (
 	"echobackend/internal/service"
 	"echobackend/pkg/cache"
 	"echobackend/pkg/database"
+	"echobackend/pkg/market"
 	"echobackend/pkg/storage"
 
 	"gorm.io/gorm"
@@ -66,7 +67,8 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	postLikeService := service.NewPostLikeService(postLikeRepo, postRepo)
 	userFollowService := service.NewUserFollowService(userFollowRepo, userRepo)
 	chatConversationService := service.NewChatConversationService(chatConversationRepo)
-	holdingService := service.NewHoldingService(holdingRepo)
+	yahooClient := market.NewYahooClient(nil)
+	holdingService := service.NewHoldingService(holdingRepo, yahooClient)
 
 	userHandler := handler.NewUserHandler(userService, userFollowService)
 	postHandler := handler.NewPostHandler(postService, postViewService)

@@ -6,7 +6,6 @@ func (r *Routes) setupUserRoutes(api *echo.Group) {
 	users := api.Group("/users")
 	{
 		// Public routes
-		users.GET("/:id", r.userHandler.GetByID)
 		users.GET("/username/:username", r.userHandler.GetByUsername)
 
 		// Authenticated routes
@@ -14,6 +13,7 @@ func (r *Routes) setupUserRoutes(api *echo.Group) {
 		{
 			authUsers.GET("/me", r.userHandler.GetMe)
 			authUsers.GET("", r.userHandler.GetUsers, r.authMiddleware.AuthAdmin())
+			authUsers.GET("/:id", r.userHandler.GetByID, r.authMiddleware.AuthAdmin())
 			authUsers.DELETE("/:id", r.userHandler.DeleteUser, r.authMiddleware.AuthAdmin())
 
 			// Follow routes

@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"echobackend/internal/dto"
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
+	"echobackend/pkg/market"
 )
 
 type holdingService struct {
 	holdingRepo repository.HoldingRepository
+	quoteClient market.QuoteClient
 }
 
 type HoldingService interface {
@@ -32,8 +35,11 @@ type HoldingService interface {
 	DuplicateHoldings(ctx context.Context, userID string, req *dto.DuplicateHoldingRequest) ([]dto.DuplicateResultItem, error)
 }
 
-func NewHoldingService(holdingRepo repository.HoldingRepository) HoldingService {
-	return &holdingService{holdingRepo: holdingRepo}
+func NewHoldingService(holdingRepo repository.HoldingRepository, quoteClient market.QuoteClient) HoldingService {
+	return &holdingService{
+		holdingRepo: holdingRepo,
+		quoteClient: quoteClient,
+	}
 }
 
 func (s *holdingService) GetHoldings(ctx context.Context, userID string, filter *dto.HoldingQueryFilter) ([]model.Holding, error) {
@@ -343,7 +349,48 @@ func (s *holdingService) SyncPrices(ctx context.Context, userID string) (*dto.Ho
 		}, nil
 	}
 
-	syncedCount := int64(len(holdings))
+	symbols := make([]string, 0, len(holdings))
+	for _, holding := range holdings {
+		if holding.Symbol == nil {
+			continue
+		}
+		symbols = append(symbols, *holding.Symbol)
+	}
+
+	quotes, err := s.quoteClient.GetQuotes(ctx, symbols)
+	if err != nil {
+		return nil, err
+	}
+
+	var syncedCount int64
+	for _, holding := range holdings {
+		if holding.Symbol == nil || holding.Units == nil {
+			continue
+		}
+
+		symbol := strings.ToUpper(strings.TrimSpace(*holding.Symbol))
+		price, ok := quotes[symbol]
+		if !ok || price <= 0 {
+			continue
+		}
+
+		units, err := strconv.ParseFloat(strings.TrimSpace(*holding.Units), 64)
+		if err != nil || units <= 0 {
+			continue
+		}
+
+		currentValue := math.Round(units*price*100) / 100
+		if err := s.holdingRepo.UpdateFields(ctx, holding.ID, userID, map[string]any{
+			"current_price": formatHoldingPrice(price),
+			"current_value": formatHoldingValue(currentValue),
+			"last_updated":  now,
+			"updated_at":    now,
+		}); err != nil {
+			return nil, err
+		}
+		syncedCount++
+	}
+
 	return &dto.HoldingSyncResponse{
 		SyncedCount: syncedCount,
 		Month:       month,
@@ -541,6 +588,14 @@ func formatFloat(f float64) string {
 		return "0"
 	}
 	return strconv.FormatFloat(f, 'f', -1, 64)
+}
+
+func formatHoldingPrice(price float64) string {
+	return strconv.FormatFloat(price, 'f', 8, 64)
+}
+
+func formatHoldingValue(value float64) string {
+	return strconv.FormatFloat(value, 'f', 2, 64)
 }
 
 func calcPercent(base, value float64) string {
