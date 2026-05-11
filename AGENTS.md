@@ -6,19 +6,21 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 
 - **Entry point:** `cmd/main.go`
 - **Build:** `go build -o bin/main cmd/main.go`
-- **Dev (hot reload):** `air` (config in `.air.toml`; builds to `tmp/main.exe` on Windows)
+- **Dev (hot reload):** `air` (config in `.air.toml`; builds to `tmp/main.exe` on Windows, `tmp/main` on Linux/macOS)
 - **Run:** `go run cmd/main.go`
-- **No Makefile.** All build/test/lint commands must be run directly via `go` tooling or external binaries.
+- **No Makefile.** All build/test/lint commands must be run directly via `go` tooling or external binaries. (GEMINI.md references Make targets — those do not exist.)
 
 ## Testing & Quality
 
-- **All tests:** `go test ./...` (no tests currently exist — `**/*_test.go` returns nothing)
+- **All tests:** `go test ./...`
+- **Single package:** `go test ./pkg/market/...`
 - **Race check:** `go test -race ./...`
 - **Coverage:** `go test -cover ./...` or `go test -coverprofile=coverage.out ./...`
 - **Vet:** `go vet ./...`
-- **Format:** `go fmt ./...` (or `gofmt -s -w .`)
+- **Format:** `go fmt ./...`
 - **Lint:** requires `golangci-lint` installed separately (`golangci-lint run`)
 - **Security:** requires `gosec` installed separately (`gosec ./...`)
+- **CI has no test or lint step** — it only builds a Docker image and deploys. You must run tests and linters locally before pushing.
 
 ## Architecture
 
@@ -34,7 +36,7 @@ Go REST API (Echo v5 + GORM + PostgreSQL). Single binary, manual DI, deployed to
 - **Shared handler helpers** in `internal/handler/helper.go`: `GetUserIDFromClaims` extracts user ID from 3 JWT claim formats (MapClaims, Token, map); `ParsePaginationParams` parses limit/offset and caps limit at 100.
 - **S3Storage** (`pkg/storage/s3_storage.go`): `NewS3Storage` can return `nil` if the MinIO client fails to initialize. Services using it must nil-check.
 - **ValkeyCache** (`pkg/cache/valkey.go`): `NewValkeyCache` returns `nil` when `VALKEY_URL` is empty or connection fails (fail-open). Services using it must nil-check. Setting `CACHE_TTL_SECONDS=0` disables cache writes even when connected.
-- **Package layout:** `internal/dto/` contains request/response DTOs; `internal/model/` contains GORM entities.
+- **Package layout:** `internal/dto/` contains request/response DTOs; `internal/model/` contains GORM entities; `pkg/market/` wraps the Yahoo Finance API for stock prices (used by `HoldingService`).
 
 ## Echo v5 Quirks
 
