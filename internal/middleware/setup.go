@@ -33,8 +33,6 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		ReferrerPolicy:        "strict-origin-when-cross-origin",
 	}))
 
-	e.Use(middleware.RequestID())
-
 	// Enhanced request logging with structured format (Echo v5 logger is *slog.Logger)
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
@@ -46,7 +44,6 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 			e.Logger.Info("handled request",
 				"method", values.Method,
 				"uri", values.URI,
-				"request_id", c.Response().Header().Get(echo.HeaderXRequestID),
 				"status", values.Status,
 				"latency_ms", float64(latency.Nanoseconds())/1e6,
 				"remote_ip", c.RealIP(),

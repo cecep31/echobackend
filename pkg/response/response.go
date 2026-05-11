@@ -27,11 +27,6 @@ type PaginationMeta struct {
 	TotalPages int `json:"total_pages"`
 }
 
-// requestID extracts the Echo request-id header for structured logging.
-func requestID(c *echo.Context) string {
-	return c.Response().Header().Get(echo.HeaderXRequestID)
-}
-
 // Success sends a successful response
 func Success(c *echo.Context, message string, data any) error {
 	return c.JSON(http.StatusOK, APIResponse{
@@ -68,7 +63,6 @@ func BadRequest(c *echo.Context, message string, err error) error {
 	}
 
 	slog.Warn("bad request",
-		"request_id", requestID(c),
 		"message", message,
 		"error", errorMsg,
 	)
@@ -83,7 +77,6 @@ func BadRequest(c *echo.Context, message string, err error) error {
 // Unauthorized sends an unauthorized error response
 func Unauthorized(c *echo.Context, message string) error {
 	slog.Warn("unauthorized",
-		"request_id", requestID(c),
 		"message", message,
 	)
 
@@ -97,7 +90,6 @@ func Unauthorized(c *echo.Context, message string) error {
 // Forbidden sends a forbidden error response
 func Forbidden(c *echo.Context, message string) error {
 	slog.Warn("forbidden",
-		"request_id", requestID(c),
 		"message", message,
 	)
 
@@ -116,7 +108,6 @@ func NotFound(c *echo.Context, message string, err error) error {
 	}
 
 	slog.Warn("not found",
-		"request_id", requestID(c),
 		"message", message,
 		"error", errorMsg,
 	)
@@ -133,7 +124,6 @@ func NotFound(c *echo.Context, message string, err error) error {
 // to avoid leaking internal details (DSN, stack traces, etc.).
 func InternalServerError(c *echo.Context, message string, err error) error {
 	slog.Error("internal server error",
-		"request_id", requestID(c),
 		"message", message,
 		"error", err,
 	)
@@ -153,7 +143,6 @@ func ValidationError(c *echo.Context, message string, err error) error {
 	}
 
 	slog.Warn("validation error",
-		"request_id", requestID(c),
 		"message", message,
 		"error", errorMsg,
 	)
@@ -170,7 +159,6 @@ func ValidationError(c *echo.Context, message string, err error) error {
 func FromValidateError(c *echo.Context, err error) error {
 	if errs, ok := err.(validator.ValidationErrors); ok {
 		slog.Warn("validation error",
-			"request_id", requestID(c),
 			"error", errs.Error(),
 		)
 		return c.JSON(http.StatusUnprocessableEntity, APIResponse{
@@ -186,7 +174,6 @@ func FromValidateError(c *echo.Context, err error) error {
 // Conflict sends a 409 Conflict response (e.g. duplicate resource).
 func Conflict(c *echo.Context, message string, conflictError string) error {
 	slog.Warn("conflict",
-		"request_id", requestID(c),
 		"message", message,
 	)
 	return c.JSON(http.StatusConflict, APIResponse{
