@@ -31,7 +31,7 @@ func main() {
 
 	// Initialize Echo
 	e := echo.New()
-	if conf.HTTPTrustProxy {
+	if conf.HTTP.TrustProxy {
 		e.IPExtractor = echo.ExtractIPFromXFFHeader()
 	} else {
 		e.IPExtractor = echo.ExtractIPDirect()
@@ -61,7 +61,7 @@ func main() {
 	// If you need tighter control per-route, wrap individual handlers with a context
 	// deadline instead of changing the global server timeout.
 	server := &http.Server{
-		Addr:              ":" + conf.HTTPPort,
+		Addr:              ":" + conf.HTTP.Port,
 		Handler:           e,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       60 * time.Second,
@@ -70,7 +70,7 @@ func main() {
 	}
 
 	go func() {
-		e.Logger.Info("starting server", "port", conf.HTTPPort)
+		e.Logger.Info("starting server", "port", conf.HTTP.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			e.Logger.Error("server exited unexpectedly", "error", err)
 		}

@@ -19,7 +19,7 @@ import (
 func NewDatabase(config *config.Config) *gorm.DB {
 	// Configure GORM logger
 	var gormLogLevel logger.LogLevel
-	if config.AppDebug {
+	if config.App.Debug {
 		gormLogLevel = logger.Info
 	} else {
 		gormLogLevel = logger.Error
@@ -30,7 +30,7 @@ func NewDatabase(config *config.Config) *gorm.DB {
 	}
 
 	// Parse database configuration
-	pgxConfig, err := pgx.ParseConfig(config.PostgresDSN)
+	pgxConfig, err := pgx.ParseConfig(config.Database.DSN)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse database config: %w", err))
 	}
@@ -57,17 +57,17 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		sqldb = stdlib.OpenDB(*pgxConfig)
 
 		// Configure connection pool with better defaults
-		maxOpenConns := config.MaxOpenConns
+		maxOpenConns := config.Database.MaxOpenConns
 		if maxOpenConns == 0 {
 			maxOpenConns = 25
 		}
 
-		maxIdleConns := config.MaxIdleConns
+		maxIdleConns := config.Database.MaxIdleConns
 		if maxIdleConns == 0 {
 			maxIdleConns = 5
 		}
 
-		connMaxLifetime := config.ConnMaxLifetime
+		connMaxLifetime := config.Database.ConnMaxLifetime
 		if connMaxLifetime == 0 {
 			connMaxLifetime = 1 * time.Hour
 		}

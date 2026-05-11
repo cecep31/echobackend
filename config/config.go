@@ -1,90 +1,136 @@
+// Package config loads and validates the application configuration.
+//
+// All values come from environment variables (a .env file is loaded first if
+// present) and are grouped into section configs on the root Config struct:
+//
+//	cfg.App       // app-level toggles (debug)
+//	cfg.HTTP      // listener, rate limit, CORS, proxy trust
+//	cfg.Auth      // JWT secret
+//	cfg.Database  // PostgreSQL DSN and pool tuning
+//	cfg.S3        // S3-compatible object storage
+//	cfg.Cache     // Valkey/Redis cache
+//
+// Some env keys have fallback aliases (legacy names). The first-set key wins;
+// see Load() for the full list.
 package config
 
 import (
 	"fmt"
-	"os"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
-type S3Config struct {
-	// Endpoint is the S3 service endpoint (e.g., "localhost:9000")
-	Endpoint string
-	// AccessKey is the S3 access key for authentication
-	AccessKey string
-	// SecretKey is the S3 secret key for authentication
-	SecretKey string
-	// Bucket is the default S3 bucket name
-	Bucket string
-	// UseSSL determines whether to use SSL/TLS for S3 connections
-	UseSSL bool
-}
-
-type CacheConfig struct {
-	// ValkeyURL is the connection URL for Valkey/Redis (for example redis://localhost:6379/0).
-	ValkeyURL string
-	// KeyPrefix is prepended to cache keys to avoid collisions across apps/environments.
-	KeyPrefix string
-	// TTL is the default cache lifetime.
-	TTL time.Duration
-	// ConnectTimeout is used when establishing a new cache connection.
-	ConnectTimeout time.Duration
-}
-
-// Config represents the application configuration.
+// Config is the root application configuration.
 type Config struct {
-	// HTTPPort is the TCP port the HTTP server listens on (e.g. "8080").
-	HTTPPort string
+	App      AppConfig
+	HTTP     HTTPConfig
+	Auth     AuthConfig
+	Database DatabaseConfig
+	S3       S3Config
+	Cache    CacheConfig
+}
+
+// AppConfig contains application-level toggles.
+type AppConfig struct {
+	// Debug enables verbose logging, GORM info logs, and debug routes (/api/debug/pprof/*).
+	Debug bool
+}
+
+// HTTPConfig controls the HTTP server, rate limiting, CORS and proxy trust.
+type HTTPConfig struct {
+	// Port is the TCP port the HTTP server listens on (e.g. "8080").
+	Port string
+	// RateLimitRPS is the sustained rate in requests per second for the global
+	// Echo rate limiter (0 = disabled). Burst is set to 2x this value.
+	RateLimitRPS int
+	// RateLimitWindow, when > 0, sets the Echo memory-store visitor ExpiresIn.
+	// When 0, Echo defaults (3 minutes) apply.
+	RateLimitWindow time.Duration
+	// TrustProxy, when true, extracts client IP from X-Forwarded-For.
+	// Use only behind a trusted reverse proxy.
+	TrustProxy bool
+	// AllowOrigins is the parsed CORS allow-list (always non-empty; defaults to ["*"]).
+	AllowOrigins []string
+}
+
+// AuthConfig contains authentication secrets.
+type AuthConfig struct {
 	// JWTSecret is the secret key used for JWT token signing and verification.
 	JWTSecret string
-	// PostgresDSN is the PostgreSQL connection string (lib/pgx / GORM DSN).
-	PostgresDSN string
+}
+
+// DatabaseConfig contains the PostgreSQL DSN and connection pool tuning.
+type DatabaseConfig struct {
+	// DSN is the PostgreSQL connection string (pgx / GORM DSN).
+	DSN string
 	// MaxOpenConns is the maximum number of open database connections in the pool.
 	MaxOpenConns int
 	// MaxIdleConns is the maximum number of idle database connections in the pool.
 	MaxIdleConns int
 	// ConnMaxLifetime is the maximum duration a database connection can be reused.
 	ConnMaxLifetime time.Duration
-	// HTTPRateLimitRPS is the global Echo rate limiter sustained rate in requests per second (0 = disabled).
-	HTTPRateLimitRPS int
-	// HTTPRateLimitWindowSec is, when >0, the Echo memory store visitor ExpiresIn in seconds. When 0, Echo defaults (3m) apply.
-	HTTPRateLimitWindowSec int
-	// HTTPTrustProxy when true sets Echo IP extraction from X-Forwarded-For with trust rules (typical behind nginx/ALB).
-	// When false, only the direct TCP peer address is used (safer when the app faces the internet without a trusted proxy).
-	HTTPTrustProxy bool
-	// HTTPAllowOrigins is the value(s) for the Access-Control-Allow-Origin CORS header.
-	// Comma-separated list of origins, or "*" to allow any origin.
-	HTTPAllowOrigins string
-	// S3 contains S3-compatible object storage (MinIO, AWS S3, etc.).
-	S3 S3Config
-	// Cache contains Valkey/Redis configuration.
-	Cache CacheConfig
-	// AppDebug enables verbose logging, GORM info logs, and debug routes.
-	AppDebug bool
+}
+
+// S3Config contains S3-compatible object storage settings (MinIO, AWS S3, etc.).
+type S3Config struct {
+	// Endpoint is the S3 service endpoint (e.g. "localhost:9000").
+	Endpoint string
+	// AccessKey is the S3 access key for authentication.
+	AccessKey string
+	// SecretKey is the S3 secret key for authentication.
+	SecretKey string
+	// Bucket is the default S3 bucket name.
+	Bucket string
+	// UseSSL determines whether to use SSL/TLS for S3 connections.
+	UseSSL bool
+}
+
+// CacheConfig contains Valkey/Redis cache settings.
+type CacheConfig struct {
+	// ValkeyURL is the connection URL for Valkey/Redis (e.g. redis://localhost:6379/0).
+	// Empty disables caching (the app runs fail-open).
+	ValkeyURL string
+	// KeyPrefix is prepended to cache keys to avoid collisions across apps/environments.
+	KeyPrefix string
+	// TTL is the default cache lifetime. 0 effectively disables writes.
+	TTL time.Duration
+	// ConnectTimeout is used when establishing a new cache connection.
+	ConnectTimeout time.Duration
 }
 
 // Load reads configuration from environment variables with defaults.
+//
 // It loads a .env file if present, then reads environment variables.
-// Returns a validated Config struct or an error if required fields are missing.
+// Returns a validated *Config or an error if required fields are missing.
+//
+// Some keys accept legacy aliases; the first-set key wins.
 func Load() (*Config, error) {
-	// Load .env file
+	// Best-effort .env loading; missing file is not an error.
 	_ = godotenv.Load()
 
-	// New env names are scoped where noted (DB_POOL_*, S3_*, etc.).
-	config := &Config{
-		HTTPPort:  envString([]string{"PORT"}, "8080"),
-		JWTSecret: envString([]string{"JWT_SECRET"}, "your-secret-key"),
-		// Default requires TLS; for local Postgres without SSL, set DATABASE_URL (see .env.example).
-		PostgresDSN:            envString([]string{"DATABASE_URL"}, "postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=require"),
-		MaxOpenConns:           envInt([]string{"DB_POOL_MAX_OPEN", "MAX_OPEN_CONNS"}, 25),
-		MaxIdleConns:           envInt([]string{"DB_POOL_MAX_IDLE", "MAX_IDLE_CONNS"}, 10),
-		ConnMaxLifetime:        envDuration([]string{"DB_POOL_CONN_LIFETIME", "CONN_MAX_LIFETIME"}, 15*time.Minute),
-		HTTPRateLimitRPS:       envInt([]string{"HTTP_RATE_LIMIT_RPS", "RATE_LIMITER_MAX"}, 0),
-		HTTPRateLimitWindowSec: envInt([]string{"HTTP_RATE_LIMIT_WINDOW_SEC", "RATE_LIMITER_TTL"}, 0),
-		HTTPTrustProxy:         envBool([]string{"HTTP_TRUST_PROXY", "TRUST_PROXY"}, false),
-		HTTPAllowOrigins:       envString([]string{"HTTP_ALLOW_ORIGINS"}, "*"),
+	cfg := &Config{
+		App: AppConfig{
+			Debug: envBool([]string{"APP_DEBUG", "DEBUG"}, false),
+		},
+		HTTP: HTTPConfig{
+			Port:            envString([]string{"PORT"}, "8080"),
+			RateLimitRPS:    envInt([]string{"HTTP_RATE_LIMIT_RPS", "RATE_LIMITER_MAX"}, 0),
+			RateLimitWindow: time.Duration(envInt([]string{"HTTP_RATE_LIMIT_WINDOW_SEC", "RATE_LIMITER_TTL"}, 0)) * time.Second,
+			TrustProxy:      envBool([]string{"HTTP_TRUST_PROXY", "TRUST_PROXY"}, false),
+			AllowOrigins:    parseOrigins(envString([]string{"HTTP_ALLOW_ORIGINS"}, "*")),
+		},
+		Auth: AuthConfig{
+			JWTSecret: envString([]string{"JWT_SECRET"}, "your-secret-key"),
+		},
+		Database: DatabaseConfig{
+			// Default requires TLS; for local Postgres without SSL, set DATABASE_URL (see .env.example).
+			DSN:             envString([]string{"DATABASE_URL"}, "postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=require"),
+			MaxOpenConns:    envInt([]string{"DB_POOL_MAX_OPEN", "MAX_OPEN_CONNS"}, 25),
+			MaxIdleConns:    envInt([]string{"DB_POOL_MAX_IDLE", "MAX_IDLE_CONNS"}, 10),
+			ConnMaxLifetime: envDuration([]string{"DB_POOL_CONN_LIFETIME", "CONN_MAX_LIFETIME"}, 15*time.Minute),
+		},
 		S3: S3Config{
 			Endpoint:  envString([]string{"S3_ENDPOINT", "MINIO_ENDPOINT"}, "localhost:9000"),
 			AccessKey: envString([]string{"S3_ACCESS_KEY", "MINIO_ACCESS_KEY"}, "minioadmin"),
@@ -98,23 +144,21 @@ func Load() (*Config, error) {
 			TTL:            time.Duration(envInt([]string{"CACHE_TTL_SECONDS"}, 60)) * time.Second,
 			ConnectTimeout: time.Duration(envInt([]string{"VALKEY_CONNECT_TIMEOUT_MS"}, 5000)) * time.Millisecond,
 		},
-		AppDebug: envBool([]string{"APP_DEBUG", "DEBUG"}, false),
 	}
 
-	if err := config.validate(); err != nil {
+	if err := cfg.validate(); err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	return cfg, nil
 }
 
-// validate ensures that all required configuration fields are present and valid.
-// Returns an error if any required field is missing or invalid.
+// validate checks cross-section invariants and required fields.
 func (c *Config) validate() error {
-	if c.JWTSecret == "" {
+	if c.Auth.JWTSecret == "" {
 		return fmt.Errorf("JWT_SECRET is required")
 	}
-	if c.PostgresDSN == "" {
+	if c.Database.DSN == "" {
 		return fmt.Errorf("DATABASE_URL is required")
 	}
 	if c.Cache.TTL < 0 {
@@ -123,54 +167,28 @@ func (c *Config) validate() error {
 	if c.Cache.ConnectTimeout < 0 {
 		return fmt.Errorf("VALKEY_CONNECT_TIMEOUT_MS must be >= 0")
 	}
+	if c.HTTP.RateLimitRPS < 0 {
+		return fmt.Errorf("HTTP_RATE_LIMIT_RPS must be >= 0")
+	}
 	return nil
 }
 
-// envString returns the first set environment variable from keys, or defaultValue.
-func envString(keys []string, defaultValue string) string {
-	for _, k := range keys {
-		if v, ok := os.LookupEnv(k); ok {
-			return v
+// parseOrigins splits a comma-separated CORS origin list, trims whitespace,
+// and drops empty entries. Returns ["*"] when the raw value is empty or "*".
+func parseOrigins(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "*" {
+		return []string{"*"}
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if v := strings.TrimSpace(p); v != "" {
+			out = append(out, v)
 		}
 	}
-	return defaultValue
-}
-
-// envInt returns the first successfully parsed int from set env keys, or defaultValue.
-func envInt(keys []string, defaultValue int) int {
-	for _, k := range keys {
-		if s, ok := os.LookupEnv(k); ok {
-			if n, err := strconv.Atoi(s); err == nil {
-				return n
-			}
-			return defaultValue
-		}
+	if len(out) == 0 {
+		return []string{"*"}
 	}
-	return defaultValue
-}
-
-// envBool returns the first successfully parsed bool from set env keys, or defaultValue.
-func envBool(keys []string, defaultValue bool) bool {
-	for _, k := range keys {
-		if s, ok := os.LookupEnv(k); ok {
-			if b, err := strconv.ParseBool(s); err == nil {
-				return b
-			}
-			return defaultValue
-		}
-	}
-	return defaultValue
-}
-
-// envDuration returns the first successfully parsed duration from set env keys, or defaultValue.
-func envDuration(keys []string, defaultValue time.Duration) time.Duration {
-	for _, k := range keys {
-		if s, ok := os.LookupEnv(k); ok {
-			if d, err := time.ParseDuration(s); err == nil {
-				return d
-			}
-			return defaultValue
-		}
-	}
-	return defaultValue
+	return out
 }

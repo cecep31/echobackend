@@ -62,7 +62,7 @@ func (r *Routes) setupAPIRoutes(api *echo.Group) {
 	r.setupAuthRoutes(api)
 	r.setupTagRoutes(api)
 	r.setupChatConversationRoutes(api)
-	if r.config.AppDebug {
+	if r.config.App.Debug {
 		r.setupDebugRoutes(api)
 	}
 }

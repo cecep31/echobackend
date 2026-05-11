@@ -40,7 +40,7 @@ func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 			}
 
-			claims, err := validateToken(tokenString, a.conf.JWTSecret)
+			claims, err := validateToken(tokenString, a.conf.Auth.JWTSecret)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("invalid token: %v", err))
 			}

@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"strings"
 	"time"
 
 	"echobackend/config"
@@ -53,26 +52,18 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 	}))
 
 	// Global HTTP rate limit (sustained RPS, token bucket; 0 = disabled)
-	if config.HTTPRateLimitRPS > 0 {
+	if config.HTTP.RateLimitRPS > 0 {
 		storeCfg := middleware.RateLimiterMemoryStoreConfig{
-			Rate:  float64(config.HTTPRateLimitRPS),
-			Burst: config.HTTPRateLimitRPS * 2,
+			Rate:  float64(config.HTTP.RateLimitRPS),
+			Burst: config.HTTP.RateLimitRPS * 2,
 		}
-		if config.HTTPRateLimitWindowSec > 0 {
-			storeCfg.ExpiresIn = time.Duration(config.HTTPRateLimitWindowSec) * time.Second
+		if config.HTTP.RateLimitWindow > 0 {
+			storeCfg.ExpiresIn = config.HTTP.RateLimitWindow
 		}
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(storeCfg)))
 	}
 
 	e.Use(middleware.Recover())
 
-	allowOrigins := []string{"*"}
-	if config.HTTPAllowOrigins != "" {
-		parts := strings.Split(config.HTTPAllowOrigins, ",")
-		for i := range parts {
-			parts[i] = strings.TrimSpace(parts[i])
-		}
-		allowOrigins = parts
-	}
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: allowOrigins}))
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: config.HTTP.AllowOrigins}))
 }
