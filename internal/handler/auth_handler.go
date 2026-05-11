@@ -52,9 +52,9 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 		return response.FromValidateError(c, err)
 	}
 
-	token, refreshToken, user, err := h.authService.Login(c.Request().Context(), loginReq.Email, loginReq.Password)
+	token, refreshToken, user, err := h.authService.Login(c.Request().Context(), loginReq.Identifier, loginReq.Password)
 	if err == apperrors.ErrInvalidCredentials {
-		return response.Unauthorized(c, "Invalid email or password")
+		return response.Unauthorized(c, "Invalid identifier or password")
 	}
 	if err != nil {
 		return response.InternalServerError(c, "Login failed", err)

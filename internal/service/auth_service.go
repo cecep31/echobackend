@@ -18,7 +18,7 @@ import (
 
 type AuthService interface {
 	Register(ctx context.Context, email, username, password string) (*model.User, error)
-	Login(ctx context.Context, email, password string) (string, string, *model.User, error)
+	Login(ctx context.Context, identifier, password string) (string, string, *model.User, error)
 	CheckUsernameAvailability(ctx context.Context, username string) (bool, error)
 	ForgotPassword(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, token, password string) error
@@ -76,8 +76,8 @@ func (s *authService) Register(ctx context.Context, email, username, password st
 	return newUser, nil
 }
 
-func (s *authService) Login(ctx context.Context, email, password string) (string, string, *model.User, error) {
-	user, err := s.authRepo.FindUserByEmail(ctx, email)
+func (s *authService) Login(ctx context.Context, identifier, password string) (string, string, *model.User, error) {
+	user, err := s.authRepo.FindUserByIdentifier(ctx, identifier)
 	if err != nil {
 		return "", "", nil, apperrors.ErrInvalidCredentials
 	}
