@@ -55,6 +55,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	postLikeRepo := repository.NewPostLikeRepository(db)
 	userFollowRepo := repository.NewUserFollowRepository(db)
 	chatConversationRepo := repository.NewChatConversationRepository(db)
+	holdingRepo := repository.NewHoldingRepository(db)
 
 	userService := service.NewUserService(userRepo)
 	tagService := service.NewTagService(tagRepo)
@@ -65,6 +66,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	postLikeService := service.NewPostLikeService(postLikeRepo, postRepo)
 	userFollowService := service.NewUserFollowService(userFollowRepo, userRepo)
 	chatConversationService := service.NewChatConversationService(chatConversationRepo)
+	holdingService := service.NewHoldingService(holdingRepo)
 
 	userHandler := handler.NewUserHandler(userService, userFollowService)
 	postHandler := handler.NewPostHandler(postService, postViewService)
@@ -75,6 +77,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	postLikeHandler := handler.NewPostLikeHandler(postLikeService)
 	userFollowHandler := handler.NewUserFollowHandler(userFollowService)
 	chatConversationHandler := handler.NewChatConversationHandler(chatConversationService)
+	holdingHandler := handler.NewHoldingHandler(holdingService)
 
 	authMiddleware := middleware.NewAuthMiddleware(cfg, userRepo)
 	appRoutes := routes.NewRoutes(
@@ -89,6 +92,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		postLikeHandler,
 		userFollowHandler,
 		chatConversationHandler,
+		holdingHandler,
 	)
 
 	return &Container{

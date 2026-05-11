@@ -31,4 +31,9 @@ var (
 	ErrPaginationOffsetNegative = errors.New("offset must be non-negative")
 	ErrFileNil                  = errors.New("file cannot be nil")
 	ErrStorageUnavailable       = errors.New("storage is unavailable")
+
+	ErrHoldingNotFound      = errors.New("holding not found")
+	ErrHoldingTypeNotFound  = errors.New("holding type not found")
+	ErrHoldingNotOwned      = errors.New("not authorized to modify this holding")
+	ErrHoldingDuplicateSame = errors.New("source and target month/year are the same")
 )

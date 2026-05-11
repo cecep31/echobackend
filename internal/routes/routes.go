@@ -20,6 +20,7 @@ type Routes struct {
 	postLikeHandler         *handler.PostLikeHandler
 	userFollowHandler       *handler.UserFollowHandler
 	chatConversationHandler *handler.ChatConversationHandler
+	holdingHandler          *handler.HoldingHandler
 }
 
 func NewRoutes(
@@ -34,6 +35,7 @@ func NewRoutes(
 	postLikeHandler *handler.PostLikeHandler,
 	userFollowHandler *handler.UserFollowHandler,
 	chatConversationHandler *handler.ChatConversationHandler,
+	holdingHandler *handler.HoldingHandler,
 ) *Routes {
 	return &Routes{
 		config:                  config,
@@ -47,6 +49,7 @@ func NewRoutes(
 		postLikeHandler:         postLikeHandler,
 		userFollowHandler:       userFollowHandler,
 		chatConversationHandler: chatConversationHandler,
+		holdingHandler:          holdingHandler,
 	}
 }
 
@@ -62,6 +65,7 @@ func (r *Routes) setupAPIRoutes(api *echo.Group) {
 	r.setupAuthRoutes(api)
 	r.setupTagRoutes(api)
 	r.setupChatConversationRoutes(api)
+	r.setupHoldingRoutes(api)
 	if r.config.App.Debug {
 		r.setupDebugRoutes(api)
 	}
