@@ -17,6 +17,6 @@ func (r *Routes) setupAuthRoutes(api *echo.Group) {
 		auth.POST("/forgot-password", r.authHandler.ForgotPassword, echomidleware.RateLimiter(echomidleware.NewRateLimiterMemoryStoreWithConfig(confratelimit)))
 		auth.POST("/reset-password", r.authHandler.ResetPassword)
 		auth.POST("/refresh", r.authHandler.RefreshToken)
-		auth.PUT("/change-password", r.authHandler.ChangePassword, r.authMiddleware.Auth())
+		auth.PATCH("/password", r.authHandler.ChangePassword, r.authMiddleware.Auth())
 	}
 }
