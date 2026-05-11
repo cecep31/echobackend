@@ -132,15 +132,16 @@ func (r *userRepository) SoftDeleteByID(ctx context.Context, id string) error {
 }
 
 func (r *userRepository) Exists(ctx context.Context, email string) (bool, error) {
-	var count int64
-	err := r.db.WithContext(ctx).Model((*model.User)(nil)).Where("email = ?", email).Count(&count).Error
+	var exists bool
+	err := r.db.WithContext(ctx).Model((*model.User)(nil)).
+		Select("1").
+		Where("email = ?", email).
+		Limit(1).
+		Scan(&exists).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return false, nil
-		}
 		return false, fmt.Errorf("failed to check user existence: %w", err)
 	}
-	return count > 0, nil
+	return exists, nil
 }
 
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {

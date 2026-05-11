@@ -2,13 +2,13 @@ package handler
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 
 	"echobackend/internal/dto"
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"strconv"
-	"strings"
 
 	"github.com/labstack/echo/v5"
 )
@@ -80,24 +80,10 @@ func (h *PostHandler) GetPosts(c *echo.Context) error {
 		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
-	for _, post := range posts {
-		if post.Body != nil && len(*post.Body) > 250 {
-			truncated := (*post.Body)[:250] + " ..."
-			post.Body = &truncated
-		}
-	}
+	dto.TruncatePostBodies(posts, 250)
 
-	meta := response.PaginationMeta{
-		TotalItems: int(total),
-		Offset:     filter.Offset,
-		Limit:      filter.Limit,
-		TotalPages: int(total)/filter.Limit + 1,
-	}
-	if int(total)%filter.Limit == 0 {
-		meta.TotalPages = int(total) / filter.Limit
-	}
-
-	return response.SuccessWithMeta(c, "Successfully retrieved posts", posts, meta)
+	return response.SuccessWithMeta(c, "Successfully retrieved posts", posts,
+		response.CalculatePaginationMeta(total, filter.Offset, filter.Limit))
 }
 
 func (h *PostHandler) CreatePost(c *echo.Context) error {
@@ -194,12 +180,7 @@ func (h *PostHandler) GetPostsRandom(c *echo.Context) error {
 		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
-	for _, post := range posts {
-		if post.Body != nil && len(*post.Body) > 250 {
-			truncated := (*post.Body)[:250] + " ..."
-			post.Body = &truncated
-		}
-	}
+	dto.TruncatePostBodies(posts, 250)
 
 	return response.Success(c, "Successfully retrieved posts", posts)
 }
@@ -212,12 +193,7 @@ func (h *PostHandler) GetPostsTrending(c *echo.Context) error {
 		return response.InternalServerError(c, "Failed to get trending posts", err)
 	}
 
-	for _, post := range posts {
-		if post.Body != nil && len(*post.Body) > 250 {
-			truncated := (*post.Body)[:250] + " ..."
-			post.Body = &truncated
-		}
-	}
+	dto.TruncatePostBodies(posts, 250)
 
 	return response.Success(c, "Successfully retrieved trending posts", posts)
 }
@@ -231,29 +207,14 @@ func (h *PostHandler) GetMyPosts(c *echo.Context) error {
 	}
 
 	posts, total, err := h.postService.GetPostsByCreatedBy(c.Request().Context(), userID, offset, limit)
-
-	for _, post := range posts {
-		if post.Body != nil && len(*post.Body) > 250 {
-			truncated := (*post.Body)[:250] + " ..."
-			post.Body = &truncated
-		}
-	}
-
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
-	meta := response.PaginationMeta{
-		TotalItems: int(total),
-		Offset:     offset,
-		Limit:      limit,
-		TotalPages: int(total)/limit + 1,
-	}
-	if int(total)%limit == 0 {
-		meta.TotalPages = int(total) / limit
-	}
+	dto.TruncatePostBodies(posts, 250)
 
-	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
+	return response.SuccessWithMeta(c, "Successfully retrieved posts", posts,
+		response.CalculatePaginationMeta(total, offset, limit))
 }
 
 func (h *PostHandler) GetPostsForYou(c *echo.Context) error {
@@ -269,32 +230,10 @@ func (h *PostHandler) GetPostsForYou(c *echo.Context) error {
 		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
-	metaLimit := limit
-	if metaLimit <= 0 {
-		metaLimit = 10
-	}
-	if metaLimit > 100 {
-		metaLimit = 100
-	}
+	dto.TruncatePostBodies(posts, 250)
 
-	for _, post := range posts {
-		if post.Body != nil && len(*post.Body) > 250 {
-			truncated := (*post.Body)[:250] + " ..."
-			post.Body = &truncated
-		}
-	}
-
-	meta := response.PaginationMeta{
-		TotalItems: int(total),
-		Offset:     offset,
-		Limit:      metaLimit,
-		TotalPages: int(total)/metaLimit + 1,
-	}
-	if int(total)%metaLimit == 0 {
-		meta.TotalPages = int(total) / metaLimit
-	}
-
-	return response.SuccessWithMeta(c, "Successfully retrieved for-you posts", posts, meta)
+	return response.SuccessWithMeta(c, "Successfully retrieved for-you posts", posts,
+		response.CalculatePaginationMeta(total, offset, limit))
 }
 
 func (h *PostHandler) GetPostsByUsername(c *echo.Context) error {
@@ -302,59 +241,14 @@ func (h *PostHandler) GetPostsByUsername(c *echo.Context) error {
 	limit, offset := ParsePaginationParams(c, 10)
 
 	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offset, limit)
-
-	for _, post := range posts {
-		if post.Body != nil && len(*post.Body) > 250 {
-			truncated := (*post.Body)[:250] + " ..."
-			post.Body = &truncated
-		}
-	}
-
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get posts", err)
 	}
 
-	meta := response.PaginationMeta{
-		TotalItems: int(total),
-		Offset:     offset,
-		Limit:      limit,
-		TotalPages: int(total)/limit + 1,
-	}
-	if int(total)%limit == 0 {
-		meta.TotalPages = int(total) / limit
-	}
+	dto.TruncatePostBodies(posts, 250)
 
-	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
-}
-
-func (h *PostHandler) GetPostsByAuthor(c *echo.Context) error {
-	username := c.Param("username")
-	limit, offset := ParsePaginationParams(c, 10)
-
-	posts, total, err := h.postService.GetPostsByUsername(c.Request().Context(), username, offset, limit)
-
-	for _, post := range posts {
-		if post.Body != nil && len(*post.Body) > 250 {
-			truncated := (*post.Body)[:250] + " ..."
-			post.Body = &truncated
-		}
-	}
-
-	if err != nil {
-		return response.InternalServerError(c, "Failed to get posts", err)
-	}
-
-	meta := response.PaginationMeta{
-		TotalItems: int(total),
-		Offset:     offset,
-		Limit:      limit,
-		TotalPages: int(total)/limit + 1,
-	}
-	if int(total)%limit == 0 {
-		meta.TotalPages = int(total) / limit
-	}
-
-	return response.SuccessWithMeta(c, "success retrieving posts", posts, meta)
+	return response.SuccessWithMeta(c, "Successfully retrieved posts", posts,
+		response.CalculatePaginationMeta(total, offset, limit))
 }
 
 func (h *PostHandler) GetPostsByTag(c *echo.Context) error {
@@ -362,29 +256,14 @@ func (h *PostHandler) GetPostsByTag(c *echo.Context) error {
 	limit, offset := ParsePaginationParams(c, 10)
 
 	posts, total, err := h.postService.GetPostsByTag(c.Request().Context(), tag, limit, offset)
-
-	for _, post := range posts {
-		if post.Body != nil && len(*post.Body) > 250 {
-			truncated := (*post.Body)[:250] + " ..."
-			post.Body = &truncated
-		}
-	}
-
 	if err != nil {
 		return response.InternalServerError(c, "Failed to get posts by tag", err)
 	}
 
-	meta := response.PaginationMeta{
-		TotalItems: int(total),
-		Offset:     offset,
-		Limit:      limit,
-		TotalPages: int(total)/limit + 1,
-	}
-	if int(total)%limit == 0 {
-		meta.TotalPages = int(total) / limit
-	}
+	dto.TruncatePostBodies(posts, 250)
 
-	return response.SuccessWithMeta(c, "success retrieving posts by tag", posts, meta)
+	return response.SuccessWithMeta(c, "Successfully retrieved posts by tag", posts,
+		response.CalculatePaginationMeta(total, offset, limit))
 }
 
 func (h *PostHandler) UploadImagePosts(c *echo.Context) error {
@@ -400,7 +279,7 @@ func (h *PostHandler) UploadImagePosts(c *echo.Context) error {
 	if err := h.postService.UploadImagePosts(c.Request().Context(), file); err != nil {
 		return h.respondPostError(c, "Failed to upload image", err)
 	}
-	return response.Success(c, "success uploading image", nil)
+	return response.Success(c, "Successfully uploaded image", nil)
 }
 
 func (h *PostHandler) GetPostsForSitemap(c *echo.Context) error {

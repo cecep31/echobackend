@@ -13,7 +13,6 @@ func (r *Routes) setupPostRoutes(api *echo.Group) {
 		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
 		posts.GET("/sitemap", r.postHandler.GetPostsForSitemap)
 		posts.GET("/username/:username", r.postHandler.GetPostsByUsername)
-		posts.GET("/author/:username", r.postHandler.GetPostsByAuthor)
 		posts.GET("/u/:username/:slug", r.postHandler.GetPostBySlugAndUsername)
 		posts.GET("/tag/:tag", r.postHandler.GetPostsByTag)
 		posts.GET("", r.postHandler.GetPosts)

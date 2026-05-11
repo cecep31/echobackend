@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"echobackend/config"
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -34,7 +34,9 @@ func NewDatabase(config *config.Config) *gorm.DB {
 	if err != nil {
 		panic(fmt.Errorf("failed to parse database config: %w", err))
 	}
-	pgxConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+	// Use the default extended query protocol for better performance (named statements,
+	// binary encoding). If you run behind PgBouncer in transaction-pooling mode, set
+	// PGX_QUERY_EXEC_MODE=simple or switch back to QueryExecModeSimpleProtocol here.
 	pgxConfig.ConnectTimeout = 10 * time.Second
 
 	// Create database connection with retry logic
@@ -49,7 +51,7 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		if attempt > 0 {
 			delay := baseDelay * time.Duration(1<<uint(attempt-1))
 			time.Sleep(delay)
-			log.Printf("Retrying database connection (attempt %d/%d)", attempt+1, maxRetries)
+			slog.Info("retrying database connection", "attempt", attempt+1, "max", maxRetries)
 		}
 
 		sqldb = stdlib.OpenDB(*pgxConfig)
@@ -80,7 +82,7 @@ func NewDatabase(config *config.Config) *gorm.DB {
 			Conn: sqldb,
 		}), gormConfig)
 		if err != nil {
-			log.Printf("Failed to connect to database (attempt %d/%d): %v", attempt+1, maxRetries, err)
+			slog.Error("failed to connect to database", "attempt", attempt+1, "max", maxRetries, "error", err)
 			if sqldb != nil {
 				sqldb.Close()
 			}
@@ -90,7 +92,7 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		// Verify connection
 		sqlDB, err := db.DB()
 		if err != nil {
-			log.Printf("Failed to get underlying sql.DB (attempt %d/%d): %v", attempt+1, maxRetries, err)
+			slog.Error("failed to get underlying sql.DB", "attempt", attempt+1, "max", maxRetries, "error", err)
 			continue
 		}
 
@@ -98,13 +100,13 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		err = sqlDB.PingContext(ctx)
 		cancel()
 		if err != nil {
-			log.Printf("Failed to ping database (attempt %d/%d): %v", attempt+1, maxRetries, err)
+			slog.Error("failed to ping database", "attempt", attempt+1, "max", maxRetries, "error", err)
 			sqlDB.Close()
 			continue
 		}
 
 		// Connection successful
-		log.Printf("Successfully connected to database")
+		slog.Info("successfully connected to database")
 		break
 	}
 

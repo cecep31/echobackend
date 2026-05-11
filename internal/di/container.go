@@ -1,6 +1,7 @@
 package di
 
 import (
+	"context"
 	"echobackend/config"
 	"echobackend/internal/handler"
 	"echobackend/internal/middleware"
@@ -10,6 +11,8 @@ import (
 	"echobackend/pkg/cache"
 	"echobackend/pkg/database"
 	"echobackend/pkg/storage"
+
+	"gorm.io/gorm"
 )
 
 // Container holds the manually wired application dependencies.
@@ -17,6 +20,7 @@ type Container struct {
 	Config  *config.Config
 	Cleanup *CleanupManager
 	Routes  *routes.Routes
+	db      *gorm.DB
 }
 
 // NewContainer creates a manually wired application container.
@@ -91,7 +95,17 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		Config:  cfg,
 		Cleanup: cleanup,
 		Routes:  appRoutes,
+		db:      db,
 	}, nil
+}
+
+// PingDB checks that the database connection is alive.
+func (c *Container) PingDB(ctx context.Context) error {
+	sqlDB, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.PingContext(ctx)
 }
 
 // GetCleanupManager retrieves the cleanup manager from the container.

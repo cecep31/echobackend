@@ -126,6 +126,21 @@ func PostToResponse(p *model.Post) *PostResponse {
 	}
 }
 
+// TruncateBody returns a copy of posts with Body truncated to maxRunes runes.
+// Safe for multi-byte UTF-8 characters.
+func TruncatePostBodies(posts []*PostResponse, maxRunes int) {
+	for _, post := range posts {
+		if post.Body == nil {
+			continue
+		}
+		r := []rune(*post.Body)
+		if len(r) > maxRunes {
+			truncated := string(r[:maxRunes]) + " ..."
+			post.Body = &truncated
+		}
+	}
+}
+
 type SitemapPost struct {
 	Username  *string    `json:"username"`
 	Slug      *string    `json:"slug"`

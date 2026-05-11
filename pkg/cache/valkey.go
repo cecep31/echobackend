@@ -54,7 +54,7 @@ func NewValkeyCache(cfg *config.Config) *ValkeyCache {
 		slog.Warn("cache: CACHE_TTL_SECONDS is 0 — SetJSON will be skipped, caching effectively disabled")
 	}
 
-	slog.Info("cache: connected to Valkey/Redis", "url", cfg.Cache.ValkeyURL, "ttl", cfg.Cache.TTL, "key_prefix", strings.TrimSpace(cfg.Cache.KeyPrefix))
+	slog.Info("cache: connected to Valkey/Redis", "ttl", cfg.Cache.TTL, "key_prefix", strings.TrimSpace(cfg.Cache.KeyPrefix))
 
 	return &ValkeyCache{
 		client:    client,

@@ -1,7 +1,7 @@
 package response
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
 	"echobackend/pkg/validator"
@@ -27,10 +27,13 @@ type PaginationMeta struct {
 	TotalPages int `json:"total_pages"`
 }
 
+// requestID extracts the Echo request-id header for structured logging.
+func requestID(c *echo.Context) string {
+	return c.Response().Header().Get(echo.HeaderXRequestID)
+}
+
 // Success sends a successful response
 func Success(c *echo.Context, message string, data any) error {
-	log.Printf("Success response request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
-
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
 		Message: message,
@@ -40,8 +43,6 @@ func Success(c *echo.Context, message string, data any) error {
 
 // SuccessWithMeta sends a successful response with metadata
 func SuccessWithMeta(c *echo.Context, message string, data any, meta any) error {
-	log.Printf("Success response with meta request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
-
 	return c.JSON(http.StatusOK, APIResponse{
 		Success: true,
 		Message: message,
@@ -52,8 +53,6 @@ func SuccessWithMeta(c *echo.Context, message string, data any, meta any) error 
 
 // Created sends a created response
 func Created(c *echo.Context, message string, data any) error {
-	log.Printf("Created response request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
-
 	return c.JSON(http.StatusCreated, APIResponse{
 		Success: true,
 		Message: message,
@@ -68,7 +67,11 @@ func BadRequest(c *echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	log.Printf("Bad request request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), message, errorMsg)
+	slog.Warn("bad request",
+		"request_id", requestID(c),
+		"message", message,
+		"error", errorMsg,
+	)
 
 	return c.JSON(http.StatusBadRequest, APIResponse{
 		Success: false,
@@ -79,7 +82,10 @@ func BadRequest(c *echo.Context, message string, err error) error {
 
 // Unauthorized sends an unauthorized error response
 func Unauthorized(c *echo.Context, message string) error {
-	log.Printf("Unauthorized access request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
+	slog.Warn("unauthorized",
+		"request_id", requestID(c),
+		"message", message,
+	)
 
 	return c.JSON(http.StatusUnauthorized, APIResponse{
 		Success: false,
@@ -90,7 +96,10 @@ func Unauthorized(c *echo.Context, message string) error {
 
 // Forbidden sends a forbidden error response
 func Forbidden(c *echo.Context, message string) error {
-	log.Printf("Forbidden access request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
+	slog.Warn("forbidden",
+		"request_id", requestID(c),
+		"message", message,
+	)
 
 	return c.JSON(http.StatusForbidden, APIResponse{
 		Success: false,
@@ -106,7 +115,11 @@ func NotFound(c *echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	log.Printf("Resource not found request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), message, errorMsg)
+	slog.Warn("not found",
+		"request_id", requestID(c),
+		"message", message,
+		"error", errorMsg,
+	)
 
 	return c.JSON(http.StatusNotFound, APIResponse{
 		Success: false,
@@ -115,19 +128,20 @@ func NotFound(c *echo.Context, message string, err error) error {
 	})
 }
 
-// InternalServerError sends an internal server error response
+// InternalServerError sends an internal server error response.
+// The raw error is logged server-side only; the client receives a generic message
+// to avoid leaking internal details (DSN, stack traces, etc.).
 func InternalServerError(c *echo.Context, message string, err error) error {
-	errorMsg := ""
-	if err != nil {
-		errorMsg = err.Error()
-	}
-
-	log.Printf("Internal server error request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), message, errorMsg)
+	slog.Error("internal server error",
+		"request_id", requestID(c),
+		"message", message,
+		"error", err,
+	)
 
 	return c.JSON(http.StatusInternalServerError, APIResponse{
 		Success: false,
 		Message: message,
-		Error:   errorMsg,
+		// Do NOT include err.Error() in the response — avoids leaking internal details.
 	})
 }
 
@@ -138,7 +152,11 @@ func ValidationError(c *echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	log.Printf("Validation error request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), message, errorMsg)
+	slog.Warn("validation error",
+		"request_id", requestID(c),
+		"message", message,
+		"error", errorMsg,
+	)
 
 	return c.JSON(http.StatusUnprocessableEntity, APIResponse{
 		Success: false,
@@ -151,12 +169,14 @@ func ValidationError(c *echo.Context, message string, err error) error {
 // structured field errors use 422 with Errors populated; otherwise ValidationError fallback.
 func FromValidateError(c *echo.Context, err error) error {
 	if errs, ok := err.(validator.ValidationErrors); ok {
-		errMsg := errs.Error()
-		log.Printf("Validation error request_id=%s message=%s error=%s", c.Response().Header().Get(echo.HeaderXRequestID), "Validation failed", errMsg)
+		slog.Warn("validation error",
+			"request_id", requestID(c),
+			"error", errs.Error(),
+		)
 		return c.JSON(http.StatusUnprocessableEntity, APIResponse{
 			Success: false,
 			Message: "Validation failed",
-			Error:   errMsg,
+			Error:   errs.Error(),
 			Errors:  errs.Errors,
 		})
 	}
@@ -165,7 +185,10 @@ func FromValidateError(c *echo.Context, err error) error {
 
 // Conflict sends a 409 Conflict response (e.g. duplicate resource).
 func Conflict(c *echo.Context, message string, conflictError string) error {
-	log.Printf("Conflict request_id=%s message=%s", c.Response().Header().Get(echo.HeaderXRequestID), message)
+	slog.Warn("conflict",
+		"request_id", requestID(c),
+		"message", message,
+	)
 	return c.JSON(http.StatusConflict, APIResponse{
 		Success: false,
 		Message: message,
@@ -173,15 +196,21 @@ func Conflict(c *echo.Context, message string, conflictError string) error {
 	})
 }
 
-// CalculatePaginationMeta calculates pagination metadata
+// CalculatePaginationMeta calculates pagination metadata.
+// Guards against division-by-zero when limit is 0.
 func CalculatePaginationMeta(totalItems int64, offset, limit int) PaginationMeta {
-	totalPages := int(totalItems) / limit
-	if int(totalItems)%limit > 0 {
+	if limit <= 0 {
+		limit = 10
+	}
+
+	total := int(totalItems)
+	totalPages := total / limit
+	if total%limit > 0 {
 		totalPages++
 	}
 
 	return PaginationMeta{
-		TotalItems: int(totalItems),
+		TotalItems: total,
 		Offset:     offset,
 		Limit:      limit,
 		TotalPages: totalPages,

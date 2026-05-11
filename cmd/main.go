@@ -45,16 +45,28 @@ func main() {
 
 	e.GET("/", helloWorld)
 
+	// Health check endpoint — used by Fly.io, Docker HEALTHCHECK, and load balancers.
+	// Returns 200 when the DB is reachable, 503 otherwise.
+	e.GET("/health", func(c *echo.Context) error {
+		return healthCheck(c, container)
+	})
+
 	// Setup middleware
 	middleware.InitMiddleware(e, conf)
 
-	// Start server in a goroutine
+	// Start server in a goroutine.
+	// ReadTimeout covers the full request body read. For most endpoints 10 s is fine,
+	// but file uploads can be slow on poor connections. We raise it to 60 s here and
+	// rely on the 10 MB body limit (middleware) to bound abuse.
+	// If you need tighter control per-route, wrap individual handlers with a context
+	// deadline instead of changing the global server timeout.
 	server := &http.Server{
-		Addr:         ":" + conf.HTTPPort,
-		Handler:      e,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:              ":" + conf.HTTPPort,
+		Handler:           e,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	go func() {
@@ -97,4 +109,21 @@ func main() {
 
 func helloWorld(c *echo.Context) error {
 	return response.Success(c, "Hello, World!", nil)
+}
+
+// healthCheck pings the database and returns 200 OK or 503 Service Unavailable.
+func healthCheck(c *echo.Context, container *di.Container) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 3*time.Second)
+	defer cancel()
+
+	if err := container.PingDB(ctx); err != nil {
+		return c.JSON(http.StatusServiceUnavailable, map[string]string{
+			"status": "unhealthy",
+			"reason": "database unreachable",
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"status": "ok",
+	})
 }

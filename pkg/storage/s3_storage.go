@@ -5,7 +5,7 @@ import (
 	"context"
 	"echobackend/config"
 	"io"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -24,16 +24,14 @@ func NewS3Storage(cfg *config.Config) *S3Storage {
 		Secure: cfg.S3.UseSSL,
 	})
 	if err != nil {
-		log.Printf("Failed to create MinIO client: %v", err)
+		slog.Error("failed to create MinIO/S3 client", "error", err)
 		return nil
 	}
 
-	s3Client := &S3Storage{
+	return &S3Storage{
 		client: minioClient,
 		bucket: cfg.S3.Bucket,
 	}
-
-	return s3Client
 }
 
 func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader) error {
