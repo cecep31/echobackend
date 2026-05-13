@@ -1,150 +1,120 @@
 # Echo Backend API
 
-A modern REST API built with Go, Echo v5, GORM, and PostgreSQL.
+A modern, robust REST API built with Go 1.25+, Echo v5, GORM, and PostgreSQL. Designed for scalability with manual dependency injection and high performance via Valkey caching.
+
+## Core Features
+
+- **High Performance**: Built on Echo v5 with optimized middleware.
+- **Robust Persistence**: GORM with PostgreSQL (using `pgx/v5` driver).
+- **Fast Caching**: Valkey (Redis-compatible) integration for high-traffic endpoints.
+- **Secure Auth**: JWT-based authentication with custom middleware.
+- **Reliable Storage**: S3/MinIO compatible storage for file management.
+- **Validation**: Strict request validation using `go-playground/validator/v10`.
+- **Modern Keys**: UUID v7 used for primary keys across all models.
+- **Rate Limiting**: Global and per-route rate limiting to protect critical endpoints.
+- **Graceful Shutdown**: Automatic resource cleanup on server termination.
+- **Health Checks**: Dedicated `/health` endpoint for Docker and Fly.io liveness probes.
 
 ## Tech Stack
 
-- **Go** 1.25+
-- **Echo** v5 (web framework)
-- **GORM** v2 (ORM)
-- **PostgreSQL** 14+ (via pgx/v5)
-- **Valkey/Redis** (caching, optional)
-- **MinIO/S3** (file storage, optional)
-- **JWT** (authentication)
-- **Docker** (deployment)
+- **Runtime**: Go 1.25+ (Built with 1.26 in Docker)
+- **Web Framework**: [Echo v5](https://github.com/labstack/echo)
+- **ORM**: [GORM](https://gorm.io/) v2
+- **Database**: PostgreSQL 14+
+- **Cache**: Valkey/Redis
+- **Storage**: MinIO / AWS S3
+- **Migrations**: [Goose](https://github.com/pressly/goose) (Raw SQL)
 
 ## Quick Start
 
 ```bash
-# Clone and setup
+# 1. Clone and setup environment
 cp .env.example .env
 
-# Edit .env with your config
+# 2. Edit .env with your local configuration
 
-# Run with hot reload (requires air)
+# 3. Run with hot reload (requires air)
 air
 
-# Or run normally
+# 4. Or run normally
 go run cmd/main.go
 ```
 
-Server starts at `http://localhost:8080`
+The server starts at `http://localhost:8080`.
 
-## Commands
+## Commands Reference
 
-| Command | Description |
-|---------|-------------|
-| `go build -o bin/main cmd/main.go` | Build binary |
-| `go run cmd/main.go` | Run the server |
-| `air` | Run with hot reload |
-| `go test ./...` | Run all tests |
-| `go test -race ./...` | Run tests with race detection |
-| `go test -cover ./...` | Run tests with coverage |
-| `go vet ./...` | Run go vet |
-| `go fmt ./...` | Format code |
-| `golangci-lint run` | Run linter (requires install) |
-| `gosec ./...` | Security scan (requires install) |
+| Task | Command |
+|------|---------|
+| **Build Binary** | `go build -o bin/main cmd/main.go` |
+| **Run Server** | `go run cmd/main.go` |
+| **Hot Reload** | `air` |
+| **Run All Tests** | `go test ./...` |
+| **Race Check** | `go test -race ./...` |
+| **Test Coverage** | `go test -cover ./...` |
+| **Static Analysis**| `go vet ./...` |
+| **Format Code** | `go fmt ./...` |
+| **Linting** | `golangci-lint run` |
+| **Security Scan** | `gosec ./...` |
 
 ## Environment Variables
 
-Key environment variables (with fallback aliases):
+The application requires the following mandatory environment variables to start:
 
-| Variable | Fallback | Description |
-|----------|----------|-------------|
-| `S3_ENDPOINT` | `MINIO_ENDPOINT` | S3/MinIO endpoint |
-| `S3_ACCESS_KEY` | `MINIO_ACCESS_KEY` | Access key |
-| `S3_SECRET_KEY` | `MINIO_SECRET_KEY` | Secret key |
-| `S3_BUCKET` | `MINIO_BUCKET` | Bucket name |
-| `S3_USE_SSL` | `MINIO_USE_SSL` | Use SSL for S3 |
-| `DB_POOL_MAX_OPEN` | `MAX_OPEN_CONNS` | Max open DB connections |
-| `DB_POOL_MAX_IDLE` | `MAX_IDLE_CONNS` | Max idle DB connections |
-| `DB_POOL_CONN_LIFETIME` | `CONN_MAX_LIFETIME` | Connection max lifetime |
-| `HTTP_RATE_LIMIT_RPS` | `RATE_LIMITER_MAX` | Global rate limit (req/sec) |
-| `HTTP_RATE_LIMIT_WINDOW_SEC` | `RATE_LIMITER_TTL` | Rate limit window |
-| `HTTP_TRUST_PROXY` | `TRUST_PROXY` | Trust X-Forwarded-For |
-| `APP_DEBUG` | `DEBUG` | Enable debug mode & pprof routes |
+| Variable | Fallback Alias | Description |
+|----------|----------------|-------------|
+| `DATABASE_URL` | - | PostgreSQL connection string (DSN) |
+| `JWT_SECRET` | - | Secret key for JWT signing & verification |
 
-For full config, see `.env.example`.
+Other optional configurations (S3, Valkey, Rate Limiting, etc.) are documented in [`.env.example`](.env.example).
 
-## Project Structure
+## Architecture
 
-```
-├── cmd/main.go              # Entry point
-├── config/config.go          # Configuration (env-based)
-├── internal/
-│   ├── di/                   # Dependency injection (container.go, cleanup.go)
-│   ├── handler/              # HTTP handlers
-│   ├── service/              # Business logic
-│   ├── repository/           # Data access
-│   ├── model/                # GORM models
-│   ├── dto/                  # Request/response DTOs
-│   ├── errors/               # Domain error sentinels
-│   ├── middleware/            # Echo middleware
-│   └── routes/               # Route definitions
-├── pkg/
-│   ├── response/             # API response helpers
-│   ├── database/             # DB setup & pooling
-│   ├── cache/                # Valkey/Redis cache
-│   ├── storage/              # S3/MinIO storage
-│   └── validator/            # Custom Echo validator
-├── migrations/                # SQL migrations (goose)
-├── .air.toml                 # Air hot reload config
-└── Dockerfile                # Docker build
+The project follows a modular layered architecture with manual dependency injection:
+
+- **`internal/di/`**: Centralized Dependency Injection container (`container.go`).
+- **`internal/handler/`**: Request handling and response formatting via `pkg/response`.
+- **`internal/service/`**: Core business logic and service orchestration.
+- **`internal/repository/`**: Data access layer using GORM.
+- **`internal/model/`**: GORM entities and shared domain models.
+- **`pkg/`**: Infrastructure-agnostic packages (Cache, Storage, Database setup).
+
+### Standardized Responses
+
+All handlers use `pkg/response` helpers to ensure a consistent API contract:
+```go
+return response.Success(c, "Data retrieved", data)
+return response.ValidationError(c, "Invalid input", err)
 ```
 
-## Development
+## Database Migrations
 
-### Cross-Platform Support
-
-`.air.toml` dikonfigurasi untuk multi-platform:
-- **Windows**: output `tmp/main.exe`
-- **Linux/macOS**: output `tmp/main`
-
-### Database Migrations (Goose)
-
-Migrations menggunakan [goose](https://github.com/pressly/goose) CLI. Konfigurasi sudah ada di `.env`:
+Managed via [goose](https://github.com/pressly/goose). Configuration is automatically picked up from `.env`.
 
 ```bash
-# Install goose (sekali saja)
-go install github.com/pressly/goose/v3/cmd/goose@latest
-
-# Apply semua migration
+# Apply all pending migrations
 goose up
 
-# Rollback 1 migration
+# Rollback the last migration
 goose down
 
-# Cek status migration
+# Check migration history
 goose status
 
-# Buat migration baru
-goose create nama_migration sql
+# Create a new migration file
+goose create <migration_name> sql
 ```
-
-Env vars di `.env` yang dipakai goose:
-
-| Variable | Description |
-|----------|-------------|
-| `GOOSE_DRIVER` | Driver database (`postgres`) |
-| `GOOSE_DBSTRING` | Koneksi string (bisa pakai `${DATABASE_URL}`) |
-| `GOOSE_MIGRATION_DIR` | Folder migration (`./migrations`) |
-| `GOOSE_TABLE` | Nama tabel tracking (`custom.goose_migrations`) |
-
-> Jika `GOOSE_DBSTRING` tidak resolve `${DATABASE_URL}` secara otomatis, export manual:
-> ```bash
-> export GOOSE_DBSTRING="postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
-> ```
 
 ## Deployment
 
-Docker image di-deploy ke Fly.io via GitHub Actions (`.github/workflows/main.yml`).
+Deployments are automated via GitHub Actions to Fly.io using the provided `Dockerfile`.
 
 ```bash
-# Build locally
-docker build -t echobackend .
+# Local Docker build test
+docker build -t cecep31/echobackend .
 
-# Run
-docker run -p 8080:8080 echobackend
+# Run container locally
+docker run -p 8080:8080 --env-file .env cecep31/echobackend
 ```
 
 ## License
