@@ -57,18 +57,24 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	userFollowRepo := repository.NewUserFollowRepository(db)
 	chatConversationRepo := repository.NewChatConversationRepository(db)
 	holdingRepo := repository.NewHoldingRepository(db)
+	bookmarkRepo := repository.NewBookmarkRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
 
+	openRouterService := service.NewOpenRouterService(cfg.OpenRouter)
 	userService := service.NewUserService(userRepo)
 	tagService := service.NewTagService(tagRepo)
 	postService := service.NewPostService(postRepo, tagService, s3Storage, valkeyCache)
 	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, cfg)
-	commentService := service.NewCommentService(commentRepo, postRepo)
+	notificationService := service.NewNotificationService(notificationRepo)
+	commentService := service.NewCommentService(commentRepo, postRepo, notificationService)
 	postViewService := service.NewPostViewService(postViewRepo, postRepo)
 	postLikeService := service.NewPostLikeService(postLikeRepo, postRepo)
-	userFollowService := service.NewUserFollowService(userFollowRepo, userRepo)
-	chatConversationService := service.NewChatConversationService(chatConversationRepo)
+	userFollowService := service.NewUserFollowService(userFollowRepo, userRepo, notificationService)
+	chatConversationService := service.NewChatConversationService(chatConversationRepo, openRouterService, cfg)
 	yahooClient := market.NewYahooClient(nil)
 	holdingService := service.NewHoldingService(holdingRepo, yahooClient)
+	bookmarkService := service.NewBookmarkService(bookmarkRepo, postRepo)
+	reportService := service.NewReportService(db)
 
 	userHandler := handler.NewUserHandler(userService, userFollowService)
 	postHandler := handler.NewPostHandler(postService, postViewService)
@@ -80,6 +86,9 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	userFollowHandler := handler.NewUserFollowHandler(userFollowService)
 	chatConversationHandler := handler.NewChatConversationHandler(chatConversationService)
 	holdingHandler := handler.NewHoldingHandler(holdingService)
+	bookmarkHandler := handler.NewBookmarkHandler(bookmarkService)
+	notificationHandler := handler.NewNotificationHandler(notificationService)
+	reportHandler := handler.NewReportHandler(reportService)
 
 	authMiddleware := middleware.NewAuthMiddleware(cfg, userRepo)
 	appRoutes := routes.NewRoutes(
@@ -95,6 +104,9 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		userFollowHandler,
 		chatConversationHandler,
 		holdingHandler,
+		bookmarkHandler,
+		notificationHandler,
+		reportHandler,
 	)
 
 	return &Container{

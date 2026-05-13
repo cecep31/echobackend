@@ -20,17 +20,20 @@ type UserFollowService interface {
 }
 
 type userFollowService struct {
-	userFollowRepo repository.UserFollowRepository
-	userRepo       repository.UserRepository
+	userFollowRepo      repository.UserFollowRepository
+	userRepo            repository.UserRepository
+	notificationService NotificationService
 }
 
 func NewUserFollowService(
 	userFollowRepo repository.UserFollowRepository,
 	userRepo repository.UserRepository,
+	notificationService NotificationService,
 ) UserFollowService {
 	return &userFollowService{
-		userFollowRepo: userFollowRepo,
-		userRepo:       userRepo,
+		userFollowRepo:      userFollowRepo,
+		userRepo:            userRepo,
+		notificationService: notificationService,
 	}
 }
 
@@ -48,6 +51,20 @@ func (s *userFollowService) FollowUser(ctx context.Context, followerID, followin
 	err = s.userFollowRepo.Follow(ctx, followerID, followingID)
 	if err != nil {
 		return nil, err
+	}
+
+	if s.notificationService != nil && followerID != followingID {
+		message := "You have a new follower"
+		title := "New follower"
+		_, _ = s.notificationService.CreateNotification(ctx, &dto.CreateNotificationRequest{
+			UserID:  followingID,
+			Type:    "follow",
+			Title:   title,
+			Message: &message,
+			Data: map[string]any{
+				"follower_id": followerID,
+			},
+		})
 	}
 
 	return &dto.FollowResponse{

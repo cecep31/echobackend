@@ -9,8 +9,56 @@ type CreateChatConversationRequest struct {
 	Title string `json:"title" validate:"required,max=255"`
 }
 
+type CreateChatConversationStreamRequest struct {
+	Title       *string  `json:"title" validate:"omitempty,min=1,max=255"`
+	Content     string   `json:"content" validate:"required,min=1,max=10000"`
+	Model       *string  `json:"model" validate:"omitempty,max=100"`
+	Temperature *float64 `json:"temperature" validate:"omitempty,gte=0,lte=2"`
+}
+
 type UpdateChatConversationRequest struct {
-	Title string `json:"title" validate:"max=255"`
+	Title    string `json:"title" validate:"max=255"`
+	IsPinned *bool  `json:"is_pinned"`
+}
+
+type CreateChatMessageRequest struct {
+	Content     string   `json:"content" validate:"required,min=1,max=10000"`
+	Role        string   `json:"role" validate:"omitempty,max=20"`
+	Model       *string  `json:"model" validate:"omitempty,max=100"`
+	Temperature *float64 `json:"temperature" validate:"omitempty,gte=0,lte=2"`
+}
+
+type ChatMessageResponse struct {
+	ID               string    `json:"id"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+	ConversationID   string    `json:"conversation_id"`
+	UserID           string    `json:"user_id"`
+	Role             string    `json:"role"`
+	Content          string    `json:"content"`
+	Model            *string   `json:"model,omitempty"`
+	PromptTokens     int       `json:"prompt_tokens"`
+	CompletionTokens int       `json:"completion_tokens"`
+	TotalTokens      int       `json:"total_tokens"`
+}
+
+func ChatMessageToResponse(m *model.ChatMessage) *ChatMessageResponse {
+	if m == nil {
+		return nil
+	}
+	return &ChatMessageResponse{
+		ID:               m.ID,
+		CreatedAt:        m.CreatedAt,
+		UpdatedAt:        m.UpdatedAt,
+		ConversationID:   m.ConversationID,
+		UserID:           m.UserID,
+		Role:             m.Role,
+		Content:          m.Content,
+		Model:            m.Model,
+		PromptTokens:     m.PromptTokens,
+		CompletionTokens: m.CompletionTokens,
+		TotalTokens:      m.TotalTokens,
+	}
 }
 
 type ChatConversationResponse struct {
@@ -38,4 +86,9 @@ func ChatConversationToResponse(c *model.ChatConversation) *ChatConversationResp
 		UserID:       c.UserID,
 		MessageCount: len(c.Messages),
 	}
+}
+
+type ChatStreamResult struct {
+	UserMessage    *ChatMessageResponse `json:"user_message"`
+	ConversationID string               `json:"conversation_id,omitempty"`
 }

@@ -19,19 +19,21 @@ type CommentService interface {
 }
 
 type commentService struct {
-	commentRepo repository.CommentRepository
-	postRepo    repository.PostRepository
+	commentRepo         repository.CommentRepository
+	postRepo            repository.PostRepository
+	notificationService NotificationService
 }
 
-func NewCommentService(commentRepo repository.CommentRepository, postRepo repository.PostRepository) CommentService {
+func NewCommentService(commentRepo repository.CommentRepository, postRepo repository.PostRepository, notificationService NotificationService) CommentService {
 	return &commentService{
-		commentRepo: commentRepo,
-		postRepo:    postRepo,
+		commentRepo:         commentRepo,
+		postRepo:            postRepo,
+		notificationService: notificationService,
 	}
 }
 
 func (s *commentService) CreateComment(ctx context.Context, postID string, req *dto.CreateCommentRequest, createdBy string) (*dto.CommentResponse, error) {
-	_, err := s.postRepo.GetPostByID(ctx, postID)
+	post, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
 		return nil, apperrors.ErrPostNotFound
 	}
@@ -49,6 +51,22 @@ func (s *commentService) CreateComment(ctx context.Context, postID string, req *
 	created, err := s.commentRepo.GetCommentByID(ctx, comment.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	if s.notificationService != nil && post.CreatedBy != nil && *post.CreatedBy != createdBy {
+		message := "Someone commented on your post"
+		title := "New comment"
+		_, _ = s.notificationService.CreateNotification(ctx, &dto.CreateNotificationRequest{
+			UserID:  *post.CreatedBy,
+			Type:    "comment",
+			Title:   title,
+			Message: &message,
+			Data: map[string]any{
+				"post_id":    postID,
+				"comment_id": created.ID,
+				"actor_id":   createdBy,
+			},
+		})
 	}
 
 	return dto.CommentToResponse(created), nil

@@ -24,12 +24,13 @@ import (
 
 // Config is the root application configuration.
 type Config struct {
-	App      AppConfig
-	HTTP     HTTPConfig
-	Auth     AuthConfig
-	Database DatabaseConfig
-	S3       S3Config
-	Cache    CacheConfig
+	App        AppConfig
+	HTTP       HTTPConfig
+	Auth       AuthConfig
+	Database   DatabaseConfig
+	S3         S3Config
+	Cache      CacheConfig
+	OpenRouter OpenRouterConfig
 }
 
 // AppConfig contains application-level toggles.
@@ -100,6 +101,16 @@ type CacheConfig struct {
 	ConnectTimeout time.Duration
 }
 
+// OpenRouterConfig contains upstream AI chat settings.
+type OpenRouterConfig struct {
+	APIKey       string
+	BaseURL      string
+	DefaultModel string
+	HTTPReferer  string
+	Title        string
+	Timeout      time.Duration
+}
+
 // Load reads configuration from environment variables with defaults.
 //
 // It loads a .env file if present, then reads environment variables.
@@ -143,6 +154,14 @@ func Load() (*Config, error) {
 			KeyPrefix:      envString([]string{"CACHE_KEY_PREFIX"}, "pilput"),
 			TTL:            time.Duration(envInt([]string{"CACHE_TTL_SECONDS"}, 60)) * time.Second,
 			ConnectTimeout: time.Duration(envInt([]string{"VALKEY_CONNECT_TIMEOUT_MS"}, 5000)) * time.Millisecond,
+		},
+		OpenRouter: OpenRouterConfig{
+			APIKey:       envString([]string{"OPENROUTER_API_KEY"}, ""),
+			BaseURL:      envString([]string{"OPENROUTER_BASE_URL"}, "https://openrouter.ai/api/v1"),
+			DefaultModel: envString([]string{"OPENROUTER_DEFAULT_MODEL"}, "google/gemma-2-9b-it:free"),
+			HTTPReferer:  envString([]string{"OPENROUTER_HTTP_REFERER"}, "https://pilput.net"),
+			Title:        envString([]string{"OPENROUTER_TITLE"}, "pilput"),
+			Timeout:      time.Duration(envInt([]string{"OPENROUTER_TIMEOUT_SECONDS"}, 90)) * time.Second,
 		},
 	}
 

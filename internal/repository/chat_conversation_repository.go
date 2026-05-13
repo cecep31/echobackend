@@ -1,12 +1,11 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
-
-	"context"
 
 	"gorm.io/gorm"
 )
@@ -18,6 +17,11 @@ type ChatConversationRepository interface {
 	UpdateConversation(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error)
 	DeleteConversation(ctx context.Context, id string) error
 	GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversation, int64, error)
+	CreateMessage(ctx context.Context, message *model.ChatMessage) (*model.ChatMessage, error)
+	GetMessagesByConversationID(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error)
+	GetMessagesByConversationIDAsc(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error)
+	GetMessageByID(ctx context.Context, id, userID string) (*model.ChatMessage, error)
+	DeleteMessage(ctx context.Context, id, userID string) error
 }
 
 type chatConversationRepository struct {
@@ -119,6 +123,60 @@ func (r *chatConversationRepository) DeleteConversation(ctx context.Context, id 
 	}
 	if result.RowsAffected == 0 {
 		return apperrors.ErrChatConversationNotFound
+	}
+	return nil
+}
+
+func (r *chatConversationRepository) CreateMessage(ctx context.Context, message *model.ChatMessage) (*model.ChatMessage, error) {
+	if err := r.db.WithContext(ctx).Create(message).Error; err != nil {
+		return nil, fmt.Errorf("failed to create chat message: %w", err)
+	}
+	return message, nil
+}
+
+func (r *chatConversationRepository) GetMessagesByConversationID(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error) {
+	var messages []*model.ChatMessage
+	err := r.db.WithContext(ctx).
+		Where("conversation_id = ? AND user_id = ?", conversationID, userID).
+		Order("created_at DESC").
+		Find(&messages).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chat messages: %w", err)
+	}
+	return messages, nil
+}
+
+func (r *chatConversationRepository) GetMessagesByConversationIDAsc(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error) {
+	var messages []*model.ChatMessage
+	err := r.db.WithContext(ctx).
+		Where("conversation_id = ? AND user_id = ?", conversationID, userID).
+		Order("created_at ASC").
+		Find(&messages).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chat messages: %w", err)
+	}
+	return messages, nil
+}
+
+func (r *chatConversationRepository) GetMessageByID(ctx context.Context, id, userID string) (*model.ChatMessage, error) {
+	var message model.ChatMessage
+	err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&message).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, apperrors.ErrChatMessageNotFound
+		}
+		return nil, fmt.Errorf("failed to get chat message: %w", err)
+	}
+	return &message, nil
+}
+
+func (r *chatConversationRepository) DeleteMessage(ctx context.Context, id, userID string) error {
+	result := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).Delete(&model.ChatMessage{})
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete chat message: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return apperrors.ErrChatMessageNotFound
 	}
 	return nil
 }
