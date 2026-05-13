@@ -47,6 +47,12 @@ func (h *HoldingHandler) GetHoldings(c *echo.Context) error {
 		SortOrder: "desc",
 	}
 
+	now := time.Now()
+	curMonth := int(now.Month())
+	curYear := now.Year()
+	filter.Month = &curMonth
+	filter.Year = &curYear
+
 	if m := c.QueryParam("month"); m != "" {
 		if v, err := strconv.Atoi(m); err == nil && v >= 1 && v <= 12 {
 			filter.Month = &v
