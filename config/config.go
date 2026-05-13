@@ -31,6 +31,8 @@ type Config struct {
 	S3         S3Config
 	Cache      CacheConfig
 	OpenRouter OpenRouterConfig
+	GitHub     GitHubConfig
+	Frontend   FrontendConfig
 }
 
 // AppConfig contains application-level toggles.
@@ -60,6 +62,8 @@ type HTTPConfig struct {
 type AuthConfig struct {
 	// JWTSecret is the secret key used for JWT token signing and verification.
 	JWTSecret string
+	// JWTExpiry is the duration for which JWT access tokens remain valid.
+	JWTExpiry time.Duration
 }
 
 // DatabaseConfig contains the PostgreSQL DSN and connection pool tuning.
@@ -111,6 +115,20 @@ type OpenRouterConfig struct {
 	Timeout      time.Duration
 }
 
+// GitHubConfig contains GitHub OAuth settings.
+type GitHubConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURI  string
+}
+
+// FrontendConfig contains frontend URL settings for OAuth redirects and cookies.
+type FrontendConfig struct {
+	URL             string
+	ResetPasswordURL string
+	MainDomain      string
+}
+
 // Load reads configuration from environment variables with defaults.
 //
 // It loads a .env file if present, then reads environment variables.
@@ -134,6 +152,7 @@ func Load() (*Config, error) {
 		},
 		Auth: AuthConfig{
 			JWTSecret: envString([]string{"JWT_SECRET"}, "your-secret-key"),
+			JWTExpiry: time.Duration(envInt([]string{"JWT_EXPIRY_HOURS"}, 3)) * time.Hour,
 		},
 		Database: DatabaseConfig{
 			// Default requires TLS; for local Postgres without SSL, set DATABASE_URL (see .env.example).
@@ -162,6 +181,16 @@ func Load() (*Config, error) {
 			HTTPReferer:  envString([]string{"OPENROUTER_HTTP_REFERER"}, "https://pilput.net"),
 			Title:        envString([]string{"OPENROUTER_TITLE"}, "pilput"),
 			Timeout:      time.Duration(envInt([]string{"OPENROUTER_TIMEOUT_SECONDS"}, 90)) * time.Second,
+		},
+		GitHub: GitHubConfig{
+			ClientID:     envString([]string{"GITHUB_CLIENT_ID"}, ""),
+			ClientSecret: envString([]string{"GITHUB_CLIENT_SECRET"}, ""),
+			RedirectURI:  envString([]string{"GITHUB_REDIRECT_URI"}, "http://localhost:8080/api/auth/oauth/github/callback"),
+		},
+		Frontend: FrontendConfig{
+			URL:              envString([]string{"FRONTEND_URL"}, "http://localhost:3000"),
+			ResetPasswordURL: envString([]string{"FRONTEND_RESET_PASSWORD_URL"}, "http://localhost:3000/reset-password"),
+			MainDomain:       envString([]string{"MAIN_DOMAIN"}, "localhost"),
 		},
 	}
 

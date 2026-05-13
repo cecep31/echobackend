@@ -51,6 +51,31 @@ func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 	}
 }
 
+// OptionalAuth validates JWT tokens if present but does not require them
+func (a *AuthMiddleware) OptionalAuth() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			authHeader := c.Request().Header.Get("Authorization")
+			if authHeader == "" {
+				return next(c)
+			}
+
+			tokenString, err := extractBearerToken(authHeader)
+			if err != nil {
+				return next(c)
+			}
+
+			claims, err := validateToken(tokenString, a.conf.Auth.JWTSecret)
+			if err != nil {
+				return next(c)
+			}
+
+			c.Set("user", claims)
+			return next(c)
+		}
+	}
+}
+
 // AuthAdmin validates that the user has admin privileges
 func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {

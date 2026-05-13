@@ -15,6 +15,7 @@ type SessionRepository interface {
 	GetByRefreshToken(ctx context.Context, token string) (*model.Session, error)
 	DeleteSession(ctx context.Context, token string) error
 	DeleteByRefreshToken(ctx context.Context, token string) error
+	DeleteByUserID(ctx context.Context, userID string) error
 	UpdateSession(ctx context.Context, s *model.Session) error
 }
 
@@ -52,6 +53,10 @@ func (r *sessionRepository) DeleteSession(ctx context.Context, token string) err
 
 func (r *sessionRepository) DeleteByRefreshToken(ctx context.Context, token string) error {
 	return r.db.WithContext(ctx).Where("refresh_token = ?", token).Delete(&model.Session{}).Error
+}
+
+func (r *sessionRepository) DeleteByUserID(ctx context.Context, userID string) error {
+	return r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&model.Session{}).Error
 }
 
 func (r *sessionRepository) UpdateSession(ctx context.Context, s *model.Session) error {
