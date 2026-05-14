@@ -9,6 +9,7 @@ import (
 
 type UserService interface {
 	GetByID(ctx context.Context, id string) (*dto.UserResponse, error)
+	GetMe(ctx context.Context, id string) (*dto.CurrentUserResponse, error)
 	GetByUsername(ctx context.Context, username string) (*dto.UserResponse, error)
 	GetUsers(ctx context.Context, offset int, limit int) ([]*dto.UserResponse, int64, error)
 	Delete(ctx context.Context, id string) error
@@ -28,6 +29,14 @@ func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse
 		return nil, err
 	}
 	return dto.UserToResponse(user), nil
+}
+
+func (s *userService) GetMe(ctx context.Context, id string) (*dto.CurrentUserResponse, error) {
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return dto.UserToCurrentUserResponse(user), nil
 }
 
 func (s *userService) GetByUsername(ctx context.Context, username string) (*dto.UserResponse, error) {

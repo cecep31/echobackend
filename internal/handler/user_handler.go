@@ -84,7 +84,7 @@ func (h *UserHandler) GetMe(c *echo.Context) error {
 		return response.Unauthorized(c, "User not authenticated")
 	}
 
-	userResponse, err := h.userService.GetByID(c.Request().Context(), userID)
+	userResponse, err := h.userService.GetMe(c.Request().Context(), userID)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve user", err)
 	}
