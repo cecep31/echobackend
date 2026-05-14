@@ -8,7 +8,7 @@ func (r *Routes) setupPostRoutes(api *echo.Group) {
 		posts.POST("", r.postHandler.CreatePost, r.authMiddleware.Auth())
 		posts.GET("/random", r.postHandler.GetPostsRandom)
 		posts.GET("/trending", r.postHandler.GetPostsTrending)
-		posts.GET("/mine", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
+		posts.GET("/me", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
 		posts.GET("/for-you", r.postHandler.GetPostsForYou, r.authMiddleware.Auth())
 		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
 		posts.GET("/sitemap", r.postHandler.GetPostsForSitemap)

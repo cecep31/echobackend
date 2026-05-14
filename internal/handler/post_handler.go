@@ -9,6 +9,7 @@ import (
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
+	"echobackend/pkg/validator"
 
 	"github.com/labstack/echo/v5"
 )
@@ -152,6 +153,10 @@ func (h *PostHandler) GetPostBySlugAndUsername(c *echo.Context) error {
 
 func (h *PostHandler) GetPost(c *echo.Context) error {
 	id := c.Param("id")
+	if !validator.IsValidUUID(id) {
+		return response.BadRequest(c, "Invalid post ID", nil)
+	}
+
 	post, err := h.postService.GetPostByID(c.Request().Context(), id)
 	if err != nil {
 		return h.respondPostError(c, "Failed to get post", err)
