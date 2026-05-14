@@ -124,41 +124,49 @@ type HoldingMonthPoint struct {
 type HoldingCompareSummary struct {
 	From                        HoldingSummaryValues `json:"from"`
 	To                          HoldingSummaryValues `json:"to"`
-	InvestedDiff                string               `json:"investedDiff"`
-	CurrentValueDiff            string               `json:"currentValueDiff"`
-	ProfitLossDiff              string               `json:"profitLossDiff"`
+	InvestedDiff                float64              `json:"investedDiff"`
+	CurrentValueDiff            float64              `json:"currentValueDiff"`
+	ProfitLossDiff              float64              `json:"profitLossDiff"`
 	HoldingsCountDiff           int64                `json:"holdingsCountDiff"`
-	InvestedDiffPercentage      string               `json:"investedDiffPercentage"`
-	CurrentValueDiffPercentage  string               `json:"currentValueDiffPercentage"`
-	HoldingsCountDiffPercentage string               `json:"holdingsCountDiffPercentage"`
+	InvestedDiffPercentage      float64              `json:"investedDiffPercentage"`
+	CurrentValueDiffPercentage  float64              `json:"currentValueDiffPercentage"`
+	HoldingsCountDiffPercentage float64              `json:"holdingsCountDiffPercentage"`
 }
 
 type HoldingSummaryValues struct {
-	TotalInvested             string                     `json:"totalInvested"`
-	TotalCurrentValue         string                     `json:"totalCurrentValue"`
-	TotalProfitLoss           string                     `json:"totalProfitLoss"`
-	TotalProfitLossPercentage string                     `json:"totalProfitLossPercentage"`
-	HoldingsCount             int64                      `json:"holdingsCount"`
-	TypeBreakdown             []HoldingTypeBreakdown     `json:"typeBreakdown"`
-	PlatformBreakdown         []HoldingPlatformBreakdown `json:"platformBreakdown"`
+	TotalInvested             float64                 `json:"totalInvested"`
+	TotalCurrentValue         float64                 `json:"totalCurrentValue"`
+	TotalProfitLoss           float64                 `json:"totalProfitLoss"`
+	TotalProfitLossPercentage float64                 `json:"totalProfitLossPercentage"`
+	HoldingsCount             int64                   `json:"holdingsCount"`
+	TypeBreakdown             []HoldingNamedBreakdown `json:"typeBreakdown"`
+	PlatformBreakdown         []HoldingNamedBreakdown `json:"platformBreakdown"`
+}
+
+type HoldingNamedBreakdown struct {
+	Name                 string  `json:"name"`
+	Invested             float64 `json:"invested"`
+	Current              float64 `json:"current"`
+	ProfitLoss           float64 `json:"profitLoss"`
+	ProfitLossPercentage float64 `json:"profitLossPercentage"`
 }
 
 type HoldingCompareBreakdown struct {
 	Name                       string                 `json:"name"`
 	From                       HoldingBreakdownValues `json:"from"`
 	To                         HoldingBreakdownValues `json:"to"`
-	InvestedDiff               string                 `json:"investedDiff"`
-	CurrentValueDiff           string                 `json:"currentValueDiff"`
-	ProfitLossDiff             string                 `json:"profitLossDiff"`
-	InvestedDiffPercentage     string                 `json:"investedDiffPercentage"`
-	CurrentValueDiffPercentage string                 `json:"currentValueDiffPercentage"`
+	InvestedDiff               float64                `json:"investedDiff"`
+	CurrentValueDiff           float64                `json:"currentValueDiff"`
+	ProfitLossDiff             float64                `json:"profitLossDiff"`
+	InvestedDiffPercentage     float64                `json:"investedDiffPercentage"`
+	CurrentValueDiffPercentage float64                `json:"currentValueDiffPercentage"`
 }
 
 type HoldingBreakdownValues struct {
-	Invested             string `json:"invested"`
-	Current              string `json:"current"`
-	ProfitLoss           string `json:"profitLoss"`
-	ProfitLossPercentage string `json:"profitLossPercentage"`
+	Invested             float64 `json:"invested"`
+	Current              float64 `json:"current"`
+	ProfitLoss           float64 `json:"profitLoss"`
+	ProfitLossPercentage float64 `json:"profitLossPercentage"`
 }
 
 type HoldingMonthlyDataResponse struct {

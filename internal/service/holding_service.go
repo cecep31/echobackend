@@ -260,13 +260,13 @@ func (s *holdingService) CompareMonths(ctx context.Context, userID string, q *dt
 		Summary: dto.HoldingCompareSummary{
 			From:                        toSummaryValues(fromSummary),
 			To:                          toSummaryValues(toSummary),
-			InvestedDiff:                formatFloat(toInvested - fromInvested),
-			CurrentValueDiff:            formatFloat(toCurrent - fromCurrent),
-			ProfitLossDiff:              formatFloat(toPL - fromPL),
+			InvestedDiff:                toInvested - fromInvested,
+			CurrentValueDiff:            toCurrent - fromCurrent,
+			ProfitLossDiff:              toPL - fromPL,
 			HoldingsCountDiff:           toSummary.HoldingsCount - fromSummary.HoldingsCount,
-			InvestedDiffPercentage:      calcPercent(fromInvested, toInvested),
-			CurrentValueDiffPercentage:  calcPercent(fromCurrent, toCurrent),
-			HoldingsCountDiffPercentage: calcPercentInt(fromSummary.HoldingsCount, toSummary.HoldingsCount),
+			InvestedDiffPercentage:      calcPercentNumber(fromInvested, toInvested),
+			CurrentValueDiffPercentage:  calcPercentNumber(fromCurrent, toCurrent),
+			HoldingsCountDiffPercentage: calcPercentIntNumber(fromSummary.HoldingsCount, toSummary.HoldingsCount),
 		},
 		TypeComparison:     typeComp,
 		PlatformComparison: platformComp,
@@ -510,22 +510,22 @@ func buildCompareBreakdownResult(allNames map[string]bool, fromMap, toMap map[st
 		result = append(result, dto.HoldingCompareBreakdown{
 			Name: name,
 			From: dto.HoldingBreakdownValues{
-				Invested:             formatFloat(from.Invested),
-				Current:              formatFloat(from.CurrentValue),
-				ProfitLoss:           formatFloat(fromPL),
-				ProfitLossPercentage: calcPercent(from.Invested, from.CurrentValue),
+				Invested:             from.Invested,
+				Current:              from.CurrentValue,
+				ProfitLoss:           fromPL,
+				ProfitLossPercentage: calcPercentNumber(from.Invested, from.CurrentValue),
 			},
 			To: dto.HoldingBreakdownValues{
-				Invested:             formatFloat(to.Invested),
-				Current:              formatFloat(to.CurrentValue),
-				ProfitLoss:           formatFloat(toPL),
-				ProfitLossPercentage: calcPercent(to.Invested, to.CurrentValue),
+				Invested:             to.Invested,
+				Current:              to.CurrentValue,
+				ProfitLoss:           toPL,
+				ProfitLossPercentage: calcPercentNumber(to.Invested, to.CurrentValue),
 			},
-			InvestedDiff:               formatFloat(to.Invested - from.Invested),
-			CurrentValueDiff:           formatFloat(to.CurrentValue - from.CurrentValue),
-			ProfitLossDiff:             formatFloat(toPL - fromPL),
-			InvestedDiffPercentage:     calcPercent(from.Invested, to.Invested),
-			CurrentValueDiffPercentage: calcPercent(from.CurrentValue, to.CurrentValue),
+			InvestedDiff:               to.Invested - from.Invested,
+			CurrentValueDiff:           to.CurrentValue - from.CurrentValue,
+			ProfitLossDiff:             toPL - fromPL,
+			InvestedDiffPercentage:     calcPercentNumber(from.Invested, to.Invested),
+			CurrentValueDiffPercentage: calcPercentNumber(from.CurrentValue, to.CurrentValue),
 		})
 	}
 	return result
@@ -599,29 +599,73 @@ func formatHoldingValue(value float64) string {
 }
 
 func calcPercent(base, value float64) string {
+	return formatFloat(calcPercentNumber(base, value))
+}
+
+func calcPercentNumber(base, value float64) float64 {
 	if base == 0 {
-		return "0"
+		return 0
 	}
 	pct := ((value - base) / base) * 100
-	return strconv.FormatFloat(math.Round(pct*100)/100, 'f', -1, 64)
+	return math.Round(pct*100) / 100
 }
 
 func calcPercentInt(base, value int64) string {
+	return formatFloat(calcPercentIntNumber(base, value))
+}
+
+func calcPercentIntNumber(base, value int64) float64 {
 	if base == 0 {
-		return "0"
+		return 0
 	}
 	pct := (float64(value-base) / float64(base)) * 100
-	return strconv.FormatFloat(math.Round(pct*100)/100, 'f', -1, 64)
+	return math.Round(pct*100) / 100
+}
+
+func parseFloatValue(value string) float64 {
+	parsed, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0
+	}
+	return parsed
+}
+
+func toNamedBreakdowns(types []dto.HoldingTypeBreakdown) []dto.HoldingNamedBreakdown {
+	result := make([]dto.HoldingNamedBreakdown, 0, len(types))
+	for _, item := range types {
+		result = append(result, dto.HoldingNamedBreakdown{
+			Name:                 item.Name,
+			Invested:             parseFloatValue(item.Invested),
+			Current:              parseFloatValue(item.Current),
+			ProfitLoss:           parseFloatValue(item.ProfitLoss),
+			ProfitLossPercentage: parseFloatValue(item.ProfitLossPercentage),
+		})
+	}
+	return result
+}
+
+func toNamedPlatformBreakdowns(platforms []dto.HoldingPlatformBreakdown) []dto.HoldingNamedBreakdown {
+	result := make([]dto.HoldingNamedBreakdown, 0, len(platforms))
+	for _, item := range platforms {
+		result = append(result, dto.HoldingNamedBreakdown{
+			Name:                 item.Name,
+			Invested:             parseFloatValue(item.Invested),
+			Current:              parseFloatValue(item.Current),
+			ProfitLoss:           parseFloatValue(item.ProfitLoss),
+			ProfitLossPercentage: parseFloatValue(item.ProfitLossPercentage),
+		})
+	}
+	return result
 }
 
 func toSummaryValues(s *dto.HoldingSummaryResponse) dto.HoldingSummaryValues {
 	return dto.HoldingSummaryValues{
-		TotalInvested:             s.TotalInvested,
-		TotalCurrentValue:         s.TotalCurrentValue,
-		TotalProfitLoss:           s.TotalProfitLoss,
-		TotalProfitLossPercentage: s.TotalProfitLossPercentage,
+		TotalInvested:             parseFloatValue(s.TotalInvested),
+		TotalCurrentValue:         parseFloatValue(s.TotalCurrentValue),
+		TotalProfitLoss:           parseFloatValue(s.TotalProfitLoss),
+		TotalProfitLossPercentage: parseFloatValue(s.TotalProfitLossPercentage),
 		HoldingsCount:             s.HoldingsCount,
-		TypeBreakdown:             s.TypeBreakdown,
-		PlatformBreakdown:         s.PlatformBreakdown,
+		TypeBreakdown:             toNamedBreakdowns(s.TypeBreakdown),
+		PlatformBreakdown:         toNamedPlatformBreakdowns(s.PlatformBreakdown),
 	}
 }
