@@ -17,7 +17,7 @@ type PostComment struct {
 	CreatedBy       string         `json:"created_by" gorm:"type:uuid;not null"`
 
 	User          *User        `gorm:"foreignKey:CreatedBy" json:"user,omitempty"`
-	Posts         *Post        `gorm:"foreignKey:PostID" json:"posts,omitempty"`
+	Post          *Post        `gorm:"foreignKey:PostID" json:"post,omitempty"`
 	ParentComment *PostComment `gorm:"foreignKey:ParentCommentID" json:"parent_comment,omitempty"`
 }
 
