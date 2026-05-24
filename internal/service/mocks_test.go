@@ -17,6 +17,7 @@ import (
 var (
 	_ repository.PostLikeRepository = (*mockPostLikeRepo)(nil)
 	_ repository.PostRepository     = (*mockPostRepo)(nil)
+	_ repository.PostViewRepository = (*mockPostViewRepo)(nil)
 	_ repository.UserRepository     = (*mockUserRepo)(nil)
 	_ repository.TagRepository      = (*mockTagRepo)(nil)
 	_ repository.HoldingRepository  = (*mockHoldingRepo)(nil)
@@ -78,8 +79,10 @@ func (m *mockPostLikeRepo) GetLikeByUserAndPost(ctx context.Context, postID, use
 // ---- PostRepository mock ------------------------------------------------------
 
 type mockPostRepo struct {
-	getPostByIDFn func(ctx context.Context, id string) (*model.Post, error)
-	existsFn      func(ctx context.Context, id string) (bool, error)
+	getPostByIDFn         func(ctx context.Context, id string) (*model.Post, error)
+	existsFn              func(ctx context.Context, id string) (bool, error)
+	getAuthorPostStatsFn  func(ctx context.Context, userID string) (*dto.MyPostsAnalyticsSummary, error)
+	getTopPostsByAuthorFn func(ctx context.Context, userID string, limit int) ([]dto.MyPostPerformance, error)
 }
 
 func (m *mockPostRepo) CreatePost(ctx context.Context, post *model.Post) error {
@@ -138,6 +141,62 @@ func (m *mockPostRepo) ExistsByID(ctx context.Context, id string) (bool, error) 
 		return m.existsFn(ctx, id)
 	}
 	return false, nil
+}
+func (m *mockPostRepo) GetAuthorPostStats(ctx context.Context, userID string) (*dto.MyPostsAnalyticsSummary, error) {
+	if m.getAuthorPostStatsFn != nil {
+		return m.getAuthorPostStatsFn(ctx, userID)
+	}
+	return &dto.MyPostsAnalyticsSummary{}, nil
+}
+func (m *mockPostRepo) GetTopPostsByAuthor(ctx context.Context, userID string, limit int) ([]dto.MyPostPerformance, error) {
+	if m.getTopPostsByAuthorFn != nil {
+		return m.getTopPostsByAuthorFn(ctx, userID, limit)
+	}
+	return nil, nil
+}
+
+// ---- PostViewRepository mock --------------------------------------------------
+
+type mockPostViewRepo struct {
+	getViewTrendByAuthorFn     func(ctx context.Context, userID, startDate, endDate string) ([]struct {
+		Date  string
+		Count int64
+	}, error)
+	countViewsByAuthorBeforeFn func(ctx context.Context, userID, beforeDate string) (int64, error)
+}
+
+func (m *mockPostViewRepo) CreateView(ctx context.Context, view *model.PostView) error {
+	panic("CreateView not stubbed")
+}
+func (m *mockPostViewRepo) GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostView, int64, error) {
+	panic("GetViewsByPostID not stubbed")
+}
+func (m *mockPostViewRepo) GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error) {
+	panic("GetViewStats not stubbed")
+}
+func (m *mockPostViewRepo) HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error) {
+	panic("HasUserViewedPost not stubbed")
+}
+func (m *mockPostViewRepo) GetViewByUserAndPost(ctx context.Context, postID, userID string) (*model.PostView, error) {
+	panic("GetViewByUserAndPost not stubbed")
+}
+func (m *mockPostViewRepo) IncrementPostViewCount(ctx context.Context, postID string) error {
+	panic("IncrementPostViewCount not stubbed")
+}
+func (m *mockPostViewRepo) GetViewTrendByAuthor(ctx context.Context, userID, startDate, endDate string) ([]struct {
+	Date  string
+	Count int64
+}, error) {
+	if m.getViewTrendByAuthorFn != nil {
+		return m.getViewTrendByAuthorFn(ctx, userID, startDate, endDate)
+	}
+	return nil, nil
+}
+func (m *mockPostViewRepo) CountViewsByAuthorBefore(ctx context.Context, userID, beforeDate string) (int64, error) {
+	if m.countViewsByAuthorBeforeFn != nil {
+		return m.countViewsByAuthorBeforeFn(ctx, userID, beforeDate)
+	}
+	return 0, nil
 }
 
 // ---- UserRepository mock ------------------------------------------------------

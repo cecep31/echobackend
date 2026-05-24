@@ -16,6 +16,7 @@ type PostViewService interface {
 	GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*dto.PostViewResponse, int64, error)
 	GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error)
 	HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error)
+	GetMyPostsAnalytics(ctx context.Context, userID string, q *dto.MyPostsAnalyticsQuery) (*dto.MyPostsAnalyticsResponse, error)
 }
 
 type postViewService struct {
@@ -135,4 +136,73 @@ func (s *postViewService) HasUserViewedPost(ctx context.Context, postID, userID 
 	}
 
 	return hasViewed, nil
+}
+
+func (s *postViewService) GetMyPostsAnalytics(ctx context.Context, userID string, q *dto.MyPostsAnalyticsQuery) (*dto.MyPostsAnalyticsResponse, error) {
+	start := time.Now().AddDate(0, 0, -30)
+	end := time.Now()
+	if q != nil {
+		if q.StartDate != "" {
+			if parsed, err := time.Parse("2006-01-02", q.StartDate); err == nil {
+				start = parsed
+			}
+		}
+		if q.EndDate != "" {
+			if parsed, err := time.Parse("2006-01-02", q.EndDate); err == nil {
+				end = parsed
+			}
+		}
+	}
+	if start.After(end) {
+		start, end = end, start
+	}
+
+	startKey := start.Format("2006-01-02")
+	endKey := end.Format("2006-01-02")
+
+	summary, err := s.postRepo.GetAuthorPostStats(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get author post stats: %w", err)
+	}
+
+	topPosts, err := s.postRepo.GetTopPostsByAuthor(ctx, userID, 5)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get top posts: %w", err)
+	}
+	if topPosts == nil {
+		topPosts = []dto.MyPostPerformance{}
+	}
+
+	rows, err := s.postViewRepo.GetViewTrendByAuthor(ctx, userID, startKey, endKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get view trend: %w", err)
+	}
+
+	rowMap := make(map[string]int64, len(rows))
+	for _, row := range rows {
+		rowMap[row.Date] = row.Count
+	}
+
+	cumulative, err := s.postViewRepo.CountViewsByAuthorBefore(ctx, userID, startKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count views before period: %w", err)
+	}
+
+	viewTrend := make([]dto.MyPostsViewTrendPoint, 0)
+	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+		dateKey := d.Format("2006-01-02")
+		views := rowMap[dateKey]
+		cumulative += views
+		viewTrend = append(viewTrend, dto.MyPostsViewTrendPoint{
+			Date:            dateKey,
+			Views:           views,
+			CumulativeViews: cumulative,
+		})
+	}
+
+	return &dto.MyPostsAnalyticsResponse{
+		Summary:   *summary,
+		ViewTrend: viewTrend,
+		TopPosts:  topPosts,
+	}, nil
 }

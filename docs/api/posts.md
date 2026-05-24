@@ -37,6 +37,7 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 | GET | `/random` | Tidak |
 | GET | `/trending` | Tidak |
 | GET | `/me` | Bearer |
+| GET | `/me/analytics` | Bearer |
 | GET | `/feed/for-you` | Bearer |
 | POST | `/image` | Bearer |
 | GET | `/sitemap` | Tidak |
@@ -90,6 +91,45 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 ### GET `/api/posts/me` dan `/feed/for-you`
 
 **Query:** `limit`, `offset`. **Auth wajib.**
+
+### GET `/api/posts/me/analytics`
+
+Data agregat untuk chart performa post milik user login. **Auth wajib.**
+
+**Query (opsional)**
+
+| Param | Default | Keterangan |
+|-------|---------|------------|
+| `start_date` | 30 hari lalu | Format `YYYY-MM-DD` |
+| `end_date` | Hari ini | Format `YYYY-MM-DD` |
+
+**Sukses — 200** — `data`:
+
+```json
+{
+  "summary": {
+    "total_posts": 12,
+    "published_posts": 10,
+    "total_views": 1500,
+    "total_likes": 230
+  },
+  "view_trend": [
+    { "date": "2026-04-24", "views": 10, "cumulative_views": 100 }
+  ],
+  "top_posts": [
+    {
+      "id": "uuid",
+      "title": "Judul post",
+      "slug": "judul-post",
+      "view_count": 500,
+      "like_count": 80
+    }
+  ]
+}
+```
+
+- `view_trend` — seri harian untuk line/area chart (satu titik per hari dalam rentang, termasuk hari tanpa view = 0).
+- `top_posts` — maks. 5 post dengan `view_count` tertinggi (bar chart / ranking).
 
 ### POST `/api/posts/image`
 

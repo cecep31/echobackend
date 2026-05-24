@@ -29,6 +29,8 @@ type PostRepository interface {
 	GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.Post, int64, error)
 	GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*model.Post, int64, error)
 	ExistsByID(ctx context.Context, id string) (bool, error)
+	GetAuthorPostStats(ctx context.Context, userID string) (*dto.MyPostsAnalyticsSummary, error)
+	GetTopPostsByAuthor(ctx context.Context, userID string, limit int) ([]dto.MyPostPerformance, error)
 }
 
 type postRepository struct {
@@ -444,4 +446,44 @@ func (r *postRepository) GetPostsForSitemap(ctx context.Context, limit int) ([]*
 	}
 
 	return sitemapPosts, nil
+}
+
+func (r *postRepository) GetAuthorPostStats(ctx context.Context, userID string) (*dto.MyPostsAnalyticsSummary, error) {
+	stats := &dto.MyPostsAnalyticsSummary{}
+	err := r.db.WithContext(ctx).
+		Table("posts").
+		Select(`
+			COUNT(*) AS total_posts,
+			COUNT(*) FILTER (WHERE published = true) AS published_posts,
+			COALESCE(SUM(view_count), 0) AS total_views,
+			COALESCE(SUM(like_count), 0) AS total_likes
+		`).
+		Where("created_by = ?", userID).
+		Scan(stats).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get author post stats: %w", err)
+	}
+	return stats, nil
+}
+
+func (r *postRepository) GetTopPostsByAuthor(ctx context.Context, userID string, limit int) ([]dto.MyPostPerformance, error) {
+	if limit <= 0 {
+		limit = 5
+	}
+	if limit > 20 {
+		limit = 20
+	}
+
+	var posts []dto.MyPostPerformance
+	err := r.db.WithContext(ctx).
+		Table("posts").
+		Select("id, title, slug, view_count, like_count").
+		Where("created_by = ?", userID).
+		Order("view_count DESC, like_count DESC, created_at DESC").
+		Limit(limit).
+		Scan(&posts).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get top posts by author: %w", err)
+	}
+	return posts, nil
 }

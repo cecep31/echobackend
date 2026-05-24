@@ -222,6 +222,25 @@ func (h *PostHandler) GetMyPosts(c *echo.Context) error {
 		response.CalculatePaginationMeta(total, offset, limit))
 }
 
+func (h *PostHandler) GetMyPostsAnalytics(c *echo.Context) error {
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
+
+	q := &dto.MyPostsAnalyticsQuery{
+		StartDate: c.QueryParam("start_date"),
+		EndDate:   c.QueryParam("end_date"),
+	}
+
+	analytics, err := h.postViewService.GetMyPostsAnalytics(c.Request().Context(), userID, q)
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get post analytics", err)
+	}
+
+	return response.Success(c, "Successfully retrieved post analytics", analytics)
+}
+
 func (h *PostHandler) GetPostsForYou(c *echo.Context) error {
 	limit, offset := ParsePaginationParams(c, 10)
 
