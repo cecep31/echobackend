@@ -17,7 +17,7 @@ type PostView struct {
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	Post *Post `json:"post" gorm:"foreignKey:PostID"`
-	User *User `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	User *User `json:"-" gorm:"foreignKey:UserID"`
 }
 
 func (PostView) TableName() string {

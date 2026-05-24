@@ -9,7 +9,7 @@ type PostLikeResponse struct {
 	ID        string        `json:"id"`
 	PostID    string        `json:"post_id"`
 	UserID    string        `json:"user_id"`
-	User      *UserResponse `json:"user,omitempty"`
+	User      *UserBrief    `json:"user,omitempty"`
 	CreatedAt *time.Time    `json:"created_at"`
 }
 
@@ -17,10 +17,7 @@ func PostLikeToResponse(pl *model.PostLike) *PostLikeResponse {
 	if pl == nil {
 		return nil
 	}
-	var userResp *UserResponse
-	if pl.User != nil && pl.User.ID != "" {
-		userResp = UserToResponse(pl.User)
-	}
+	userResp := UserToBrief(pl.User)
 	return &PostLikeResponse{
 		ID:        pl.ID,
 		PostID:    pl.PostID,

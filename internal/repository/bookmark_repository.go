@@ -36,7 +36,7 @@ func (r *bookmarkRepository) FindBookmarkByUserAndPost(ctx context.Context, user
 	var bookmark model.PostBookmark
 	err := r.db.WithContext(ctx).
 		Preload("Post").
-		Preload("Post.User").
+		Preload("Post.User", preloadUserBrief).
 		Preload("Folder").
 		Where("user_id = ? AND post_id = ?", userID, postID).
 		First(&bookmark).Error
@@ -53,7 +53,7 @@ func (r *bookmarkRepository) FindBookmarkByID(ctx context.Context, id, userID st
 	var bookmark model.PostBookmark
 	err := r.db.WithContext(ctx).
 		Preload("Post").
-		Preload("Post.User").
+		Preload("Post.User", preloadUserBrief).
 		Preload("Folder").
 		Where("id = ? AND user_id = ?", id, userID).
 		First(&bookmark).Error
@@ -114,7 +114,7 @@ func (r *bookmarkRepository) GetBookmarksByUser(ctx context.Context, userID stri
 
 	err := query.
 		Preload("Post").
-		Preload("Post.User").
+		Preload("Post.User", preloadUserBrief).
 		Preload("Folder").
 		Order("created_at DESC").
 		Limit(limit).

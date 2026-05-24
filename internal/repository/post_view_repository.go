@@ -38,9 +38,8 @@ func (r *postViewRepository) GetViewsByPostID(ctx context.Context, postID string
 		return nil, 0, err
 	}
 
-	// Get paginated views with user information
+	// Get paginated views (user_id only — no user preload needed)
 	err := r.db.WithContext(ctx).
-		Preload("User").
 		Where("post_id = ?", postID).
 		Order("created_at DESC").
 		Limit(limit).

@@ -42,9 +42,3 @@ type AuthTokenResponse struct {
 	RefreshToken string     `json:"refresh_token"`
 	User         *UserBrief `json:"user"`
 }
-
-type UserBrief struct {
-	ID       string  `json:"id"`
-	Email    string  `json:"email"`
-	Username *string `json:"username"`
-}

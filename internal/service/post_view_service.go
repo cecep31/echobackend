@@ -13,7 +13,7 @@ import (
 
 type PostViewService interface {
 	RecordView(ctx context.Context, postID, userID string, ipAddress, userAgent *string) error
-	GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostView, int64, error)
+	GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*dto.PostViewResponse, int64, error)
 	GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error)
 	HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error)
 }
@@ -80,7 +80,7 @@ func (s *postViewService) RecordView(ctx context.Context, postID, userID string,
 	return nil
 }
 
-func (s *postViewService) GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*model.PostView, int64, error) {
+func (s *postViewService) GetViewsByPostID(ctx context.Context, postID string, limit, offset int) ([]*dto.PostViewResponse, int64, error) {
 	if postID == "" {
 		return nil, 0, apperrors.ErrEmptyPostID
 	}
@@ -100,7 +100,12 @@ func (s *postViewService) GetViewsByPostID(ctx context.Context, postID string, l
 		return nil, 0, fmt.Errorf("failed to get views by post ID: %w", err)
 	}
 
-	return views, total, nil
+	responses := make([]*dto.PostViewResponse, len(views))
+	for i, view := range views {
+		responses[i] = dto.PostViewToResponse(view)
+	}
+
+	return responses, total, nil
 }
 
 func (s *postViewService) GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error) {

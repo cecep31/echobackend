@@ -46,7 +46,7 @@ func (r *postLikeRepository) GetLikesByPostID(ctx context.Context, postID string
 
 	// Get paginated likes with user information
 	err := r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Where("post_id = ?", postID).
 		Order("created_at DESC").
 		Limit(limit).
@@ -81,6 +81,6 @@ func (r *postLikeRepository) HasUserLikedPost(ctx context.Context, postID, userI
 
 func (r *postLikeRepository) GetLikeByUserAndPost(ctx context.Context, postID, userID string) (*model.PostLike, error) {
 	var like model.PostLike
-	err := r.db.WithContext(ctx).Preload("User").Where("post_id = ? AND user_id = ?", postID, userID).First(&like).Error
+	err := r.db.WithContext(ctx).Preload("User", preloadUserBrief).Where("post_id = ? AND user_id = ?", postID, userID).First(&like).Error
 	return &like, err
 }

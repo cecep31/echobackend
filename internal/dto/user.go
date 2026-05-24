@@ -5,6 +5,23 @@ import (
 	"time"
 )
 
+type UserBrief struct {
+	ID       string  `json:"id"`
+	Username *string `json:"username"`
+	Image    *string `json:"image"`
+}
+
+func UserToBrief(u *model.User) *UserBrief {
+	if u == nil || u.ID == "" {
+		return nil
+	}
+	return &UserBrief{
+		ID:       u.ID,
+		Username: u.Username,
+		Image:    u.Image,
+	}
+}
+
 type UserResponse struct {
 	ID             string         `json:"id"`
 	Email          string         `json:"email"`

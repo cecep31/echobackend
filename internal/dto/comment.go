@@ -14,7 +14,7 @@ type CommentResponse struct {
 	PostID          string        `json:"post_id"`
 	ParentCommentID *string       `json:"parent_comment_id,omitempty"`
 	Text            string        `json:"text"`
-	User            *UserResponse `json:"user,omitempty"`
+	User            *UserBrief    `json:"user,omitempty"`
 	CreatedAt       *time.Time    `json:"created_at"`
 	UpdatedAt       *time.Time    `json:"updated_at"`
 }
@@ -23,10 +23,7 @@ func CommentToResponse(pc *model.PostComment) *CommentResponse {
 	if pc == nil {
 		return nil
 	}
-	var userResp *UserResponse
-	if pc.User != nil && pc.User.ID != "" {
-		userResp = UserToResponse(pc.User)
-	}
+	userResp := UserToBrief(pc.User)
 	return &CommentResponse{
 		ID:              pc.ID,
 		PostID:          pc.PostID,

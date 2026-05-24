@@ -78,7 +78,7 @@ type PostResponse struct {
 	BookmarkCount int64         `json:"bookmark_count"`
 	Published     *bool         `json:"published"`
 	PublishedAt   *time.Time    `json:"published_at"`
-	User          *UserResponse `json:"user,omitempty"`
+	User          *UserBrief    `json:"user,omitempty"`
 	Tags          []TagResponse `json:"tags,omitempty"`
 	CreatedAt     *time.Time    `json:"created_at"`
 	UpdatedAt     *time.Time    `json:"updated_at"`
@@ -89,10 +89,7 @@ func PostToResponse(p *model.Post) *PostResponse {
 	if p == nil {
 		return nil
 	}
-	var userResp *UserResponse
-	if p.User != nil && p.User.ID != "" {
-		userResp = UserToResponse(p.User)
-	}
+	userResp := UserToBrief(p.User)
 
 	var tagResponses []TagResponse
 	if p.Tags != nil {

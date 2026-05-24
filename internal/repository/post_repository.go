@@ -51,7 +51,7 @@ func (r *postRepository) CreatePostWithTags(ctx context.Context, post *model.Pos
 		return nil, fmt.Errorf("failed to create post with tags: %w", err)
 	}
 
-	err = r.db.WithContext(ctx).Preload("User").Preload("Tags").First(post, "id = ?", post.ID).Error
+	err = r.db.WithContext(ctx).Preload("User", preloadUserBrief).Preload("Tags").First(post, "id = ?", post.ID).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to load created post with associations: %w", err)
 	}
@@ -62,7 +62,7 @@ func (r *postRepository) CreatePostWithTags(ctx context.Context, post *model.Pos
 func (r *postRepository) UpdatePost(ctx context.Context, id string, updates map[string]interface{}) (*model.Post, error) {
 	if len(updates) == 0 {
 		var currentPost model.Post
-		err := r.db.WithContext(ctx).Preload("User").Preload("Tags").First(&currentPost, "id = ?", id).Error
+		err := r.db.WithContext(ctx).Preload("User", preloadUserBrief).Preload("Tags").First(&currentPost, "id = ?", id).Error
 		if err != nil {
 			if err == gorm.ErrRecordNotFound {
 				return nil, apperrors.ErrPostNotFound
@@ -81,7 +81,7 @@ func (r *postRepository) UpdatePost(ctx context.Context, id string, updates map[
 	}
 
 	var updatedPost model.Post
-	err := r.db.WithContext(ctx).Preload("User").Preload("Tags").First(&updatedPost, "id = ?", id).Error
+	err := r.db.WithContext(ctx).Preload("User", preloadUserBrief).Preload("Tags").First(&updatedPost, "id = ?", id).Error
 	if err != nil {
 		return nil, fmt.Errorf("post updated, but failed to retrieve updated record: %w", err)
 	}
@@ -103,7 +103,7 @@ func (r *postRepository) GetPostByUsername(ctx context.Context, username string,
 	}
 
 	err = r.db.WithContext(ctx).Model(&model.Post{}).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Joins("JOIN users ON users.id = posts.created_by").
 		Where("users.username = ?", username).
@@ -140,7 +140,7 @@ func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([
 	}
 
 	err = r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Where("published = ?", true).
 		Order("created_at DESC").
@@ -157,7 +157,7 @@ func (r *postRepository) GetPosts(ctx context.Context, limit int, offset int) ([
 func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error) {
 	var post model.Post
 	err := r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Joins("JOIN users ON users.id = posts.created_by").
 		Where("posts.slug = ? AND users.username = ?", slug, username).
@@ -175,7 +175,7 @@ func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug stri
 func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Post, error) {
 	var post model.Post
 	err := r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		First(&post, "id = ?", id).Error
 
@@ -191,7 +191,7 @@ func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Pos
 func (r *postRepository) GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error) {
 	var randomPosts []*model.Post
 	err := r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Where("published = ?", true).
 		Order("RANDOM()").
@@ -208,7 +208,7 @@ func (r *postRepository) GetPostsTrending(ctx context.Context, limit int) ([]*mo
 	var posts []*model.Post
 
 	err := r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Where("published = ?", true).
 		Order("like_count * 2 + bookmark_count * 2 + view_count DESC").
@@ -231,7 +231,7 @@ func (r *postRepository) GetPostsByCreatedBy(ctx context.Context, createdBy stri
 	}
 
 	err = r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Where("created_by = ?", createdBy).
 		Order("created_at DESC").
@@ -265,7 +265,7 @@ func (r *postRepository) GetPostsForYou(ctx context.Context, userID string, offs
 	}
 
 	err := r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Where("published = ?", true).
 		Where("created_by = ? OR created_by IN (?)", userID, followingIDs).
@@ -293,7 +293,7 @@ func (r *postRepository) SearchPosts(ctx context.Context, keyword string, limit 
 	}
 
 	err = r.db.WithContext(ctx).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Where("(title ILIKE ? OR body ILIKE ?) AND published = ?", likePattern, likePattern, true).
 		Order("created_at DESC").
@@ -321,7 +321,7 @@ func (r *postRepository) GetPostsByTag(ctx context.Context, tag string, limit in
 	}
 
 	err = r.db.WithContext(ctx).Model(&model.Post{}).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags").
 		Joins("JOIN posts_to_tags ON posts_to_tags.post_id = posts.id").
 		Joins("JOIN tags ON tags.id = posts_to_tags.tag_id").
@@ -350,7 +350,7 @@ func (r *postRepository) GetPostsFiltered(ctx context.Context, filter *dto.PostQ
 	var count int64
 
 	query := r.db.WithContext(ctx).Model(&model.Post{}).
-		Preload("User").
+		Preload("User", preloadUserBrief).
 		Preload("Tags")
 
 	if filter.Search != "" {
