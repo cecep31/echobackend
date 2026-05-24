@@ -15,7 +15,7 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 | `last_name` | string \| null | |
 | `followers_count` | number | |
 | `following_count` | number | |
-| `is_following` | boolean \| null | Hanya jika request membawa JWT valid |
+| `is_following` | boolean \| null | Hanya terisi pada route yang memuat konteks auth (mis. admin `GET /:id`) |
 | `profile` | object \| null | Lihat `Profile` di bawah |
 | `created_at` | string (ISO) \| null | |
 | `updated_at` | string (ISO) \| null | |
@@ -40,7 +40,7 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 | Method | Path | Auth | Keterangan |
 |--------|------|------|------------|
 | GET | `/:id` | Bearer + **super admin** | By UUID |
-| GET | `/username/:username` | Opsional JWT | By username |
+| GET | `/username/:username` | Tidak | By username |
 | GET | `/me` | Bearer | User dari token |
 | GET | `` | Bearer + **super admin** | List semua user (paginated) |
 | DELETE | `/:id` | Bearer + **super admin** | Hapus user |
@@ -57,11 +57,11 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 
 ### GET `/api/users/:id` (admin)
 
-**Sukses — 200** — `data`: `UserResponse`. Dengan JWT, `is_following` terisi jika relevan.
+**Sukses — 200** — `data`: `UserResponse`. `is_following` terisi jika requester login (route admin sudah memakai auth).
 
 ### GET `/api/users/username/:username`
 
-**Sukses — 200** — `data`: `UserResponse`. Dengan JWT, `is_following` terisi jika relevan.
+**Sukses — 200** — `data`: `UserResponse`. Route publik — `is_following` tidak terisi.
 
 ### DELETE `/api/users/:id` (admin)
 

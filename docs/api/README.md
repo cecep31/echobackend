@@ -94,8 +94,11 @@ Query: `limit` (default bervariasi per endpoint, **maksimum 100**), `offset` (de
 | Users & follow | `/api/users` | [users.md](./users.md) |
 | Posts (komentar, view, like) | `/api/posts` | [posts.md](./posts.md) |
 | Tags | `/api/tags` | [tags.md](./tags.md) |
-| Chat | `/api/chat/conversations` | [chat.md](./chat.md) |
+| Chat | `/api/chat/conversations`, `/api/chat/messages` | [chat.md](./chat.md) |
 | Holdings | `/api/holdings`, `/api/holding-types` | [holdings.md](./holdings.md) |
+| Bookmarks | `/api/bookmarks` | [bookmarks.md](./bookmarks.md) |
+| Notifications | `/api/notifications` | [notifications.md](./notifications.md) |
+| Reports (admin) | `/api/reports` | [reports.md](./reports.md) |
 
 Debug (`/api/debug/pprof/*`) hanya saat `APP_DEBUG=true` — tidak untuk frontend.
 

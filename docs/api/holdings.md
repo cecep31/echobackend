@@ -56,12 +56,12 @@ Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holdin
 
 **Query**
 
-| Param | Keterangan |
-|-------|------------|
-| `month` | 1–12 |
-| `year` | Tahun |
-| `sortBy` | Field sort (lihat service) |
-| `order` | `asc` / `desc` |
+| Param | Default | Keterangan |
+|-------|---------|------------|
+| `month` | Bulan berjalan | 1–12 |
+| `year` | Tahun berjalan | |
+| `sortBy` | `created_at` | `created_at`, `updated_at`, `name`, `platform`, `invested_amount`, `current_value`, `holding_type` |
+| `order` | `desc` | `asc` / `desc` |
 
 **Sukses — 200** — `data`: `Holding[]`.
 
@@ -103,7 +103,12 @@ Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holdin
 
 ## GET `/api/holdings/monthly`
 
-**Query:** `startMonth`, `startYear`, `endMonth`, `endYear`.
+**Query**
+
+| Param | Default | Keterangan |
+|-------|---------|------------|
+| `startMonth`, `startYear` | Bulan/tahun berjalan | Awal rentang |
+| `endMonth`, `endYear` | 11 bulan sebelum start | Akhir rentang (jika tidak diisi) |
 
 **Sukses — 200** — `data`: `HoldingMonthlyDataResponse[]`.
 
@@ -158,7 +163,7 @@ Sinkron harga untuk periode aktif user.
 
 | HTTP | Kondisi |
 |------|---------|
-| 404 | Tidak ada / bukan milik user |
+| 404 | Holding tidak ada |
 | 403 | Bukan pemilik |
 
 ---

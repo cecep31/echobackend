@@ -36,8 +36,8 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 | GET | `` | Tidak |
 | GET | `/random` | Tidak |
 | GET | `/trending` | Tidak |
-| GET | `/mine` | Bearer |
-| GET | `/for-you` | Bearer |
+| GET | `/me` | Bearer |
+| GET | `/feed/for-you` | Bearer |
 | POST | `/image` | Bearer |
 | GET | `/sitemap` | Tidak |
 | GET | `/username/:username` | Tidak |
@@ -87,7 +87,7 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 
 **Query:** `limit` (default 10).
 
-### GET `/api/posts/mine` dan `/for-you`
+### GET `/api/posts/me` dan `/feed/for-you`
 
 **Query:** `limit`, `offset`. **Auth wajib.**
 
