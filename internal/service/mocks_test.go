@@ -12,6 +12,7 @@ import (
 	"echobackend/internal/dto"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
+	"time"
 )
 
 var (
@@ -26,12 +27,16 @@ var (
 // ---- PostLikeRepository mock --------------------------------------------------
 
 type mockPostLikeRepo struct {
-	createLikeFn       func(ctx context.Context, like *model.PostLike) error
-	deleteLikeFn       func(ctx context.Context, postID, userID string) error
-	getLikesByPostIDFn func(ctx context.Context, postID string, limit, offset int) ([]*model.PostLike, int64, error)
-	getLikeStatsFn     func(ctx context.Context, postID string) (*dto.PostLikeStats, error)
-	hasUserLikedFn     func(ctx context.Context, postID, userID string) (bool, error)
-	getLikeFn          func(ctx context.Context, postID, userID string) (*model.PostLike, error)
+	createLikeFn              func(ctx context.Context, like *model.PostLike) error
+	deleteLikeFn              func(ctx context.Context, postID, userID string) error
+	getLikesByPostIDFn        func(ctx context.Context, postID string, limit, offset int) ([]*model.PostLike, int64, error)
+	getLikeStatsFn            func(ctx context.Context, postID string) (*dto.PostLikeStats, error)
+	hasUserLikedFn            func(ctx context.Context, postID, userID string) (bool, error)
+	getLikeFn                 func(ctx context.Context, postID, userID string) (*model.PostLike, error)
+	getLikesByMonthByAuthorFn func(ctx context.Context, userID string, start, endExclusive time.Time) ([]struct {
+		Month string
+		Count int64
+	}, error)
 }
 
 func (m *mockPostLikeRepo) CreateLike(ctx context.Context, like *model.PostLike) error {
@@ -72,6 +77,16 @@ func (m *mockPostLikeRepo) HasUserLikedPost(ctx context.Context, postID, userID 
 func (m *mockPostLikeRepo) GetLikeByUserAndPost(ctx context.Context, postID, userID string) (*model.PostLike, error) {
 	if m.getLikeFn != nil {
 		return m.getLikeFn(ctx, postID, userID)
+	}
+	return nil, nil
+}
+
+func (m *mockPostLikeRepo) GetLikesByMonthByAuthor(ctx context.Context, userID string, start, endExclusive time.Time) ([]struct {
+	Month string
+	Count int64
+}, error) {
+	if m.getLikesByMonthByAuthorFn != nil {
+		return m.getLikesByMonthByAuthorFn(ctx, userID, start, endExclusive)
 	}
 	return nil, nil
 }
@@ -158,7 +173,7 @@ func (m *mockPostRepo) GetTopPostsByAuthor(ctx context.Context, userID string, l
 // ---- PostViewRepository mock --------------------------------------------------
 
 type mockPostViewRepo struct {
-	getViewTrendByAuthorFn     func(ctx context.Context, userID, startDate, endDate string) ([]struct {
+	getViewTrendByAuthorFn func(ctx context.Context, userID, startDate, endDate string) ([]struct {
 		Date  string
 		Count int64
 	}, error)

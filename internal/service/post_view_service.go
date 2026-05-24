@@ -17,20 +17,24 @@ type PostViewService interface {
 	GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error)
 	HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error)
 	GetMyPostsAnalytics(ctx context.Context, userID string, q *dto.MyPostsAnalyticsQuery) (*dto.MyPostsAnalyticsResponse, error)
+	GetMyPostsLikesByMonth(ctx context.Context, userID string, q *dto.MyPostsLikesByMonthQuery) (*dto.MyPostsLikesByMonthResponse, error)
 }
 
 type postViewService struct {
 	postViewRepo repository.PostViewRepository
 	postRepo     repository.PostRepository
+	postLikeRepo repository.PostLikeRepository
 }
 
 func NewPostViewService(
 	postViewRepo repository.PostViewRepository,
 	postRepo repository.PostRepository,
+	postLikeRepo repository.PostLikeRepository,
 ) PostViewService {
 	return &postViewService{
 		postViewRepo: postViewRepo,
 		postRepo:     postRepo,
+		postLikeRepo: postLikeRepo,
 	}
 }
 
@@ -204,5 +208,46 @@ func (s *postViewService) GetMyPostsAnalytics(ctx context.Context, userID string
 		Summary:   *summary,
 		ViewTrend: viewTrend,
 		TopPosts:  topPosts,
+	}, nil
+}
+
+func (s *postViewService) GetMyPostsLikesByMonth(ctx context.Context, userID string, q *dto.MyPostsLikesByMonthQuery) (*dto.MyPostsLikesByMonthResponse, error) {
+	months := 12
+	if q != nil && q.Months >= 1 && q.Months <= 24 {
+		months = q.Months
+	}
+
+	now := time.Now()
+	loc := now.Location()
+	endMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
+	startMonth := endMonth.AddDate(0, -(months - 1), 0)
+	endExclusive := endMonth.AddDate(0, 1, 0)
+
+	rows, err := s.postLikeRepo.GetLikesByMonthByAuthor(ctx, userID, startMonth, endExclusive)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get likes by month: %w", err)
+	}
+
+	rowMap := make(map[string]int64, len(rows))
+	for _, row := range rows {
+		rowMap[row.Month] = row.Count
+	}
+
+	series := make([]dto.MyPostsLikesByMonthPoint, 0, months)
+	var total int64
+	for i := 0; i < months; i++ {
+		monthKey := startMonth.AddDate(0, i, 0).Format("2006-01")
+		likes := rowMap[monthKey]
+		total += likes
+		series = append(series, dto.MyPostsLikesByMonthPoint{
+			Month: monthKey,
+			Likes: likes,
+		})
+	}
+
+	return &dto.MyPostsLikesByMonthResponse{
+		Months: months,
+		Series: series,
+		Total:  total,
 	}, nil
 }

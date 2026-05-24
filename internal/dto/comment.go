@@ -10,13 +10,13 @@ type CreateCommentRequest struct {
 }
 
 type CommentResponse struct {
-	ID              string        `json:"id"`
-	PostID          string        `json:"post_id"`
-	ParentCommentID *string       `json:"parent_comment_id,omitempty"`
-	Text            string        `json:"text"`
-	User            *UserBrief    `json:"user,omitempty"`
-	CreatedAt       *time.Time    `json:"created_at"`
-	UpdatedAt       *time.Time    `json:"updated_at"`
+	ID              string     `json:"id"`
+	PostID          string     `json:"post_id"`
+	ParentCommentID *string    `json:"parent_comment_id,omitempty"`
+	Text            string     `json:"text"`
+	User            *UserBrief `json:"user,omitempty"`
+	CreatedAt       *time.Time `json:"created_at"`
+	UpdatedAt       *time.Time `json:"updated_at"`
 }
 
 func CommentToResponse(pc *model.PostComment) *CommentResponse {

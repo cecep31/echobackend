@@ -38,7 +38,7 @@ func (s *authActivityService) LogActivity(ctx context.Context, userID *string, a
 	entry := &model.AuthActivityLog{
 		UserID:       userID,
 		ActivityType: activityType,
-		Status:        status,
+		Status:       status,
 		IPAddress:    &ipAddress,
 		UserAgent:    &userAgent,
 		ErrorMessage: errorMessage,

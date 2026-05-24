@@ -36,12 +36,12 @@ type AuthService interface {
 }
 
 type GithubUser struct {
-	Login      string  `json:"login"`
-	ID         int64   `json:"id"`
-	AvatarURL  string  `json:"avatar_url"`
-	Email      *string `json:"email"`
-	Name       string  `json:"name"`
-	HTMLURL    string  `json:"html_url"`
+	Login     string  `json:"login"`
+	ID        int64   `json:"id"`
+	AvatarURL string  `json:"avatar_url"`
+	Email     *string `json:"email"`
+	Name      string  `json:"name"`
+	HTMLURL   string  `json:"html_url"`
 }
 
 type authService struct {
@@ -363,10 +363,10 @@ func (s *authService) SignInWithGithub(ctx context.Context, githubUser *GithubUs
 
 		username := githubUser.Login
 		newUser := &model.User{
-			Email:        email,
-			Username:     &username,
-			GithubID:     &githubID,
-			Image:        &githubUser.AvatarURL,
+			Email:    email,
+			Username: &username,
+			GithubID: &githubID,
+			Image:    &githubUser.AvatarURL,
 		}
 
 		if err := s.authRepo.CreateUser(ctx, newUser); err != nil {

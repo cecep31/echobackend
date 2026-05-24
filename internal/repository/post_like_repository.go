@@ -4,6 +4,7 @@ import (
 	"context"
 	"echobackend/internal/dto"
 	"echobackend/internal/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -15,6 +16,10 @@ type PostLikeRepository interface {
 	GetLikeStats(ctx context.Context, postID string) (*dto.PostLikeStats, error)
 	HasUserLikedPost(ctx context.Context, postID, userID string) (bool, error)
 	GetLikeByUserAndPost(ctx context.Context, postID, userID string) (*model.PostLike, error)
+	GetLikesByMonthByAuthor(ctx context.Context, userID string, start, endExclusive time.Time) ([]struct {
+		Month string
+		Count int64
+	}, error)
 }
 
 type postLikeRepository struct {
@@ -83,4 +88,27 @@ func (r *postLikeRepository) GetLikeByUserAndPost(ctx context.Context, postID, u
 	var like model.PostLike
 	err := r.db.WithContext(ctx).Preload("User", preloadUserBrief).Where("post_id = ? AND user_id = ?", postID, userID).First(&like).Error
 	return &like, err
+}
+
+func (r *postLikeRepository) GetLikesByMonthByAuthor(ctx context.Context, userID string, start, endExclusive time.Time) ([]struct {
+	Month string
+	Count int64
+}, error) {
+	var rows []struct {
+		Month string
+		Count int64
+	}
+	err := r.db.WithContext(ctx).
+		Table("post_likes AS pl").
+		Select("TO_CHAR(DATE_TRUNC('month', pl.created_at), 'YYYY-MM') AS month, COUNT(*) AS count").
+		Joins("JOIN posts AS p ON p.id = pl.post_id AND p.deleted_at IS NULL").
+		Where("p.created_by = ? AND pl.deleted_at IS NULL", userID).
+		Where("pl.created_at >= ? AND pl.created_at < ?", start, endExclusive).
+		Group("DATE_TRUNC('month', pl.created_at)").
+		Order("DATE_TRUNC('month', pl.created_at) ASC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
 }

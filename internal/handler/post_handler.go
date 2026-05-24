@@ -241,6 +241,29 @@ func (h *PostHandler) GetMyPostsAnalytics(c *echo.Context) error {
 	return response.Success(c, "Successfully retrieved post analytics", analytics)
 }
 
+func (h *PostHandler) GetMyPostsLikesByMonth(c *echo.Context) error {
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
+
+	months := 12
+	if m := c.QueryParam("months"); m != "" {
+		if v, err := strconv.Atoi(m); err == nil && v >= 1 && v <= 24 {
+			months = v
+		}
+	}
+
+	data, err := h.postViewService.GetMyPostsLikesByMonth(c.Request().Context(), userID, &dto.MyPostsLikesByMonthQuery{
+		Months: months,
+	})
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get likes by month", err)
+	}
+
+	return response.Success(c, "Successfully retrieved likes by month", data)
+}
+
 func (h *PostHandler) GetPostsForYou(c *echo.Context) error {
 	limit, offset := ParsePaginationParams(c, 10)
 

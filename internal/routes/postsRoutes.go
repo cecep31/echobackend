@@ -10,6 +10,7 @@ func (r *Routes) setupPostRoutes(api *echo.Group) {
 		posts.GET("/trending", r.postHandler.GetPostsTrending)
 		posts.GET("/me", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
 		posts.GET("/me/analytics", r.postHandler.GetMyPostsAnalytics, r.authMiddleware.Auth())
+		posts.GET("/me/analytics/likes-by-month", r.postHandler.GetMyPostsLikesByMonth, r.authMiddleware.Auth())
 		posts.GET("/feed/for-you", r.postHandler.GetPostsForYou, r.authMiddleware.Auth())
 		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
 		posts.GET("/sitemap", r.postHandler.GetPostsForSitemap)

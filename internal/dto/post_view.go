@@ -40,9 +40,24 @@ type MyPostsAnalyticsSummary struct {
 }
 
 type MyPostsAnalyticsResponse struct {
-	Summary   MyPostsAnalyticsSummary   `json:"summary"`
-	ViewTrend []MyPostsViewTrendPoint   `json:"view_trend"`
-	TopPosts  []MyPostPerformance       `json:"top_posts"`
+	Summary   MyPostsAnalyticsSummary `json:"summary"`
+	ViewTrend []MyPostsViewTrendPoint `json:"view_trend"`
+	TopPosts  []MyPostPerformance     `json:"top_posts"`
+}
+
+type MyPostsLikesByMonthQuery struct {
+	Months int
+}
+
+type MyPostsLikesByMonthPoint struct {
+	Month string `json:"month"`
+	Likes int64  `json:"likes"`
+}
+
+type MyPostsLikesByMonthResponse struct {
+	Months int                        `json:"months"`
+	Series []MyPostsLikesByMonthPoint `json:"series"`
+	Total  int64                      `json:"total"`
 }
 
 type PostViewResponse struct {

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
 	"echobackend/internal/dto"
 )
@@ -47,7 +48,7 @@ func TestPostViewService_GetMyPostsAnalytics(t *testing.T) {
 		},
 	}
 
-	svc := NewPostViewService(viewRepo, postRepo)
+	svc := NewPostViewService(viewRepo, postRepo, &mockPostLikeRepo{})
 	got, err := svc.GetMyPostsAnalytics(context.Background(), validUserID, &dto.MyPostsAnalyticsQuery{
 		StartDate: "2026-05-01",
 		EndDate:   "2026-05-03",
@@ -70,5 +71,43 @@ func TestPostViewService_GetMyPostsAnalytics(t *testing.T) {
 	}
 	if got.ViewTrend[2].Views != 3 || got.ViewTrend[2].CumulativeViews != 28 {
 		t.Fatalf("unexpected last trend point: %+v", got.ViewTrend[2])
+	}
+}
+
+func TestPostViewService_GetMyPostsLikesByMonth(t *testing.T) {
+	likeRepo := &mockPostLikeRepo{
+		getLikesByMonthByAuthorFn: func(ctx context.Context, userID string, start, endExclusive time.Time) ([]struct {
+			Month string
+			Count int64
+		}, error) {
+			return []struct {
+				Month string
+				Count int64
+			}{
+				{Month: "2026-04", Count: 5},
+				{Month: "2026-05", Count: 3},
+			}, nil
+		},
+	}
+
+	svc := NewPostViewService(&mockPostViewRepo{}, &mockPostRepo{}, likeRepo)
+	got, err := svc.GetMyPostsLikesByMonth(context.Background(), validUserID, &dto.MyPostsLikesByMonthQuery{
+		Months: 3,
+	})
+	if err != nil {
+		t.Fatalf("GetMyPostsLikesByMonth returned error: %v", err)
+	}
+
+	if got.Months != 3 {
+		t.Fatalf("expected months=3, got %d", got.Months)
+	}
+	if len(got.Series) != 3 {
+		t.Fatalf("expected 3 series points, got %d", len(got.Series))
+	}
+	if got.Total != 8 {
+		t.Fatalf("expected total=8, got %d", got.Total)
+	}
+	if got.Series[1].Likes != 5 || got.Series[2].Likes != 3 {
+		t.Fatalf("unexpected series: %+v", got.Series)
 	}
 }

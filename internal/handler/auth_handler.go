@@ -265,15 +265,15 @@ func (h *AuthHandler) GetProfile(c *echo.Context) error {
 	}
 
 	return response.Success(c, "Profile retrieved successfully", map[string]any{
-		"id":               user.ID,
-		"email":            user.Email,
-		"username":         user.Username,
-		"first_name":       user.FirstName,
-		"last_name":        user.LastName,
-		"image":            user.Image,
-		"is_super_admin":   user.IsSuperAdmin,
-		"followers_count":  user.FollowersCount,
-		"following_count":  user.FollowingCount,
+		"id":              user.ID,
+		"email":           user.Email,
+		"username":        user.Username,
+		"first_name":      user.FirstName,
+		"last_name":       user.LastName,
+		"image":           user.Image,
+		"is_super_admin":  user.IsSuperAdmin,
+		"followers_count": user.FollowersCount,
+		"following_count": user.FollowingCount,
 	})
 }
 

@@ -6,11 +6,11 @@ import (
 )
 
 type PostLikeResponse struct {
-	ID        string        `json:"id"`
-	PostID    string        `json:"post_id"`
-	UserID    string        `json:"user_id"`
-	User      *UserBrief    `json:"user,omitempty"`
-	CreatedAt *time.Time    `json:"created_at"`
+	ID        string     `json:"id"`
+	PostID    string     `json:"post_id"`
+	UserID    string     `json:"user_id"`
+	User      *UserBrief `json:"user,omitempty"`
+	CreatedAt *time.Time `json:"created_at"`
 }
 
 func PostLikeToResponse(pl *model.PostLike) *PostLikeResponse {

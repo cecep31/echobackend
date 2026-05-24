@@ -38,6 +38,7 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 | GET | `/trending` | Tidak |
 | GET | `/me` | Bearer |
 | GET | `/me/analytics` | Bearer |
+| GET | `/me/analytics/likes-by-month` | Bearer |
 | GET | `/feed/for-you` | Bearer |
 | POST | `/image` | Bearer |
 | GET | `/sitemap` | Tidak |
@@ -130,6 +131,33 @@ Data agregat untuk chart performa post milik user login. **Auth wajib.**
 
 - `view_trend` — seri harian untuk line/area chart (satu titik per hari dalam rentang, termasuk hari tanpa view = 0).
 - `top_posts` — maks. 5 post dengan `view_count` tertinggi (bar chart / ranking).
+
+### GET `/api/posts/me/analytics/likes-by-month`
+
+Like yang **diterima** post milik user login, diagregasi per bulan. **Auth wajib.**
+
+**Query (opsional)**
+
+| Param | Default | Keterangan |
+|-------|---------|------------|
+| `months` | 12 | 1–24; N bulan kalender terakhir (termasuk bulan berjalan) |
+
+**Sukses — 200** — `data`:
+
+```json
+{
+  "months": 12,
+  "series": [
+    { "month": "2025-06", "likes": 0 },
+    { "month": "2025-07", "likes": 14 },
+    { "month": "2026-05", "likes": 23 }
+  ],
+  "total": 230
+}
+```
+
+- `series` — satu titik per bulan (`YYYY-MM`), zero-fill untuk bulan tanpa like.
+- `total` — jumlah like dalam rentang `months`.
 
 ### POST `/api/posts/image`
 
