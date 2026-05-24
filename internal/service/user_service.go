@@ -58,7 +58,7 @@ func (s *userService) GetUsers(ctx context.Context, offset int, limit int) ([]*d
 		if user == nil {
 			continue
 		}
-		userResponses = append(userResponses, dto.UserToResponse(user))
+		userResponses = append(userResponses, dto.UserToAdminResponse(user))
 	}
 
 	return userResponses, total, nil

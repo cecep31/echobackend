@@ -16,7 +16,7 @@ type UserFollowService interface {
 	GetFollowing(ctx context.Context, userID string, limit, offset int) ([]*dto.UserResponse, int64, error)
 	GetFollowStats(ctx context.Context, userID string) (*dto.UserFollowStats, error)
 	GetMutualFollows(ctx context.Context, userID1, userID2 string) ([]*dto.UserResponse, error)
-	GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string) (*dto.UserResponse, error)
+	GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string, includeAdminFields bool) (*dto.UserResponse, error)
 }
 
 type userFollowService struct {
@@ -135,13 +135,18 @@ func (s *userFollowService) GetMutualFollows(ctx context.Context, userID1, userI
 	return userResponses, nil
 }
 
-func (s *userFollowService) GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string) (*dto.UserResponse, error) {
+func (s *userFollowService) GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string, includeAdminFields bool) (*dto.UserResponse, error) {
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 
-	userResponse := dto.UserToResponse(user)
+	var userResponse *dto.UserResponse
+	if includeAdminFields {
+		userResponse = dto.UserToAdminResponse(user)
+	} else {
+		userResponse = dto.UserToResponse(user)
+	}
 
 	if currentUserID != "" && currentUserID != userID {
 		isFollowing, err := s.userFollowRepo.IsFollowing(ctx, currentUserID, userID)

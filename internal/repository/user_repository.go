@@ -103,7 +103,7 @@ func (r *userRepository) GetUsers(ctx context.Context, offset, limit int) ([]*mo
 		return nil, 0, fmt.Errorf("failed to count users: %w", err)
 	}
 
-	err = r.db.WithContext(ctx).Preload("Profile").Offset(offset).Limit(limit).Find(&users).Error
+	err = r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&users).Error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get users: %w", err)
 	}

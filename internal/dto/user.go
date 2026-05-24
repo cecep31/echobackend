@@ -33,6 +33,7 @@ type UserResponse struct {
 	FollowersCount int64          `json:"followers_count"`
 	FollowingCount int64          `json:"following_count"`
 	IsFollowing    *bool          `json:"is_following,omitempty"`
+	IsSuperAdmin   *bool          `json:"is_super_admin,omitempty"`
 	Profile        *model.Profile `json:"profile,omitempty"`
 	CreatedAt      *time.Time     `json:"created_at"`
 	UpdatedAt      *time.Time     `json:"updated_at"`
@@ -92,6 +93,14 @@ func UserToResponse(u *model.User) *UserResponse {
 		CreatedAt:      u.CreatedAt,
 		UpdatedAt:      u.UpdatedAt,
 	}
+}
+
+func UserToAdminResponse(u *model.User) *UserResponse {
+	resp := UserToResponse(u)
+	if resp != nil {
+		resp.IsSuperAdmin = u.IsSuperAdmin
+	}
+	return resp
 }
 
 func UserToPublicResponse(u *model.User) *PublicUserResponse {

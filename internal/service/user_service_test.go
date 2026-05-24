@@ -82,9 +82,9 @@ func TestUserService_GetUsers_Success(t *testing.T) {
 	repo := &mockUserRepo{
 		getUsersFn: func(ctx context.Context, offset, limit int) ([]*model.User, int64, error) {
 			return []*model.User{
-				{ID: "u1", Email: "a@x.com"},
+				{ID: "u1", Email: "a@x.com", IsSuperAdmin: ptr(false)},
 				nil, // nil entries should be skipped per service contract
-				{ID: "u2", Email: "b@x.com"},
+				{ID: "u2", Email: "b@x.com", IsSuperAdmin: ptr(true)},
 			}, 2, nil
 		},
 	}
@@ -98,6 +98,12 @@ func TestUserService_GetUsers_Success(t *testing.T) {
 	}
 	if len(resp) != 2 {
 		t.Fatalf("len = %d, want 2", len(resp))
+	}
+	if resp[0].IsSuperAdmin == nil || *resp[0].IsSuperAdmin {
+		t.Fatalf("expected u1 IsSuperAdmin false, got %v", resp[0].IsSuperAdmin)
+	}
+	if resp[1].IsSuperAdmin == nil || !*resp[1].IsSuperAdmin {
+		t.Fatalf("expected u2 IsSuperAdmin true, got %v", resp[1].IsSuperAdmin)
 	}
 }
 

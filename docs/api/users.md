@@ -16,7 +16,8 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 | `followers_count` | number | |
 | `following_count` | number | |
 | `is_following` | boolean \| null | Hanya terisi pada route yang memuat konteks auth (mis. admin `GET /:id`) |
-| `profile` | object \| null | Lihat `Profile` di bawah |
+| `is_super_admin` | boolean \| null | Hanya pada route admin (`GET /`, `GET /:id`) |
+| `profile` | object \| null | Tidak di-load pada `GET /` (admin list); ada pada route lain |
 | `created_at` | string (ISO) \| null | |
 | `updated_at` | string (ISO) \| null | |
 

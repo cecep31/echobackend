@@ -27,7 +27,7 @@ func (h *UserHandler) GetByID(c *echo.Context) error {
 		currentUserID = uid
 	}
 
-	userResponse, err := h.userFollowService.GetUserWithFollowStatus(c.Request().Context(), userID, currentUserID)
+	userResponse, err := h.userFollowService.GetUserWithFollowStatus(c.Request().Context(), userID, currentUserID, true)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve user", err)
 	}
@@ -48,7 +48,7 @@ func (h *UserHandler) GetByUsername(c *echo.Context) error {
 		return response.InternalServerError(c, "Failed to retrieve user", err)
 	}
 
-	userResponse, err := h.userFollowService.GetUserWithFollowStatus(c.Request().Context(), user.ID, currentUserID)
+	userResponse, err := h.userFollowService.GetUserWithFollowStatus(c.Request().Context(), user.ID, currentUserID, false)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve user", err)
 	}
