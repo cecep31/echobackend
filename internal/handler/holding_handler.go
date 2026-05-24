@@ -31,6 +31,8 @@ func (h *HoldingHandler) respondHoldingError(c *echo.Context, message string, er
 		return response.BadRequest(c, message, err)
 	case errors.Is(err, apperrors.ErrHoldingDuplicateSame):
 		return response.BadRequest(c, message, err)
+	case errors.Is(err, apperrors.ErrHoldingInvalidRange):
+		return response.BadRequest(c, message, err)
 	default:
 		return response.InternalServerError(c, message, err)
 	}

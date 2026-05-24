@@ -274,6 +274,13 @@ func (s *holdingService) CompareMonths(ctx context.Context, userID string, q *dt
 }
 
 func (s *holdingService) GetMonthlyData(ctx context.Context, userID string, q *dto.HoldingMonthlyQuery) ([]dto.HoldingMonthlyDataResponse, error) {
+	// The iteration walks from (EndMonth, EndYear) FORWARD to (StartMonth, StartYear),
+	// so End must be on or before Start chronologically. Reject inverted ranges up
+	// front — without this guard the loop below never terminates and burns CPU/RAM.
+	if q.EndYear > q.StartYear || (q.EndYear == q.StartYear && q.EndMonth > q.StartMonth) {
+		return nil, apperrors.ErrHoldingInvalidRange
+	}
+
 	data, err := s.holdingRepo.GetMonthlyData(ctx, userID, q.StartMonth, q.StartYear, q.EndMonth, q.EndYear)
 	if err != nil {
 		return nil, err

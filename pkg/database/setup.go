@@ -106,7 +106,7 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		}
 
 		// Connection successful
-		slog.Info("successfully connected to database")
+		slog.Info("database: connected", "max_open", maxOpenConns, "max_idle", maxIdleConns, "conn_lifetime", connMaxLifetime)
 		break
 	}
 

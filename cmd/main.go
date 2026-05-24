@@ -7,6 +7,7 @@ import (
 	"echobackend/internal/middleware"
 	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,6 +23,11 @@ func main() {
 	if errconf != nil {
 		panic(errconf)
 	}
+
+	// Configure the default slog handler so every package that calls slog.Info/Warn/Error
+	// emits a consistent, tidy line (RFC3339 time, level, msg, key=value attrs).
+	// Level follows APP_DEBUG: Debug when on, Info otherwise.
+	setupLogger(conf.App.Debug)
 
 	// Initialize dependency container
 	container, err := di.NewContainer(conf)
@@ -126,4 +132,28 @@ func healthCheck(c *echo.Context, container *di.Container) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"status": "ok",
 	})
+}
+
+// setupLogger installs a text-format slog handler as the default. All packages
+// using slog (cache, database, response, etc.) inherit this format, replacing
+// the noisy log.Default() output with aligned key=value lines.
+func setupLogger(debug bool) {
+	level := slog.LevelInfo
+	if debug {
+		level = slog.LevelDebug
+	}
+
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: level,
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			// Render time as compact RFC3339 instead of the verbose default.
+			if a.Key == slog.TimeKey {
+				if t, ok := a.Value.Any().(time.Time); ok {
+					a.Value = slog.StringValue(t.Format(time.RFC3339))
+				}
+			}
+			return a
+		},
+	})
+	slog.SetDefault(slog.New(handler))
 }
