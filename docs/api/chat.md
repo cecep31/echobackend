@@ -39,7 +39,7 @@ CRUD percakapan chat per user, pesan, dan streaming respons AI. Semua route **wa
 | `is_pinned` | boolean |
 | `pinned_at` | string \| null |
 | `message_count` | number |
-| `messages` | array `ChatMessageResponse` (hanya pada GET `/:id`; urutan kronologis) |
+| `chat_messages` | array `ChatMessageResponse` (hanya pada GET `/:id`; urutan kronologis) |
 | `created_at` | string (ISO) |
 | `updated_at` | string (ISO) |
 
@@ -114,7 +114,7 @@ Stream diakhiri dengan `data: [DONE]`.
 
 ## GET `/api/chat/conversations/:id`
 
-**Sukses — 200** — `data`: satu `ChatConversationResponse` termasuk `messages` (semua pesan, `created_at` naik).
+**Sukses — 200** — `data`: satu `ChatConversationResponse` termasuk `chat_messages` (semua pesan, `created_at` naik).
 
 Hanya percakapan milik user dari token.
 

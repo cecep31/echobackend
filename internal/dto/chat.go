@@ -70,7 +70,7 @@ type ChatConversationResponse struct {
 	PinnedAt     *time.Time             `json:"pinned_at,omitempty"`
 	UserID       string                 `json:"user_id"`
 	MessageCount int                    `json:"message_count"`
-	Messages     []*ChatMessageResponse `json:"messages,omitempty"`
+	ChatMessages []*ChatMessageResponse `json:"chat_messages,omitempty"`
 }
 
 func ChatConversationToResponse(c *model.ChatConversation) *ChatConversationResponse {
@@ -94,7 +94,7 @@ func ChatConversationToDetailResponse(c *model.ChatConversation) *ChatConversati
 	if resp == nil {
 		return nil
 	}
-	resp.Messages = chatMessagesToResponses(c.Messages)
+	resp.ChatMessages = chatMessagesToResponses(c.Messages)
 	return resp
 }
 
