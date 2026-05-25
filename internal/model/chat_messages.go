@@ -3,7 +3,7 @@ package model
 import "time"
 
 type ChatMessage struct {
-	ID               string           `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
+	ID               string           `gorm:"type:uuid;primaryKey;default:uuidv7()"`
 	CreatedAt        time.Time        `json:"created_at"`
 	UpdatedAt        time.Time        `json:"updated_at"`
 	ConversationID   string           `gorm:"type:uuid;not null"`

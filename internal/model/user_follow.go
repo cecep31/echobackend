@@ -7,7 +7,7 @@ import (
 )
 
 type UserFollow struct {
-	ID          string         `json:"id" gorm:"type:uuid;primaryKey"`
+	ID          string         `json:"id" gorm:"type:uuid;primaryKey;default:uuidv7()"`
 	FollowerID  string         `json:"follower_id" gorm:"type:uuid;not null;index"`
 	FollowingID string         `json:"following_id" gorm:"type:uuid;not null;index"`
 	CreatedAt   *time.Time     `json:"created_at" gorm:"index"`

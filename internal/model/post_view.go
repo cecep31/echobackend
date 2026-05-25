@@ -7,7 +7,7 @@ import (
 )
 
 type PostView struct {
-	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
+	ID        string         `json:"id" gorm:"type:uuid;primaryKey;default:uuidv7()"`
 	PostID    string         `json:"post_id" gorm:"type:uuid;not null;index"`
 	UserID    *string        `json:"user_id" gorm:"type:uuid;index"`
 	IPAddress *string        `json:"ip_address" gorm:"type:varchar(45)"`

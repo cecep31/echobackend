@@ -124,9 +124,10 @@ type GitHubConfig struct {
 
 // FrontendConfig contains frontend URL settings for OAuth redirects and cookies.
 type FrontendConfig struct {
-	URL             string
+	URL              string
+	OAuthCallbackURL string
 	ResetPasswordURL string
-	MainDomain      string
+	MainDomain       string
 }
 
 // Load reads configuration from environment variables with defaults.
@@ -189,6 +190,7 @@ func Load() (*Config, error) {
 		},
 		Frontend: FrontendConfig{
 			URL:              envString([]string{"FRONTEND_URL"}, "http://localhost:3000"),
+			OAuthCallbackURL: envString([]string{"FRONTEND_OAUTH_CALLBACK_URL"}, "http://localhost:3000/auth/callback"),
 			ResetPasswordURL: envString([]string{"FRONTEND_RESET_PASSWORD_URL"}, "http://localhost:3000/reset-password"),
 			MainDomain:       envString([]string{"MAIN_DOMAIN"}, "localhost"),
 		},

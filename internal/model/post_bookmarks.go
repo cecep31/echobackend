@@ -5,7 +5,7 @@ import (
 )
 
 type PostBookmark struct {
-	ID        string     `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
+	ID        string     `json:"id" gorm:"type:uuid;primaryKey;default:uuidv7()"`
 	PostID    string     `json:"post_id" gorm:"type:uuid;not null;uniqueIndex:idx_post_bookmarks_unique_user_post"`
 	UserID    string     `json:"user_id" gorm:"type:uuid;not null;uniqueIndex:idx_post_bookmarks_unique_user_post"`
 	FolderID  *string    `json:"folder_id" gorm:"type:uuid;index"`

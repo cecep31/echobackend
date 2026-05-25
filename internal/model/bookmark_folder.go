@@ -4,7 +4,7 @@ import "time"
 
 // BookmarkFolder is a user-defined folder for organizing saved posts.
 type BookmarkFolder struct {
-	ID          string     `json:"id" gorm:"type:uuid;primaryKey;default:uuid_generate_v4()"`
+	ID          string     `json:"id" gorm:"type:uuid;primaryKey;default:uuidv7()"`
 	UserID      string     `json:"user_id" gorm:"type:uuid;not null;uniqueIndex:idx_bookmark_folders_user_name"`
 	Name        string     `json:"name" gorm:"type:varchar(100);not null;uniqueIndex:idx_bookmark_folders_user_name"`
 	Description *string    `json:"description"`

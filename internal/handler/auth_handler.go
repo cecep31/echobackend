@@ -347,9 +347,11 @@ func (h *AuthHandler) GithubOAuthRedirect(c *echo.Context) error {
 }
 
 func (h *AuthHandler) GithubOAuthCallback(c *echo.Context) error {
+	callbackURL := h.frontendConfig.OAuthCallbackURL
+
 	code := c.QueryParam("code")
 	if code == "" {
-		return c.Redirect(http.StatusTemporaryRedirect, h.frontendConfig.URL+"?error=missing_code")
+		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=missing_code")
 	}
 
 	ipAddress := c.RealIP()
@@ -358,13 +360,13 @@ func (h *AuthHandler) GithubOAuthCallback(c *echo.Context) error {
 	githubToken, err := h.authService.GetGithubToken(code)
 	if err != nil {
 		h.activityService.LogActivity(c.Request().Context(), nil, model.ActivityOAuthLoginFailed, model.StatusFailure, ipAddress, userAgent, nil, map[string]any{"provider": "github", "error": err.Error()})
-		return c.Redirect(http.StatusTemporaryRedirect, h.frontendConfig.URL+"?error=github_token_failed")
+		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=github_token_failed")
 	}
 
 	githubUser, err := fetchGithubUser(githubToken)
 	if err != nil {
 		h.activityService.LogActivity(c.Request().Context(), nil, model.ActivityOAuthLoginFailed, model.StatusFailure, ipAddress, userAgent, nil, map[string]any{"provider": "github", "error": err.Error()})
-		return c.Redirect(http.StatusTemporaryRedirect, h.frontendConfig.URL+"?error=github_user_failed")
+		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=github_user_failed")
 	}
 
 	if githubUser.Email == nil || *githubUser.Email == "" {
@@ -376,10 +378,10 @@ func (h *AuthHandler) GithubOAuthCallback(c *echo.Context) error {
 
 	accessToken, refreshToken, user, err := h.authService.SignInWithGithub(c.Request().Context(), githubUser, ipAddress, userAgent)
 	if err != nil {
-		return c.Redirect(http.StatusTemporaryRedirect, h.frontendConfig.URL+"?error=oauth_login_failed")
+		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=oauth_login_failed")
 	}
 
-	redirectURL := fmt.Sprintf("%s?access_token=%s&refresh_token=%s", h.frontendConfig.URL, accessToken, refreshToken)
+	redirectURL := fmt.Sprintf("%s?access_token=%s&refresh_token=%s", callbackURL, accessToken, refreshToken)
 	_ = user
 	return c.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }

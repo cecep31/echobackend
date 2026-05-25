@@ -36,7 +36,7 @@ goose create <name> sql     # New migration file
 - Config loaded via `config.Load()` — reads `.env` (godotenv) then environment variables.
 - **Required**: `DATABASE_URL`, `JWT_SECRET`. App panics if missing.
 - Many keys accept **fallback aliases** (legacy names). First-set key wins. See `config/config.go` for full list.
-- `GOOSE_TABLE=custom.goose_migrations` — non-default goose table location; migrations won't work without this.
+- `GOOSE_TABLE=custom.goose_migrations` — non-default goose table location; run `psql "$DATABASE_URL" -f scripts/bootstrap-goose-schema.sql` once before the first `goose up`.
 - Valkey/Redis caching is **optional** — leave `VALKEY_URL` empty to disable (app runs fail-open).
 
 ## Testing

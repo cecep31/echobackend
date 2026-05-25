@@ -10,7 +10,7 @@ A modern, robust REST API built with Go 1.25+, Echo v5, GORM, and PostgreSQL. De
 - **Secure Auth**: JWT-based authentication with custom middleware.
 - **Reliable Storage**: S3/MinIO compatible storage for file management.
 - **Validation**: Strict request validation using `go-playground/validator/v10`.
-- **Modern Keys**: UUID v7 used for primary keys across all models.
+- **Modern Keys**: UUID primary keys across all models (v7 preferred).
 - **Rate Limiting**: Global and per-route rate limiting to protect critical endpoints.
 - **Graceful Shutdown**: Automatic resource cleanup on server termination.
 - **Health Checks**: Dedicated `/health` endpoint for Docker and Fly.io liveness probes.
@@ -20,7 +20,7 @@ A modern, robust REST API built with Go 1.25+, Echo v5, GORM, and PostgreSQL. De
 - **Runtime**: Go 1.25+ (Built with 1.26 in Docker)
 - **Web Framework**: [Echo v5](https://github.com/labstack/echo)
 - **ORM**: [GORM](https://gorm.io/) v2
-- **Database**: PostgreSQL 14+
+- **Database**: PostgreSQL 18+
 - **Cache**: Valkey/Redis
 - **Storage**: MinIO / AWS S3
 - **Migrations**: [Goose](https://github.com/pressly/goose) (Raw SQL)

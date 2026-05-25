@@ -421,13 +421,15 @@ Jika email GitHub tidak tersedia, endpoint akan meminta email dari `https://api.
 **Alur sukses — 307** Redirect ke:
 
 ```
-{FRONTEND_URL}?access_token=eyJ...&refresh_token=pl_...
+{FRONTEND_OAUTH_CALLBACK_URL}?access_token=eyJ...&refresh_token=pl_...
 ```
+
+Default: `{FRONTEND_URL}/auth/callback` (`http://localhost:3000/auth/callback`).
 
 **Alur gagal — 307** Redirect ke:
 
 ```
-{FRONTEND_URL}?error=<error_type>
+{FRONTEND_OAUTH_CALLBACK_URL}?error=<error_type>
 ```
 
 | Error type | Kondisi |

@@ -4,6 +4,19 @@ Managed via [goose](https://github.com/pressly/goose). Env vars configured in `.
 
 ## Running Migrations
 
+`GOOSE_TABLE=custom.goose_migrations` stores version history in the `custom` schema. Create that schema once before the first run:
+
+```bash
+psql "$DATABASE_URL" -f scripts/bootstrap-goose-schema.sql
+goose up
+```
+
+On Windows (PowerShell):
+
+```powershell
+.\scripts\migrate-up.ps1
+```
+
 ```bash
 # Apply all pending migrations
 goose up
@@ -28,10 +41,13 @@ goose create nama_migration sql
 | 004 | `004_add_bookmark_folders_and_post_bookmarks.sql` | bookmark_folders, post_bookmarks, bookmark_count trigger |
 | 005 | `005_add_chat_conversations_and_messages.sql` | chat_conversations, chat_messages |
 
+| 009 | `009_use_uuidv7_default.sql` | Switch UUID primary key defaults to `uuidv7()` |
+| 010 | `010_drop_uuid_ossp.sql` | Drop unused `uuid-ossp` extension |
+
 ## Notes
 
 - All `CREATE TABLE` and `ADD COLUMN` statements use `IF NOT EXISTS` / `IF NOT EXISTS` for idempotency
 - Foreign key constraints with `ON DELETE CASCADE` ensure data integrity
 - Database triggers automatically maintain count fields (view_count, like_count, bookmark_count, followers_count, following_count)
 - Soft deletes are supported via `deleted_at` timestamps
-- UUID v4 (`uuid_generate_v4()`) is used for primary keys
+- UUID primary keys use `uuidv7()` by default (PostgreSQL 18+)
