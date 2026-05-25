@@ -38,12 +38,12 @@ func NewUserFollowService(
 }
 
 func (s *userFollowService) FollowUser(ctx context.Context, followerID, followingID string) (*dto.FollowResponse, error) {
-	_, err := s.userRepo.GetByID(ctx, followerID)
+	_, err := s.userRepo.GetByID(ctx, followerID, false)
 	if err != nil {
 		return nil, apperrors.ErrUserNotFound
 	}
 
-	_, err = s.userRepo.GetByID(ctx, followingID)
+	_, err = s.userRepo.GetByID(ctx, followingID, false)
 	if err != nil {
 		return nil, apperrors.ErrUserNotFound
 	}
@@ -136,7 +136,7 @@ func (s *userFollowService) GetMutualFollows(ctx context.Context, userID1, userI
 }
 
 func (s *userFollowService) GetUserWithFollowStatus(ctx context.Context, userID, currentUserID string, includeAdminFields bool) (*dto.UserResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userRepo.GetByID(ctx, userID, false)
 	if err != nil {
 		return nil, err
 	}

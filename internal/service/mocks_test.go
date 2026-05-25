@@ -217,10 +217,11 @@ func (m *mockPostViewRepo) CountViewsByAuthorBefore(ctx context.Context, userID,
 // ---- UserRepository mock ------------------------------------------------------
 
 type mockUserRepo struct {
-	getByIDFn       func(ctx context.Context, id string) (*model.User, error)
+	getByIDFn       func(ctx context.Context, id string, deletedOnly bool) (*model.User, error)
 	getByUsernameFn func(ctx context.Context, username string) (*model.User, error)
-	getUsersFn      func(ctx context.Context, offset int, limit int) ([]*model.User, int64, error)
+	getUsersFn      func(ctx context.Context, offset int, limit int, deletedFilter repository.UserDeletedFilter) ([]*model.User, int64, error)
 	softDeleteFn    func(ctx context.Context, id string) error
+	restoreByIDFn   func(ctx context.Context, id string) error
 	createFn        func(ctx context.Context, user *model.User) error
 	updateFn        func(ctx context.Context, user *model.User) error
 	existsFn        func(ctx context.Context, email string) (bool, error)
@@ -233,15 +234,15 @@ func (m *mockUserRepo) Create(ctx context.Context, user *model.User) error {
 	}
 	return nil
 }
-func (m *mockUserRepo) GetByID(ctx context.Context, id string) (*model.User, error) {
+func (m *mockUserRepo) GetByID(ctx context.Context, id string, deletedOnly bool) (*model.User, error) {
 	if m.getByIDFn != nil {
-		return m.getByIDFn(ctx, id)
+		return m.getByIDFn(ctx, id, deletedOnly)
 	}
 	return nil, nil
 }
-func (m *mockUserRepo) GetUsers(ctx context.Context, offset int, limit int) ([]*model.User, int64, error) {
+func (m *mockUserRepo) GetUsers(ctx context.Context, offset int, limit int, deletedFilter repository.UserDeletedFilter) ([]*model.User, int64, error) {
 	if m.getUsersFn != nil {
-		return m.getUsersFn(ctx, offset, limit)
+		return m.getUsersFn(ctx, offset, limit, deletedFilter)
 	}
 	return nil, 0, nil
 }
@@ -269,6 +270,12 @@ func (m *mockUserRepo) Update(ctx context.Context, user *model.User) error {
 func (m *mockUserRepo) SoftDeleteByID(ctx context.Context, id string) error {
 	if m.softDeleteFn != nil {
 		return m.softDeleteFn(ctx, id)
+	}
+	return nil
+}
+func (m *mockUserRepo) RestoreByID(ctx context.Context, id string) error {
+	if m.restoreByIDFn != nil {
+		return m.restoreByIDFn(ctx, id)
 	}
 	return nil
 }

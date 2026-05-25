@@ -10,15 +10,37 @@ import (
 	"gorm.io/gorm"
 )
 
+type UserDeletedFilter string
+
+const (
+	UserDeletedFilterActive UserDeletedFilter = ""
+	UserDeletedFilterOnly   UserDeletedFilter = "true"
+	UserDeletedFilterAll    UserDeletedFilter = "all"
+)
+
+func ParseUserDeletedFilter(value string) (UserDeletedFilter, error) {
+	switch value {
+	case "", "false":
+		return UserDeletedFilterActive, nil
+	case string(UserDeletedFilterOnly):
+		return UserDeletedFilterOnly, nil
+	case string(UserDeletedFilterAll):
+		return UserDeletedFilterAll, nil
+	default:
+		return "", fmt.Errorf("deleted must be true, false, or all")
+	}
+}
+
 type UserRepository interface {
 	Create(ctx context.Context, user *model.User) error
-	GetByID(ctx context.Context, id string) (*model.User, error)
-	GetUsers(ctx context.Context, offset int, limit int) ([]*model.User, int64, error)
+	GetByID(ctx context.Context, id string, deletedOnly bool) (*model.User, error)
+	GetUsers(ctx context.Context, offset int, limit int, deletedFilter UserDeletedFilter) ([]*model.User, int64, error)
 	GetUsersByEmail(ctx context.Context, email string) ([]*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	Update(ctx context.Context, user *model.User) error
 	SoftDeleteByID(ctx context.Context, id string) error
+	RestoreByID(ctx context.Context, id string) error
 	Exists(ctx context.Context, email string) (bool, error)
 	CheckUserByUsername(ctx context.Context, username string) error
 }
@@ -75,9 +97,13 @@ func (r *userRepository) Update(ctx context.Context, user *model.User) error {
 	return nil
 }
 
-func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, error) {
+func (r *userRepository) GetByID(ctx context.Context, id string, deletedOnly bool) (*model.User, error) {
 	var user model.User
-	err := r.db.WithContext(ctx).Preload("Profile").Where("id = ?", id).First(&user).Error
+	query := r.db.WithContext(ctx).Preload("Profile").Where("id = ?", id)
+	if deletedOnly {
+		query = query.Unscoped().Where("deleted_at IS NOT NULL")
+	}
+	err := query.First(&user).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, apperrors.ErrUserNotFound
@@ -87,7 +113,7 @@ func (r *userRepository) GetByID(ctx context.Context, id string) (*model.User, e
 	return &user, nil
 }
 
-func (r *userRepository) GetUsers(ctx context.Context, offset, limit int) ([]*model.User, int64, error) {
+func (r *userRepository) GetUsers(ctx context.Context, offset, limit int, deletedFilter UserDeletedFilter) ([]*model.User, int64, error) {
 	var users []*model.User
 	var totalCount int64
 
@@ -98,12 +124,24 @@ func (r *userRepository) GetUsers(ctx context.Context, offset, limit int) ([]*mo
 		return nil, 0, fmt.Errorf("limit must be between 1 and 100")
 	}
 
-	err := r.db.WithContext(ctx).Model((*model.User)(nil)).Count(&totalCount).Error
-	if err != nil {
+	query := r.db.WithContext(ctx).Model((*model.User)(nil))
+	switch deletedFilter {
+	case UserDeletedFilterOnly:
+		query = query.Unscoped().Where("deleted_at IS NOT NULL")
+	case UserDeletedFilterAll:
+		query = query.Unscoped()
+	}
+
+	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, fmt.Errorf("failed to count users: %w", err)
 	}
 
-	err = r.db.WithContext(ctx).Offset(offset).Limit(limit).Find(&users).Error
+	findQuery := query.Offset(offset).Limit(limit)
+	if deletedFilter == UserDeletedFilterOnly {
+		findQuery = findQuery.Order("deleted_at DESC")
+	}
+
+	err := findQuery.Find(&users).Error
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get users: %w", err)
 	}
@@ -124,6 +162,56 @@ func (r *userRepository) SoftDeleteByID(ctx context.Context, id string) error {
 	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.User{})
 	if result.Error != nil {
 		return fmt.Errorf("failed to soft delete user: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return apperrors.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *userRepository) RestoreByID(ctx context.Context, id string) error {
+	var user model.User
+	err := r.db.WithContext(ctx).Unscoped().
+		Where("id = ? AND deleted_at IS NOT NULL", id).
+		First(&user).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return apperrors.ErrUserNotFound
+		}
+		return fmt.Errorf("failed to get deleted user: %w", err)
+	}
+
+	var emailTaken bool
+	err = r.db.WithContext(ctx).Model(&model.User{}).
+		Select("1").
+		Where("email = ? AND id != ?", user.Email, id).
+		Limit(1).
+		Scan(&emailTaken).Error
+	if err != nil {
+		return fmt.Errorf("failed to check email conflict: %w", err)
+	}
+	if emailTaken {
+		return apperrors.ErrUserExists
+	}
+
+	if user.Username != nil && *user.Username != "" {
+		var usernameTaken bool
+		err = r.db.WithContext(ctx).Model(&model.User{}).
+			Select("1").
+			Where("username = ? AND id != ?", *user.Username, id).
+			Limit(1).
+			Scan(&usernameTaken).Error
+		if err != nil {
+			return fmt.Errorf("failed to check username conflict: %w", err)
+		}
+		if usernameTaken {
+			return apperrors.ErrUserExists
+		}
+	}
+
+	result := r.db.WithContext(ctx).Unscoped().Model(&user).Update("deleted_at", nil)
+	if result.Error != nil {
+		return fmt.Errorf("failed to restore user: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
 		return apperrors.ErrUserNotFound

@@ -9,10 +9,12 @@ import (
 
 type UserService interface {
 	GetByID(ctx context.Context, id string) (*dto.UserResponse, error)
+	GetAdminByID(ctx context.Context, id string, deletedOnly bool) (*dto.UserResponse, error)
 	GetMe(ctx context.Context, id string) (*dto.CurrentUserResponse, error)
 	GetByUsername(ctx context.Context, username string) (*dto.UserResponse, error)
-	GetUsers(ctx context.Context, offset int, limit int) ([]*dto.UserResponse, int64, error)
+	GetUsers(ctx context.Context, offset int, limit int, deletedFilter repository.UserDeletedFilter) ([]*dto.UserResponse, int64, error)
 	Delete(ctx context.Context, id string) error
+	Restore(ctx context.Context, id string) (*dto.UserResponse, error)
 }
 
 type userService struct {
@@ -24,15 +26,23 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 }
 
 func (s *userService) GetByID(ctx context.Context, id string) (*dto.UserResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, id)
+	user, err := s.userRepo.GetByID(ctx, id, false)
 	if err != nil {
 		return nil, err
 	}
 	return dto.UserToResponse(user), nil
 }
 
+func (s *userService) GetAdminByID(ctx context.Context, id string, deletedOnly bool) (*dto.UserResponse, error) {
+	user, err := s.userRepo.GetByID(ctx, id, deletedOnly)
+	if err != nil {
+		return nil, err
+	}
+	return dto.UserToAdminResponse(user), nil
+}
+
 func (s *userService) GetMe(ctx context.Context, id string) (*dto.CurrentUserResponse, error) {
-	user, err := s.userRepo.GetByID(ctx, id)
+	user, err := s.userRepo.GetByID(ctx, id, false)
 	if err != nil {
 		return nil, err
 	}
@@ -47,8 +57,8 @@ func (s *userService) GetByUsername(ctx context.Context, username string) (*dto.
 	return dto.UserToResponse(user), nil
 }
 
-func (s *userService) GetUsers(ctx context.Context, offset int, limit int) ([]*dto.UserResponse, int64, error) {
-	users, total, err := s.userRepo.GetUsers(ctx, offset, limit)
+func (s *userService) GetUsers(ctx context.Context, offset int, limit int, deletedFilter repository.UserDeletedFilter) ([]*dto.UserResponse, int64, error) {
+	users, total, err := s.userRepo.GetUsers(ctx, offset, limit, deletedFilter)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to retrieve users from repository: %w", err)
 	}
@@ -66,4 +76,17 @@ func (s *userService) GetUsers(ctx context.Context, offset int, limit int) ([]*d
 
 func (s *userService) Delete(ctx context.Context, id string) error {
 	return s.userRepo.SoftDeleteByID(ctx, id)
+}
+
+func (s *userService) Restore(ctx context.Context, id string) (*dto.UserResponse, error) {
+	if err := s.userRepo.RestoreByID(ctx, id); err != nil {
+		return nil, err
+	}
+
+	user, err := s.userRepo.GetByID(ctx, id, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve restored user: %w", err)
+	}
+
+	return dto.UserToAdminResponse(user), nil
 }

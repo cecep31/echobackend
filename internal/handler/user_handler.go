@@ -1,6 +1,10 @@
 package handler
 
 import (
+	"errors"
+
+	apperrors "echobackend/internal/errors"
+	"echobackend/internal/repository"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
 
@@ -21,6 +25,14 @@ func NewUserHandler(userService service.UserService, userFollowService service.U
 
 func (h *UserHandler) GetByID(c *echo.Context) error {
 	userID := c.Param("id")
+
+	if c.QueryParam("deleted") == "true" {
+		userResponse, err := h.userService.GetAdminByID(c.Request().Context(), userID, true)
+		if err != nil {
+			return response.InternalServerError(c, "Failed to retrieve user", err)
+		}
+		return response.Success(c, "Successfully retrieved user", userResponse)
+	}
 
 	var currentUserID string
 	if uid, ok := GetUserIDFromClaims(c); ok {
@@ -57,9 +69,14 @@ func (h *UserHandler) GetByUsername(c *echo.Context) error {
 }
 
 func (h *UserHandler) GetUsers(c *echo.Context) error {
+	deletedFilter, err := repository.ParseUserDeletedFilter(c.QueryParam("deleted"))
+	if err != nil {
+		return response.BadRequest(c, "Invalid deleted filter", err)
+	}
+
 	limit, offset := ParsePaginationParams(c, 10)
 
-	users, total, err := h.userService.GetUsers(c.Request().Context(), offset, limit)
+	users, total, err := h.userService.GetUsers(c.Request().Context(), offset, limit, deletedFilter)
 	if err != nil {
 		return response.InternalServerError(c, "Failed to retrieve users", err)
 	}
@@ -76,6 +93,23 @@ func (h *UserHandler) DeleteUser(c *echo.Context) error {
 	}
 
 	return response.Success(c, "Successfully deleted user", nil)
+}
+
+func (h *UserHandler) RestoreUser(c *echo.Context) error {
+	id := c.Param("id")
+
+	userResponse, err := h.userService.Restore(c.Request().Context(), id)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrUserNotFound) {
+			return response.NotFound(c, "Deleted user not found", err)
+		}
+		if errors.Is(err, apperrors.ErrUserExists) {
+			return response.Conflict(c, "Cannot restore user", "Email or username already taken by another active user")
+		}
+		return response.InternalServerError(c, "Failed to restore user", err)
+	}
+
+	return response.Success(c, "Successfully restored user", userResponse)
 }
 
 func (h *UserHandler) GetMe(c *echo.Context) error {

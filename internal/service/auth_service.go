@@ -208,7 +208,7 @@ func (s *authService) ResetPassword(ctx context.Context, token, password, ipAddr
 		return apperrors.ErrPasswordResetTokenExpired
 	}
 
-	user, err := s.userRepo.GetByID(ctx, tokenEntry.UserID)
+	user, err := s.userRepo.GetByID(ctx, tokenEntry.UserID, false)
 	if err != nil {
 		return apperrors.ErrUserNotFound
 	}
@@ -246,7 +246,7 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken, ipAddress,
 		return "", "", nil, apperrors.ErrTokenExpired
 	}
 
-	user, err := s.userRepo.GetByID(ctx, session.UserID)
+	user, err := s.userRepo.GetByID(ctx, session.UserID, false)
 	if err != nil {
 		return "", "", nil, err
 	}
@@ -264,7 +264,7 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken, ipAddress,
 }
 
 func (s *authService) ChangePassword(ctx context.Context, userID, currentPassword, newPassword, ipAddress, userAgent string) error {
-	user, err := s.userRepo.GetByID(ctx, userID)
+	user, err := s.userRepo.GetByID(ctx, userID, false)
 	if err != nil {
 		return apperrors.ErrUserNotFound
 	}
@@ -299,7 +299,7 @@ func (s *authService) Logout(ctx context.Context, refreshToken string) error {
 }
 
 func (s *authService) GetProfile(ctx context.Context, userID string) (*model.User, error) {
-	return s.userRepo.GetByID(ctx, userID)
+	return s.userRepo.GetByID(ctx, userID, false)
 }
 
 func (s *authService) GetGithubOAuthURL() string {

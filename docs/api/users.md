@@ -20,6 +20,7 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 | `profile` | object \| null | Tidak di-load pada `GET /` (admin list); ada pada route lain |
 | `created_at` | string (ISO) \| null | |
 | `updated_at` | string (ISO) \| null | |
+| `deleted_at` | string (ISO) \| null | Hanya pada route admin; terisi jika user sudah di-soft-delete |
 
 ### `Profile`
 
@@ -43,8 +44,9 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 | GET | `/:id` | Bearer + **super admin** | By UUID |
 | GET | `/username/:username` | Tidak | By username |
 | GET | `/me` | Bearer | User dari token |
-| GET | `` | Bearer + **super admin** | List semua user (paginated) |
-| DELETE | `/:id` | Bearer + **super admin** | Hapus user |
+| GET | `` | Bearer + **super admin** | List user (paginated); filter soft-delete via query |
+| DELETE | `/:id` | Bearer + **super admin** | Soft-delete user |
+| POST | `/:id/restore` | Bearer + **super admin** | Restore user yang sudah di-soft-delete |
 
 ### GET `/api/users/me`
 
@@ -52,13 +54,42 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 
 ### GET `/api/users` (admin)
 
-**Query:** `limit`, `offset` (default limit 10, max 100).
+**Query**
+
+| Param | Tipe | Default | Keterangan |
+|-------|------|---------|------------|
+| `limit` | number | 10 | Max 100 |
+| `offset` | number | 0 | |
+| `deleted` | string | *(kosong)* | Filter soft-delete: `false` atau kosong = hanya user aktif; `true` = hanya user terhapus; `all` = semua user |
+
+Nilai `deleted` selain `true`, `false`, `all`, atau kosong → **400 Bad Request**.
 
 **Sukses — 200** — `data`: array `UserResponse`, `meta`: paginasi.
 
+Contoh:
+
+```http
+GET /api/users?deleted=true&limit=10&offset=0
+GET /api/users?deleted=all
+```
+
 ### GET `/api/users/:id` (admin)
 
-**Sukses — 200** — `data`: `UserResponse`. `is_following` terisi jika requester login (route admin sudah memakai auth).
+**Query**
+
+| Param | Tipe | Default | Keterangan |
+|-------|------|---------|------------|
+| `deleted` | string | *(kosong)* | `true` = ambil user yang sudah di-soft-delete by UUID |
+
+Tanpa `deleted=true`, hanya user **aktif** yang ditemukan. User terhapus tidak muncul kecuali query di atas dipakai.
+
+**Sukses — 200** — `data`: `UserResponse`. `is_following` terisi jika requester login (route admin sudah memakai auth). `deleted_at` terisi jika user sudah di-soft-delete.
+
+Contoh:
+
+```http
+GET /api/users/<uuid>?deleted=true
+```
 
 ### GET `/api/users/username/:username`
 
@@ -66,7 +97,28 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 
 ### DELETE `/api/users/:id` (admin)
 
+Soft-delete user (set `deleted_at`; baris tidak dihapus permanen dari database).
+
 **Sukses — 200** — `data`: `null`.
+
+### POST `/api/users/:id/restore` (admin)
+
+Mengembalikan user yang sudah di-soft-delete (`deleted_at` → `null`).
+
+**Sukses — 200** — `data`: `UserResponse` user yang sudah aktif kembali.
+
+**Error**
+
+| Status | Kondisi |
+|--------|---------|
+| 404 | User tidak ditemukan atau belum di-soft-delete |
+| 409 | Email atau username sudah dipakai user aktif lain |
+
+Contoh:
+
+```http
+POST /api/users/<uuid>/restore
+```
 
 ---
 

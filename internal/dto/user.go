@@ -37,6 +37,7 @@ type UserResponse struct {
 	Profile        *model.Profile `json:"profile,omitempty"`
 	CreatedAt      *time.Time     `json:"created_at"`
 	UpdatedAt      *time.Time     `json:"updated_at"`
+	DeletedAt      *time.Time     `json:"deleted_at,omitempty"`
 }
 
 type CurrentUserResponse struct {
@@ -99,6 +100,10 @@ func UserToAdminResponse(u *model.User) *UserResponse {
 	resp := UserToResponse(u)
 	if resp != nil {
 		resp.IsSuperAdmin = u.IsSuperAdmin
+		if u.DeletedAt.Valid {
+			t := u.DeletedAt.Time
+			resp.DeletedAt = &t
+		}
 	}
 	return resp
 }

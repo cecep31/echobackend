@@ -161,7 +161,7 @@ func getUserIDFromClaims(claims jwt.MapClaims) (string, error) {
 }
 
 func (a *AuthMiddleware) isSuperAdminFromDB(ctx context.Context, userID string) (bool, error) {
-	user, err := a.userRepo.GetByID(ctx, userID)
+	user, err := a.userRepo.GetByID(ctx, userID, false)
 	if err != nil {
 		return false, err
 	}
