@@ -62,14 +62,15 @@ func ChatMessageToResponse(m *model.ChatMessage) *ChatMessageResponse {
 }
 
 type ChatConversationResponse struct {
-	ID           string     `json:"id"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-	Title        string     `json:"title"`
-	IsPinned     bool       `json:"is_pinned"`
-	PinnedAt     *time.Time `json:"pinned_at,omitempty"`
-	UserID       string     `json:"user_id"`
-	MessageCount int        `json:"message_count"`
+	ID           string                 `json:"id"`
+	CreatedAt    time.Time              `json:"created_at"`
+	UpdatedAt    time.Time              `json:"updated_at"`
+	Title        string                 `json:"title"`
+	IsPinned     bool                   `json:"is_pinned"`
+	PinnedAt     *time.Time             `json:"pinned_at,omitempty"`
+	UserID       string                 `json:"user_id"`
+	MessageCount int                    `json:"message_count"`
+	Messages     []*ChatMessageResponse `json:"messages,omitempty"`
 }
 
 func ChatConversationToResponse(c *model.ChatConversation) *ChatConversationResponse {
@@ -86,6 +87,26 @@ func ChatConversationToResponse(c *model.ChatConversation) *ChatConversationResp
 		UserID:       c.UserID,
 		MessageCount: len(c.Messages),
 	}
+}
+
+func ChatConversationToDetailResponse(c *model.ChatConversation) *ChatConversationResponse {
+	resp := ChatConversationToResponse(c)
+	if resp == nil {
+		return nil
+	}
+	resp.Messages = chatMessagesToResponses(c.Messages)
+	return resp
+}
+
+func chatMessagesToResponses(messages []model.ChatMessage) []*ChatMessageResponse {
+	if len(messages) == 0 {
+		return []*ChatMessageResponse{}
+	}
+	responses := make([]*ChatMessageResponse, 0, len(messages))
+	for i := range messages {
+		responses = append(responses, ChatMessageToResponse(&messages[i]))
+	}
+	return responses
 }
 
 type ChatStreamResult struct {

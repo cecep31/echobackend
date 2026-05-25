@@ -89,7 +89,7 @@ func (s *chatConversationService) GetConversationByID(ctx context.Context, id st
 		return nil, apperrors.ErrConversationNotOwned
 	}
 
-	return dto.ChatConversationToResponse(conversation), nil
+	return dto.ChatConversationToDetailResponse(conversation), nil
 }
 
 func (s *chatConversationService) GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*dto.ChatConversationResponse, int64, error) {

@@ -43,7 +43,9 @@ func (r *chatConversationRepository) CreateConversation(ctx context.Context, con
 func (r *chatConversationRepository) GetConversationByID(ctx context.Context, id string) (*model.ChatConversation, error) {
 	var conversation model.ChatConversation
 	err := r.db.WithContext(ctx).
-		Preload("Messages").
+		Preload("Messages", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at ASC")
+		}).
 		First(&conversation, "id = ?", id).Error
 
 	if err != nil {
