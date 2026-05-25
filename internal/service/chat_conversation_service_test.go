@@ -1,0 +1,176 @@
+package service
+
+import (
+	"context"
+	"testing"
+
+	"echobackend/config"
+	"echobackend/internal/dto"
+	"echobackend/internal/model"
+)
+
+type mockChatConversationRepo struct {
+	getConversationByIDFn            func(ctx context.Context, id string) (*model.ChatConversation, error)
+	createMessageFn                  func(ctx context.Context, message *model.ChatMessage) (*model.ChatMessage, error)
+	updateConversationFn             func(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error)
+	getMessagesByConversationIDAscFn func(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error)
+}
+
+func (m *mockChatConversationRepo) CreateConversation(ctx context.Context, conversation *model.ChatConversation) (*model.ChatConversation, error) {
+	return conversation, nil
+}
+
+func (m *mockChatConversationRepo) GetConversationByID(ctx context.Context, id string) (*model.ChatConversation, error) {
+	if m.getConversationByIDFn != nil {
+		return m.getConversationByIDFn(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *mockChatConversationRepo) GetConversationsByUserID(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversation, int64, error) {
+	return nil, 0, nil
+}
+
+func (m *mockChatConversationRepo) UpdateConversation(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error) {
+	if m.updateConversationFn != nil {
+		return m.updateConversationFn(ctx, id, updates)
+	}
+	return &model.ChatConversation{ID: id}, nil
+}
+
+func (m *mockChatConversationRepo) DeleteConversation(ctx context.Context, id string) error {
+	return nil
+}
+
+func (m *mockChatConversationRepo) GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversation, int64, error) {
+	return nil, 0, nil
+}
+
+func (m *mockChatConversationRepo) CreateMessage(ctx context.Context, message *model.ChatMessage) (*model.ChatMessage, error) {
+	if m.createMessageFn != nil {
+		return m.createMessageFn(ctx, message)
+	}
+	return message, nil
+}
+
+func (m *mockChatConversationRepo) GetMessagesByConversationID(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error) {
+	return nil, nil
+}
+
+func (m *mockChatConversationRepo) GetMessagesByConversationIDAsc(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error) {
+	if m.getMessagesByConversationIDAscFn != nil {
+		return m.getMessagesByConversationIDAscFn(ctx, conversationID, userID)
+	}
+	return nil, nil
+}
+
+func (m *mockChatConversationRepo) GetMessageByID(ctx context.Context, id, userID string) (*model.ChatMessage, error) {
+	return nil, nil
+}
+
+func (m *mockChatConversationRepo) DeleteMessage(ctx context.Context, id, userID string) error {
+	return nil
+}
+
+type mockOpenRouterService struct {
+	generateStreamFn func(ctx context.Context, messages []OpenRouterMessage, model *string, temperature float64) (<-chan string, <-chan OpenRouterUsage, <-chan error)
+}
+
+func (m *mockOpenRouterService) GenerateResponse(ctx context.Context, messages []OpenRouterMessage, model *string, temperature float64) (*OpenRouterResponse, error) {
+	return nil, nil
+}
+
+func (m *mockOpenRouterService) GenerateStream(ctx context.Context, messages []OpenRouterMessage, model *string, temperature float64) (<-chan string, <-chan OpenRouterUsage, <-chan error) {
+	if m.generateStreamFn != nil {
+		return m.generateStreamFn(ctx, messages, model, temperature)
+	}
+	return nil, nil, nil
+}
+
+func TestCreateStreamingMessage_ForwardsAllChunksToClient(t *testing.T) {
+	t.Parallel()
+
+	const (
+		userID         = "user-1"
+		conversationID = "conv-1"
+	)
+
+	repo := &mockChatConversationRepo{
+		getConversationByIDFn: func(ctx context.Context, id string) (*model.ChatConversation, error) {
+			return &model.ChatConversation{
+				ID:     conversationID,
+				UserID: userID,
+				Title:  "Existing conversation",
+			}, nil
+		},
+		createMessageFn: func(ctx context.Context, message *model.ChatMessage) (*model.ChatMessage, error) {
+			if message.Role == "assistant" {
+				message.ID = "assistant-1"
+				return message, nil
+			}
+			message.ID = "user-1"
+			return message, nil
+		},
+		getMessagesByConversationIDAscFn: func(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error) {
+			return []*model.ChatMessage{{
+				ID:             "user-1",
+				ConversationID: conversationID,
+				UserID:         userID,
+				Role:           "user",
+				Content:        "Hello",
+			}}, nil
+		},
+	}
+
+	openRouter := &mockOpenRouterService{
+		generateStreamFn: func(ctx context.Context, messages []OpenRouterMessage, model *string, temperature float64) (<-chan string, <-chan OpenRouterUsage, <-chan error) {
+			chunks := make(chan string, 2)
+			usageCh := make(chan OpenRouterUsage, 1)
+			errCh := make(chan error, 1)
+
+			chunks <- "Hello "
+			chunks <- "world"
+			close(chunks)
+			usageCh <- OpenRouterUsage{PromptTokens: 1, CompletionTokens: 2, TotalTokens: 3}
+			close(usageCh)
+			close(errCh)
+
+			return chunks, usageCh, errCh
+		},
+	}
+
+	svc := NewChatConversationService(repo, openRouter, &config.Config{
+		OpenRouter: config.OpenRouterConfig{DefaultModel: "test-model"},
+	})
+
+	result, chunks, complete, errCh, err := svc.CreateStreamingMessage(context.Background(), userID, conversationID, &dto.CreateChatMessageRequest{
+		Content: "Hello",
+	})
+	if err != nil {
+		t.Fatalf("CreateStreamingMessage() error = %v", err)
+	}
+	if result == nil || result.UserMessage == nil {
+		t.Fatal("expected user message in stream result")
+	}
+
+	var received []string
+	for chunk := range chunks {
+		received = append(received, chunk)
+	}
+
+	if len(received) != 2 || received[0] != "Hello " || received[1] != "world" {
+		t.Fatalf("client chunks = %#v, want [Hello , world]", received)
+	}
+
+	if err, ok := <-errCh; ok && err != nil {
+		t.Fatalf("unexpected stream error: %v", err)
+	}
+
+	msg, ok := <-complete
+	if !ok {
+		t.Fatal("expected completed assistant message")
+	}
+	if msg.Content != "Hello world" {
+		t.Fatalf("assistant content = %q, want %q", msg.Content, "Hello world")
+	}
+}

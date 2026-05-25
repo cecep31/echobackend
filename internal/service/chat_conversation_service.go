@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -273,26 +274,30 @@ func (s *chatConversationService) createStreamingMessageInternal(ctx context.Con
 		}
 	}
 
-	chunks, usageCh, upstreamErrCh := s.openRouter.GenerateStream(ctx, toOpenRouterMessages(contextMessages), req.Model, normalizedTemperature(req.Temperature))
+	upstreamChunks, usageCh, upstreamErrCh := s.openRouter.GenerateStream(ctx, toOpenRouterMessages(contextMessages), req.Model, normalizedTemperature(req.Temperature))
+	outChunks := make(chan string)
 	complete := make(chan dto.ChatMessageResponse, 1)
 	errCh := make(chan error, 1)
 
 	go func() {
+		defer close(outChunks)
 		defer close(complete)
 		defer close(errCh)
 
 		var content strings.Builder
-		for chunk := range chunks {
+		for chunk := range upstreamChunks {
 			content.WriteString(chunk)
+			select {
+			case <-ctx.Done():
+				errCh <- ctx.Err()
+				return
+			case outChunks <- chunk:
+			}
 		}
 
-		select {
-		case err, ok := <-upstreamErrCh:
-			if ok && err != nil {
-				errCh <- err
-				return
-			}
-		default:
+		if err, ok := <-upstreamErrCh; ok && err != nil {
+			errCh <- err
+			return
 		}
 
 		usage := OpenRouterUsage{}
@@ -300,6 +305,7 @@ func (s *chatConversationService) createStreamingMessageInternal(ctx context.Con
 			usage = u
 		}
 		if content.Len() == 0 {
+			errCh <- fmt.Errorf("OpenRouter returned an empty response")
 			return
 		}
 		saved, err := s.SaveStreamingMessage(ctx, conversationID, userID, content.String(), req.Model, usage)
@@ -310,7 +316,7 @@ func (s *chatConversationService) createStreamingMessageInternal(ctx context.Con
 		complete <- *saved
 	}()
 
-	return result, chunks, complete, errCh, nil
+	return result, outChunks, complete, errCh, nil
 }
 
 func (s *chatConversationService) SaveStreamingMessage(ctx context.Context, conversationID, userID, content string, modelID *string, usage OpenRouterUsage) (*dto.ChatMessageResponse, error) {

@@ -3,7 +3,9 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
+	"strings"
 
 	"echobackend/internal/dto"
 	apperrors "echobackend/internal/errors"
@@ -301,17 +303,14 @@ func streamChatEvents(c *echo.Context, initialEvent map[string]any, chunks <-cha
 		flusher.Flush()
 	}
 
-	select {
-	case err, ok := <-errCh:
-		if ok && err != nil {
-			_ = writeSSE(res, map[string]any{
-				"type": "error",
-				"data": "Failed to generate AI response",
-			})
-			flusher.Flush()
-			return nil
-		}
-	default:
+	if err, ok := <-errCh; ok && err != nil {
+		slog.Error("chat stream failed", "error", err)
+		_ = writeSSE(res, map[string]any{
+			"type": "error",
+			"data": streamErrorMessage(err),
+		})
+		flusher.Flush()
+		return nil
 	}
 
 	if msg, ok := <-complete; ok {
@@ -336,4 +335,22 @@ func writeSSE(w http.ResponseWriter, payload any) error {
 	}
 	_, err = w.Write([]byte("data: " + string(data) + "\n\n"))
 	return err
+}
+
+func streamErrorMessage(err error) string {
+	if err == nil {
+		return "Failed to generate AI response"
+	}
+	msg := err.Error()
+	if idx := strings.Index(msg, `{"error"`); idx >= 0 {
+		var payload struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal([]byte(msg[idx:]), &payload) == nil && payload.Error.Message != "" {
+			return payload.Error.Message
+		}
+	}
+	return msg
 }

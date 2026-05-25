@@ -12,7 +12,7 @@ type CreateChatConversationRequest struct {
 type CreateChatConversationStreamRequest struct {
 	Title       *string  `json:"title" validate:"omitempty,min=1,max=255"`
 	Content     string   `json:"content" validate:"required,min=1,max=10000"`
-	Model       *string  `json:"model" validate:"omitempty,max=100"`
+	Model       *string  `json:"model" validate:"omitempty,max=100,free_model"`
 	Temperature *float64 `json:"temperature" validate:"omitempty,gte=0,lte=2"`
 }
 
@@ -24,7 +24,7 @@ type UpdateChatConversationRequest struct {
 type CreateChatMessageRequest struct {
 	Content     string   `json:"content" validate:"required,min=1,max=10000"`
 	Role        string   `json:"role" validate:"omitempty,max=20"`
-	Model       *string  `json:"model" validate:"omitempty,max=100"`
+	Model       *string  `json:"model" validate:"omitempty,max=100,free_model"`
 	Temperature *float64 `json:"temperature" validate:"omitempty,gte=0,lte=2"`
 }
 

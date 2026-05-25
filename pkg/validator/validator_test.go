@@ -194,3 +194,45 @@ func TestCustomValidator_Validate(t *testing.T) {
 		}
 	})
 }
+
+func TestIsFreeOpenRouterModel(t *testing.T) {
+	tests := []struct {
+		name  string
+		model string
+		want  bool
+	}{
+		{"openrouter free router", "openrouter/free", true},
+		{"free suffix", "deepseek/deepseek-v4-flash:free", true},
+		{"trimmed free suffix", "  stepfun/step-3.5-flash:free  ", true},
+		{"paid model", "openai/gpt-4o", false},
+		{"missing free suffix", "stepfun/step-3.5-flash", false},
+		{"empty", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsFreeOpenRouterModel(tt.model); got != tt.want {
+				t.Fatalf("IsFreeOpenRouterModel(%q) = %v, want %v", tt.model, got, tt.want)
+			}
+		})
+	}
+}
+
+type chatMessageModelSample struct {
+	Model *string `validate:"omitempty,max=100,free_model"`
+}
+
+func TestFreeModelValidation(t *testing.T) {
+	v := NewValidator()
+	free := "openrouter/free"
+	paid := "openai/gpt-4o"
+
+	if err := v.Validate(&chatMessageModelSample{}); err != nil {
+		t.Fatalf("expected nil for omitted model, got %v", err)
+	}
+	if err := v.Validate(&chatMessageModelSample{Model: &free}); err != nil {
+		t.Fatalf("expected nil for free model, got %v", err)
+	}
+	if err := v.Validate(&chatMessageModelSample{Model: &paid}); err == nil {
+		t.Fatal("expected validation error for paid model")
+	}
+}

@@ -15,8 +15,9 @@ var messages = map[string]string{
 	"email":    "%s must be a valid email address",
 	"min":      "%s must be at least %s characters long",
 	"max":      "%s must not exceed %s characters",
-	"oneof":    "%s must be one of [%s]",
-	"default":  "%s failed validation for tag %s",
+	"oneof":      "%s must be one of [%s]",
+	"free_model": "%s must be a free OpenRouter model (use :free suffix or openrouter/free)",
+	"default":    "%s failed validation for tag %s",
 }
 
 type CustomValidator struct {
@@ -45,7 +46,34 @@ func (v ValidationErrors) Error() string {
 
 func NewValidator() *CustomValidator {
 	v := validator.New()
+	_ = v.RegisterValidation("free_model", validateFreeModel)
 	return &CustomValidator{validator: v}
+}
+
+func validateFreeModel(fl validator.FieldLevel) bool {
+	switch value := fl.Field().Interface().(type) {
+	case string:
+		return value == "" || IsFreeOpenRouterModel(value)
+	case *string:
+		if value == nil || *value == "" {
+			return true
+		}
+		return IsFreeOpenRouterModel(*value)
+	default:
+		return false
+	}
+}
+
+// IsFreeOpenRouterModel reports whether model ID is an OpenRouter free-tier model.
+func IsFreeOpenRouterModel(model string) bool {
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return false
+	}
+	if strings.EqualFold(model, "openrouter/free") {
+		return true
+	}
+	return strings.HasSuffix(model, ":free")
 }
 
 func (cv *CustomValidator) Validate(i any) error {
@@ -82,6 +110,8 @@ func getErrorMessage(e validator.FieldError) string {
 		return fmt.Sprintf(messages["max"], fieldName, e.Param())
 	case "oneof":
 		return fmt.Sprintf(messages["oneof"], fieldName, e.Param())
+	case "free_model":
+		return fmt.Sprintf(messages["free_model"], fieldName)
 	default:
 		return fmt.Sprintf(messages["default"], fieldName, e.Tag())
 	}

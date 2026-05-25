@@ -178,7 +178,7 @@ func Load() (*Config, error) {
 		OpenRouter: OpenRouterConfig{
 			APIKey:       envString([]string{"OPENROUTER_API_KEY"}, ""),
 			BaseURL:      envString([]string{"OPENROUTER_BASE_URL"}, "https://openrouter.ai/api/v1"),
-			DefaultModel: envString([]string{"OPENROUTER_DEFAULT_MODEL"}, "google/gemma-2-9b-it:free"),
+			DefaultModel: envString([]string{"OPENROUTER_DEFAULT_MODEL"}, "openrouter/free"),
 			HTTPReferer:  envString([]string{"OPENROUTER_HTTP_REFERER"}, "https://pilput.net"),
 			Title:        envString([]string{"OPENROUTER_TITLE"}, "pilput"),
 			Timeout:      time.Duration(envInt([]string{"OPENROUTER_TIMEOUT_SECONDS"}, 90)) * time.Second,
