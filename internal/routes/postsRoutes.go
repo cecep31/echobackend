@@ -11,6 +11,9 @@ func (r *Routes) setupPostRoutes(api *echo.Group) {
 		posts.GET("/me", r.postHandler.GetMyPosts, r.authMiddleware.Auth())
 		posts.GET("/me/analytics", r.postHandler.GetMyPostsAnalytics, r.authMiddleware.Auth())
 		posts.GET("/me/analytics/likes-by-month", r.postHandler.GetMyPostsLikesByMonth, r.authMiddleware.Auth())
+		posts.GET("/me/:id", r.postHandler.GetMyPost, r.authMiddleware.Auth())
+		posts.PUT("/me/:id", r.postHandler.UpdateMyPost, r.authMiddleware.Auth())
+		posts.DELETE("/me/:id", r.postHandler.DeleteMyPost, r.authMiddleware.Auth())
 		posts.GET("/feed/for-you", r.postHandler.GetPostsForYou, r.authMiddleware.Auth())
 		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
 		posts.GET("/sitemap", r.postHandler.GetPostsForSitemap)
@@ -18,9 +21,9 @@ func (r *Routes) setupPostRoutes(api *echo.Group) {
 		posts.GET("/u/:username/:slug", r.postHandler.GetPostBySlugAndUsername)
 		posts.GET("/tag/:tag", r.postHandler.GetPostsByTag)
 		posts.GET("", r.postHandler.GetPosts)
-		posts.PUT("/:id", r.postHandler.UpdatePost, r.authMiddleware.Auth())
-		posts.DELETE("/:id", r.postHandler.DeletePost, r.authMiddleware.Auth())
-		posts.GET("/:id", r.postHandler.GetPost)
+		posts.PUT("/:id", r.postHandler.UpdatePost, r.authMiddleware.Auth(), r.authMiddleware.AuthAdmin())
+		posts.DELETE("/:id", r.postHandler.DeletePost, r.authMiddleware.Auth(), r.authMiddleware.AuthAdmin())
+		posts.GET("/:id", r.postHandler.GetPost, r.authMiddleware.Auth(), r.authMiddleware.AuthAdmin())
 
 		// Comment routes
 		posts.GET("/:id/comments", r.commentHandler.GetCommentsByPostID)

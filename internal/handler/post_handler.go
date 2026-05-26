@@ -113,6 +113,33 @@ func (h *PostHandler) CreatePost(c *echo.Context) error {
 
 func (h *PostHandler) UpdatePost(c *echo.Context) error {
 	id := c.Param("id")
+	if !validator.IsValidUUID(id) {
+		return response.BadRequest(c, "Invalid post ID", nil)
+	}
+
+	var updateDTO dto.UpdatePostRequest
+	if err := c.Bind(&updateDTO); err != nil {
+		return response.BadRequest(c, "Failed to update post", err)
+	}
+
+	if err := c.Validate(updateDTO); err != nil {
+		return response.FromValidateError(c, err)
+	}
+
+	updatedPost, err := h.postService.UpdatePost(c.Request().Context(), id, &updateDTO)
+	if err != nil {
+		return h.respondPostError(c, "Failed to update post", err)
+	}
+
+	return response.Success(c, "Post updated successfully", updatedPost)
+}
+
+func (h *PostHandler) UpdateMyPost(c *echo.Context) error {
+	id := c.Param("id")
+	if !validator.IsValidUUID(id) {
+		return response.BadRequest(c, "Invalid post ID", nil)
+	}
+
 	var updateDTO dto.UpdatePostRequest
 	if err := c.Bind(&updateDTO); err != nil {
 		return response.BadRequest(c, "Failed to update post", err)
@@ -165,8 +192,58 @@ func (h *PostHandler) GetPost(c *echo.Context) error {
 	return response.Success(c, "Successfully retrieved post", post)
 }
 
+func (h *PostHandler) GetMyPost(c *echo.Context) error {
+	id := c.Param("id")
+	if !validator.IsValidUUID(id) {
+		return response.BadRequest(c, "Invalid post ID", nil)
+	}
+
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
+
+	if err := h.postService.IsAuthor(c.Request().Context(), id, userID); err != nil {
+		return h.respondPostError(c, "Failed to check post ownership", err)
+	}
+
+	post, err := h.postService.GetPostByID(c.Request().Context(), id)
+	if err != nil {
+		return h.respondPostError(c, "Failed to get post", err)
+	}
+
+	return response.Success(c, "Successfully retrieved post", post)
+}
+
 func (h *PostHandler) DeletePost(c *echo.Context) error {
 	id := c.Param("id")
+	if !validator.IsValidUUID(id) {
+		return response.BadRequest(c, "Invalid post ID", nil)
+	}
+
+	err := h.postService.DeletePostByID(c.Request().Context(), id)
+	if err != nil {
+		return h.respondPostError(c, "Failed to delete post", err)
+	}
+
+	return response.Success(c, "Successfully deleted post", nil)
+}
+
+func (h *PostHandler) DeleteMyPost(c *echo.Context) error {
+	id := c.Param("id")
+	if !validator.IsValidUUID(id) {
+		return response.BadRequest(c, "Invalid post ID", nil)
+	}
+
+	userID, ok := GetUserIDFromClaims(c)
+	if !ok {
+		return response.Unauthorized(c, "User not authenticated")
+	}
+
+	if err := h.postService.IsAuthor(c.Request().Context(), id, userID); err != nil {
+		return h.respondPostError(c, "Failed to check post ownership", err)
+	}
+
 	err := h.postService.DeletePostByID(c.Request().Context(), id)
 	if err != nil {
 		return h.respondPostError(c, "Failed to delete post", err)

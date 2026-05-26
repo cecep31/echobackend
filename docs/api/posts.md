@@ -37,6 +37,9 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 | GET | `/random` | Tidak |
 | GET | `/trending` | Tidak |
 | GET | `/me` | Bearer |
+| GET | `/me/:id` | Bearer |
+| PUT | `/me/:id` | Bearer |
+| DELETE | `/me/:id` | Bearer |
 | GET | `/me/analytics` | Bearer |
 | GET | `/me/analytics/likes-by-month` | Bearer |
 | GET | `/feed/for-you` | Bearer |
@@ -45,9 +48,9 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 | GET | `/username/:username` | Tidak |
 | GET | `/u/:username/:slug` | Tidak |
 | GET | `/tag/:tag` | Tidak |
-| GET | `/:id` | Tidak |
-| PUT | `/:id` | Bearer |
-| DELETE | `/:id` | Bearer |
+| GET | `/:id` | Bearer + Admin |
+| PUT | `/:id` | Bearer + Admin |
+| DELETE | `/:id` | Bearer + Admin |
 
 ### POST `/api/posts`
 
@@ -92,6 +95,18 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 ### GET `/api/posts/me` dan `/feed/for-you`
 
 **Query:** `limit`, `offset`. **Auth wajib.**
+
+### GET / PUT / DELETE `/api/posts/me/:id`
+
+Detail, update, atau hapus post milik user login. **Auth wajib.**
+
+**Error umum**
+
+| HTTP | Kondisi |
+|------|---------|
+| 400 | ID post tidak valid |
+| 403 | Bukan penulis |
+| 404 | Post tidak ada |
 
 ### GET `/api/posts/me/analytics`
 
@@ -183,7 +198,13 @@ Like yang **diterima** post milik user login, diagregasi per bulan. **Auth wajib
 
 Detail penuh satu post (body tidak dipotong).
 
+### GET `/api/posts/:id`
+
+Detail penuh satu post untuk admin. **Auth admin wajib.**
+
 ### PUT `/api/posts/:id`
+
+Update post by ID untuk admin. **Auth admin wajib.**
 
 **Body (`UpdatePostRequest`)** — semua field opsional; `published` boolean pointer.
 
@@ -191,10 +212,11 @@ Detail penuh satu post (body tidak dipotong).
 
 | HTTP | Kondisi |
 |------|---------|
-| 403 | Bukan penulis |
 | 404 | Post tidak ada |
 
 ### DELETE `/api/posts/:id`
+
+Hapus post by ID untuk admin. **Auth admin wajib.**
 
 **Sukses — 200** — `data`: `null`.
 
