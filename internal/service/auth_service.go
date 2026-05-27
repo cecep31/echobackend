@@ -187,7 +187,6 @@ func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, user
 
 	s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, nil)
 
-	fmt.Printf("Password reset token for %s: %s (expires at %s)\n", email, resetToken, expiresAt.Format(time.RFC3339))
 	return nil
 }
 

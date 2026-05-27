@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -51,7 +53,14 @@ func (r *authRepository) FindUserByIdentifier(ctx context.Context, identifier st
 
 func (r *authRepository) CreateUser(ctx context.Context, user *model.User) error {
 	result := r.db.WithContext(ctx).Create(user)
-	return result.Error
+	if result.Error != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(result.Error, &pgErr) && pgErr.Code == "23505" {
+			return apperrors.ErrUserExists
+		}
+		return result.Error
+	}
+	return nil
 }
 
 func (r *authRepository) FindUserByGithubID(ctx context.Context, githubID int64) (*model.User, error) {

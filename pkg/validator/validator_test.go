@@ -115,7 +115,12 @@ func TestSanitizeString(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"removes script tag", `hello<script>alert(1)</script>world`, "helloworld"},
+		{"escapes script tag", `hello<script>alert(1)</script>world`, "hello&lt;script&gt;alert(1)&lt;/script&gt;world"},
+		{"escapes img onerror", `<img onerror="alert(1)">`, "&lt;img onerror=&#34;alert(1)&#34;&gt;"},
+		{"escapes svg onload", `<svg onload="alert(1)">`, "&lt;svg onload=&#34;alert(1)&#34;&gt;"},
+		{"escapes ampersand", `foo & bar`, "foo &amp; bar"},
+		{"escapes quotes", `he said "hello"`, "he said &#34;hello&#34;"},
+		{"escapes single quote", `it's fine`, "it&#39;s fine"},
 		{"trims whitespace", "   spaced   ", "spaced"},
 		{"empty stays empty", "", ""},
 		{"plain text untouched", "just text", "just text"},

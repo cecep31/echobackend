@@ -152,7 +152,7 @@ func Load() (*Config, error) {
 			AllowOrigins:    parseOrigins(envString([]string{"HTTP_ALLOW_ORIGINS"}, "*")),
 		},
 		Auth: AuthConfig{
-			JWTSecret: envString([]string{"JWT_SECRET"}, "your-secret-key"),
+			JWTSecret: envString([]string{"JWT_SECRET"}, ""),
 			JWTExpiry: time.Duration(envInt([]string{"JWT_EXPIRY_HOURS"}, 3)) * time.Hour,
 		},
 		Database: DatabaseConfig{
@@ -207,6 +207,9 @@ func Load() (*Config, error) {
 func (c *Config) validate() error {
 	if c.Auth.JWTSecret == "" {
 		return fmt.Errorf("JWT_SECRET is required")
+	}
+	if len(c.Auth.JWTSecret) < 32 {
+		return fmt.Errorf("JWT_SECRET must be at least 32 characters long")
 	}
 	if c.Database.DSN == "" {
 		return fmt.Errorf("DATABASE_URL is required")

@@ -2,6 +2,7 @@ package validator
 
 import (
 	"fmt"
+	"html"
 	"regexp"
 	"strconv"
 	"strings"
@@ -195,13 +196,9 @@ func ValidatePaginationWithDefaults(limitParam, offsetParam string) (int, int, e
 	return limit, offset, nil
 }
 
-// SanitizeString removes potentially dangerous characters from input
+// SanitizeString escapes HTML special characters to prevent XSS attacks.
+// This converts <, >, &, ', and " to their HTML entity equivalents.
 func SanitizeString(input string) string {
-	// Remove potentially dangerous characters
-	re := regexp.MustCompile(`<script[^>]*>.*?</script>`)
-	sanitized := re.ReplaceAllString(input, "")
-
-	// Additional sanitization as needed
-	sanitized = strings.TrimSpace(sanitized)
-	return sanitized
+	escaped := html.EscapeString(input)
+	return strings.TrimSpace(escaped)
 }

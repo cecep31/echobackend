@@ -6,6 +6,8 @@
 go run cmd/main.go          # Run server (requires .env with DATABASE_URL + JWT_SECRET)
 air                         # Hot reload (reads .env automatically)
 go test ./...               # All tests (service + pkg layers only; no DB integration tests)
+go test ./internal/service/...  # Service tests only
+go test ./pkg/...           # Package tests only
 go test -race ./...         # Race checker
 go vet ./...                # Static analysis
 go fmt ./...                # Format
@@ -17,6 +19,12 @@ goose up                    # Apply pending
 goose down                  # Rollback one
 goose status                # Check current
 goose create <name> sql     # New migration file
+
+# First-time setup: create custom schema for goose
+psql "$DATABASE_URL" -f scripts/bootstrap-goose-schema.sql
+
+# Or use PowerShell wrapper (Windows)
+scripts/migrate-up.ps1
 ```
 
 ## Architecture
@@ -30,6 +38,8 @@ goose create <name> sql     # New migration file
 - **API routes**: All under `/api/*`, defined in `internal/routes/*Routes.go`. Auth-protected routes use `r.authMiddleware.Auth()`.
 - **Health**: `GET /health` — pings DB (200/503). Used by Fly.io and Docker HEALTHCHECK.
 - **Debug routes**: `GET /api/debug/pprof/*` — only registered when `APP_DEBUG=true`.
+- **Pagination**: Use `handler.ParsePaginationParams(c, defaultLimit)` — returns `(limit, offset)`, max cap 100.
+- **Pagination**: Use `handler.ParsePaginationParams(c, defaultLimit)` — returns `(limit, offset)`, max cap 100.
 
 ## Config & Env
 
@@ -67,12 +77,13 @@ Pagination via `handler.ParsePaginationParams(c, defaultLimit)` — max cap 100.
 
 ## Migrations
 
-- Goose with **raw SQL** files in `migrations/`. Numbered `001_init_schema.sql` through `008_...`.
-- Uses PostgreSQL features: triggers for count fields, `uuid_generate_v4()`, `ON DELETE CASCADE`, soft deletes via `deleted_at`.
+- Goose with **raw SQL** files in `migrations/`. Numbered `001_init_schema.sql` through `010_drop_uuid_ossp.sql`.
+- Uses PostgreSQL features: triggers for count fields, `uuid_generate_v4()` (v7 preferred), `ON DELETE CASCADE`, soft deletes via `deleted_at`.
 - **New migrations**: `goose create <name> sql` (always `sql`, never `go`).
+- **First-time setup**: Run `psql "$DATABASE_URL" -f scripts/bootstrap-goose-schema.sql` to create the `custom` schema before first `goose up`.
 
 ## Deployment
 
 - **Fly.io** via GitHub Actions (push to `main` → Docker build → push to Docker Hub → `flyctl deploy`).
-- Docker image: `cecep31/echobackend:latest`. Built with Go 1.26, runs as non-root user.
+- Docker image: `cecep31/echobackend:latest`. Built with Go 1.26 in Docker (go.mod specifies 1.25+), runs as non-root user.
 - Primary region: `sin` (Singapore).
