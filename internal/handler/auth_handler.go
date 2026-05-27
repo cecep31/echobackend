@@ -1,11 +1,15 @@
 package handler
 
 import (
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"echobackend/config"
@@ -342,16 +346,37 @@ func (h *AuthHandler) GetFailedLogins(c *echo.Context) error {
 }
 
 func (h *AuthHandler) GithubOAuthRedirect(c *echo.Context) error {
-	authURL := h.authService.GetGithubOAuthURL()
+	state, err := generateOAuthState()
+	if err != nil {
+		return response.InternalServerError(c, "Failed to start GitHub OAuth", err)
+	}
+
+	c.SetCookie(&http.Cookie{
+		Name:     "github_oauth_state",
+		Value:    state,
+		Path:     "/api/auth/oauth/github",
+		MaxAge:   int((10 * time.Minute).Seconds()),
+		HttpOnly: true,
+		Secure:   strings.HasPrefix(h.frontendConfig.URL, "https://"),
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	authURL := h.authService.GetGithubOAuthURL(state)
 	return c.Redirect(http.StatusTemporaryRedirect, authURL)
 }
 
 func (h *AuthHandler) GithubOAuthCallback(c *echo.Context) error {
 	callbackURL := h.frontendConfig.OAuthCallbackURL
+	clearGithubOAuthStateCookie(c)
 
 	code := c.QueryParam("code")
 	if code == "" {
 		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=missing_code")
+	}
+	state := c.QueryParam("state")
+	stateCookie, err := c.Cookie("github_oauth_state")
+	if state == "" || err != nil || subtle.ConstantTimeCompare([]byte(state), []byte(stateCookie.Value)) != 1 {
+		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=invalid_state")
 	}
 
 	ipAddress := c.RealIP()
@@ -394,7 +419,7 @@ func fetchGithubUser(token string) (*service.GithubUser, error) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -426,7 +451,7 @@ func fetchGithubUserEmail(token string) (string, error) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
@@ -459,6 +484,25 @@ func fetchGithubUserEmail(token string) (string, error) {
 		return emails[0].Email, nil
 	}
 	return "", nil
+}
+
+func generateOAuthState() (string, error) {
+	b := make([]byte, 32)
+	if _, err := io.ReadFull(rand.Reader, b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+func clearGithubOAuthStateCookie(c *echo.Context) {
+	c.SetCookie(&http.Cookie{
+		Name:     "github_oauth_state",
+		Value:    "",
+		Path:     "/api/auth/oauth/github",
+		MaxAge:   -1,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
 }
 
 func (h *AuthHandler) CheckEmail(c *echo.Context) error {

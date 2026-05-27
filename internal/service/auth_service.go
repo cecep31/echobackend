@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"echobackend/config"
@@ -30,7 +31,7 @@ type AuthService interface {
 	ChangePassword(ctx context.Context, userID, currentPassword, newPassword, ipAddress, userAgent string) error
 	Logout(ctx context.Context, refreshToken string) error
 	GetProfile(ctx context.Context, userID string) (*model.User, error)
-	GetGithubOAuthURL() string
+	GetGithubOAuthURL(state string) string
 	GetGithubToken(code string) (string, error)
 	SignInWithGithub(ctx context.Context, githubUser *GithubUser, ipAddress, userAgent string) (string, string, *model.User, error)
 }
@@ -52,7 +53,9 @@ type authService struct {
 	activityService        AuthActivityService
 	jwtSecret              []byte
 	jwtExpiry              time.Duration
+	refreshTokenExpiry     time.Duration
 	githubConfig           config.GitHubConfig
+	httpClient             *http.Client
 }
 
 func NewAuthService(
@@ -71,7 +74,9 @@ func NewAuthService(
 		activityService:        activityService,
 		jwtSecret:              []byte(config.Auth.JWTSecret),
 		jwtExpiry:              config.Auth.JWTExpiry,
+		refreshTokenExpiry:     config.Auth.RefreshTokenExpiry,
 		githubConfig:           config.GitHub,
+		httpClient:             &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -168,7 +173,11 @@ func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, user
 		return nil
 	}
 
-	resetToken := "pr_" + base64.RawURLEncoding.EncodeToString(generateRandomBytes(32))
+	resetBytes, err := generateRandomBytes(32)
+	if err != nil {
+		return err
+	}
+	resetToken := "pr_" + base64.RawURLEncoding.EncodeToString(resetBytes)
 	expiresAt := time.Now().Add(1 * time.Hour)
 
 	tokenEntry := &model.PasswordResetToken{
@@ -301,12 +310,13 @@ func (s *authService) GetProfile(ctx context.Context, userID string) (*model.Use
 	return s.userRepo.GetByID(ctx, userID, false)
 }
 
-func (s *authService) GetGithubOAuthURL() string {
+func (s *authService) GetGithubOAuthURL(state string) string {
 	authURL, _ := url.Parse("https://github.com/login/oauth/authorize")
 	q := authURL.Query()
 	q.Set("client_id", s.githubConfig.ClientID)
 	q.Set("redirect_uri", s.githubConfig.RedirectURI)
 	q.Set("scope", "user:email")
+	q.Set("state", state)
 	authURL.RawQuery = q.Encode()
 	return authURL.String()
 }
@@ -318,7 +328,14 @@ func (s *authService) GetGithubToken(code string) (string, error) {
 	data.Set("code", code)
 	data.Set("redirect_uri", s.githubConfig.RedirectURI)
 
-	resp, err := http.PostForm("https://github.com/login/oauth/access_token", data)
+	req, err := http.NewRequest(http.MethodPost, "https://github.com/login/oauth/access_token", strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("failed to build token request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/x-www-form-urlencoded")
+
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to exchange code for token: %w", err)
 	}
@@ -415,6 +432,7 @@ func (s *authService) createTokenAndSession(ctx context.Context, user *model.Use
 	sess := &model.Session{
 		RefreshToken: refreshToken,
 		UserID:       user.ID,
+		ExpiresAt:    ptrTime(time.Now().Add(s.refreshTokenExpiry)),
 	}
 	if err := s.sessionRepo.CreateSession(ctx, sess); err != nil {
 		return "", "", err
@@ -423,8 +441,14 @@ func (s *authService) createTokenAndSession(ctx context.Context, user *model.Use
 	return tokenString, refreshToken, nil
 }
 
-func generateRandomBytes(n int) []byte {
+func generateRandomBytes(n int) ([]byte, error) {
 	b := make([]byte, n)
-	rand.Read(b)
-	return b
+	if _, err := io.ReadFull(rand.Reader, b); err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func ptrTime(t time.Time) *time.Time {
+	return &t
 }

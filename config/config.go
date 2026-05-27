@@ -64,6 +64,8 @@ type AuthConfig struct {
 	JWTSecret string
 	// JWTExpiry is the duration for which JWT access tokens remain valid.
 	JWTExpiry time.Duration
+	// RefreshTokenExpiry is the duration for which refresh tokens remain valid.
+	RefreshTokenExpiry time.Duration
 }
 
 // DatabaseConfig contains the PostgreSQL DSN and connection pool tuning.
@@ -152,12 +154,12 @@ func Load() (*Config, error) {
 			AllowOrigins:    parseOrigins(envString([]string{"HTTP_ALLOW_ORIGINS"}, "*")),
 		},
 		Auth: AuthConfig{
-			JWTSecret: envString([]string{"JWT_SECRET"}, ""),
-			JWTExpiry: time.Duration(envInt([]string{"JWT_EXPIRY_HOURS"}, 3)) * time.Hour,
+			JWTSecret:          envString([]string{"JWT_SECRET"}, ""),
+			JWTExpiry:          time.Duration(envInt([]string{"JWT_EXPIRY_HOURS"}, 3)) * time.Hour,
+			RefreshTokenExpiry: time.Duration(envInt([]string{"REFRESH_TOKEN_EXPIRY_DAYS"}, 30)) * 24 * time.Hour,
 		},
 		Database: DatabaseConfig{
-			// Default requires TLS; for local Postgres without SSL, set DATABASE_URL (see .env.example).
-			DSN:             envString([]string{"DATABASE_URL"}, "postgres://postgres:postgres@127.0.0.1:5432/postgres?sslmode=require"),
+			DSN:             envString([]string{"DATABASE_URL"}, ""),
 			MaxOpenConns:    envInt([]string{"DB_POOL_MAX_OPEN", "MAX_OPEN_CONNS"}, 25),
 			MaxIdleConns:    envInt([]string{"DB_POOL_MAX_IDLE", "MAX_IDLE_CONNS"}, 10),
 			ConnMaxLifetime: envDuration([]string{"DB_POOL_CONN_LIFETIME", "CONN_MAX_LIFETIME"}, 15*time.Minute),
@@ -210,6 +212,12 @@ func (c *Config) validate() error {
 	}
 	if len(c.Auth.JWTSecret) < 32 {
 		return fmt.Errorf("JWT_SECRET must be at least 32 characters long")
+	}
+	if c.Auth.JWTExpiry <= 0 {
+		return fmt.Errorf("JWT_EXPIRY_HOURS must be > 0")
+	}
+	if c.Auth.RefreshTokenExpiry <= 0 {
+		return fmt.Errorf("REFRESH_TOKEN_EXPIRY_DAYS must be > 0")
 	}
 	if c.Database.DSN == "" {
 		return fmt.Errorf("DATABASE_URL is required")
