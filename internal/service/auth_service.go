@@ -16,6 +16,7 @@ import (
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
+	"echobackend/pkg/cache"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -35,8 +36,8 @@ type AuthService interface {
 	GetGithubOAuthURL(state string) string
 	GetGithubToken(code string) (string, error)
 	SignInWithGithub(ctx context.Context, githubUser *GithubUser, ipAddress, userAgent string) (string, string, *model.User, error)
-	CreateOAuthExchangeCode(accessToken, refreshToken string, user *model.User) (string, error)
-	ExchangeOAuthCode(code string) (string, string, *model.User, error)
+	CreateOAuthExchangeCode(ctx context.Context, accessToken, refreshToken string, user *model.User) (string, error)
+	ExchangeOAuthCode(ctx context.Context, code string) (string, string, *model.User, error)
 }
 
 type GithubUser struct {
@@ -59,9 +60,12 @@ type authService struct {
 	refreshTokenExpiry     time.Duration
 	githubConfig           config.GitHubConfig
 	httpClient             *http.Client
+	oauthExchangeCache     *cache.ValkeyCache
 	oauthExchangeCodes     map[string]oauthExchangeEntry
 	oauthExchangeMu        sync.Mutex
 }
+
+const oauthExchangeTTL = 2 * time.Minute
 
 type oauthExchangeEntry struct {
 	AccessToken  string
@@ -77,6 +81,7 @@ func NewAuthService(
 	passwordResetTokenRepo repository.PasswordResetTokenRepository,
 	activityService AuthActivityService,
 	config *config.Config,
+	oauthExchangeCache *cache.ValkeyCache,
 ) AuthService {
 	return &authService{
 		authRepo:               authRepo,
@@ -89,6 +94,7 @@ func NewAuthService(
 		refreshTokenExpiry:     config.Auth.RefreshTokenExpiry,
 		githubConfig:           config.GitHub,
 		httpClient:             &http.Client{Timeout: 10 * time.Second},
+		oauthExchangeCache:     oauthExchangeCache,
 		oauthExchangeCodes:     make(map[string]oauthExchangeEntry),
 	}
 }
@@ -420,27 +426,53 @@ func (s *authService) SignInWithGithub(ctx context.Context, githubUser *GithubUs
 	return tokenString, refreshToken, user, nil
 }
 
-func (s *authService) CreateOAuthExchangeCode(accessToken, refreshToken string, user *model.User) (string, error) {
+func (s *authService) CreateOAuthExchangeCode(ctx context.Context, accessToken, refreshToken string, user *model.User) (string, error) {
+	if user == nil {
+		return "", fmt.Errorf("oauth exchange user is nil")
+	}
+
 	codeBytes, err := generateRandomBytes(32)
 	if err != nil {
 		return "", err
 	}
 	code := "oc_" + base64.RawURLEncoding.EncodeToString(codeBytes)
+	entry := oauthExchangeEntry{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User:         user,
+		ExpiresAt:    time.Now().Add(oauthExchangeTTL),
+	}
+
+	if s.oauthExchangeCache != nil {
+		key := s.oauthExchangeCache.BuildKey("oauth_exchange", code)
+		if err := s.oauthExchangeCache.SetJSONWithTTL(ctx, key, entry, oauthExchangeTTL); err != nil {
+			return "", err
+		}
+		return code, nil
+	}
 
 	s.oauthExchangeMu.Lock()
 	defer s.oauthExchangeMu.Unlock()
 	s.cleanupExpiredOAuthExchangeCodesLocked(time.Now())
-	s.oauthExchangeCodes[code] = oauthExchangeEntry{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		User:         user,
-		ExpiresAt:    time.Now().Add(2 * time.Minute),
-	}
+	s.oauthExchangeCodes[code] = entry
 
 	return code, nil
 }
 
-func (s *authService) ExchangeOAuthCode(code string) (string, string, *model.User, error) {
+func (s *authService) ExchangeOAuthCode(ctx context.Context, code string) (string, string, *model.User, error) {
+	if s.oauthExchangeCache != nil {
+		key := s.oauthExchangeCache.BuildKey("oauth_exchange", code)
+		var entry oauthExchangeEntry
+		found, err := s.oauthExchangeCache.GetJSONAndDelete(ctx, key, &entry)
+		if err != nil {
+			return "", "", nil, err
+		}
+		if !found || time.Now().After(entry.ExpiresAt) || entry.User == nil {
+			return "", "", nil, apperrors.ErrInvalidToken
+		}
+		return entry.AccessToken, entry.RefreshToken, entry.User, nil
+	}
+
 	s.oauthExchangeMu.Lock()
 	defer s.oauthExchangeMu.Unlock()
 

@@ -432,7 +432,7 @@ Jika email GitHub tidak tersedia, endpoint akan meminta email dari `https://api.
 
 Default: `{FRONTEND_URL}/auth/callback` (`http://localhost:3000/auth/callback`).
 
-`code` adalah one-time exchange code dengan TTL 2 menit. Frontend harus menukarnya ke `POST /api/auth/oauth/exchange` untuk mendapat `access_token` dan `refresh_token`.
+`code` adalah one-time exchange code dengan TTL 2 menit. Frontend harus menukarnya ke `POST /api/auth/oauth/exchange` untuk mendapat `access_token` dan `refresh_token`. Jika Valkey/Redis aktif, code disimpan di cache dengan atomic get-delete; jika cache nonaktif, backend memakai fallback in-memory untuk local/dev.
 
 **Alur gagal — 307** Redirect ke:
 
@@ -454,6 +454,8 @@ Default: `{FRONTEND_URL}/auth/callback` (`http://localhost:3000/auth/callback`).
 ## POST `/api/auth/oauth/exchange`
 
 Menukar one-time exchange code dari callback OAuth menjadi token aplikasi. Code hanya bisa dipakai sekali dan kedaluwarsa dalam 2 menit.
+
+Di production, aktifkan `VALKEY_URL` agar exchange code bisa dipakai lintas instance backend. Tanpa Valkey/Redis, fallback in-memory hanya aman untuk single-instance/local dev.
 
 **Body**
 

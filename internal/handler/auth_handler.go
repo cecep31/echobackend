@@ -407,7 +407,7 @@ func (h *AuthHandler) GithubOAuthCallback(c *echo.Context) error {
 		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=oauth_login_failed")
 	}
 
-	exchangeCode, err := h.authService.CreateOAuthExchangeCode(accessToken, refreshToken, user)
+	exchangeCode, err := h.authService.CreateOAuthExchangeCode(c.Request().Context(), accessToken, refreshToken, user)
 	if err != nil {
 		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=oauth_exchange_failed")
 	}
@@ -426,7 +426,7 @@ func (h *AuthHandler) ExchangeOAuthCode(c *echo.Context) error {
 		return response.FromValidateError(c, err)
 	}
 
-	accessToken, refreshToken, user, err := h.authService.ExchangeOAuthCode(req.Code)
+	accessToken, refreshToken, user, err := h.authService.ExchangeOAuthCode(c.Request().Context(), req.Code)
 	if err == apperrors.ErrInvalidToken {
 		return response.Unauthorized(c, "Invalid or expired OAuth code")
 	}

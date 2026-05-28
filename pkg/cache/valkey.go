@@ -109,15 +109,45 @@ func (c *ValkeyCache) SetJSON(ctx context.Context, key string, value any) error 
 		return nil
 	}
 
+	return c.SetJSONWithTTL(ctx, key, value, c.ttl)
+}
+
+func (c *ValkeyCache) SetJSONWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error {
+	if c == nil || c.client == nil || key == "" || ttl <= 0 {
+		return nil
+	}
+
 	payload, err := json.Marshal(value)
 	if err != nil {
 		slog.Warn("cache: SetJSON marshal error", "key", key, "error", err)
 		return err
 	}
 
-	if err := c.client.Set(ctx, key, payload, c.ttl).Err(); err != nil {
+	if err := c.client.Set(ctx, key, payload, ttl).Err(); err != nil {
 		slog.Warn("cache: SetJSON write error", "key", key, "error", err)
 		return err
 	}
 	return nil
+}
+
+func (c *ValkeyCache) GetJSONAndDelete(ctx context.Context, key string, dest any) (bool, error) {
+	if c == nil || c.client == nil || key == "" {
+		return false, nil
+	}
+
+	value, err := c.client.GetDel(ctx, key).Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			return false, nil
+		}
+		slog.Warn("cache: GetJSONAndDelete error", "key", key, "error", err)
+		return false, err
+	}
+
+	if err := json.Unmarshal(value, dest); err != nil {
+		slog.Warn("cache: GetJSONAndDelete unmarshal error", "key", key, "error", err)
+		return false, err
+	}
+
+	return true, nil
 }

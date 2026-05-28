@@ -67,7 +67,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	userService := service.NewUserService(userRepo)
 	tagService := service.NewTagService(tagRepo)
 	postService := service.NewPostService(postRepo, tagService, s3Storage, valkeyCache)
-	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, passwordResetTokenRepo, authActivityService, cfg)
+	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, passwordResetTokenRepo, authActivityService, cfg, valkeyCache)
 	notificationService := service.NewNotificationService(notificationRepo)
 	commentService := service.NewCommentService(commentRepo, postRepo, notificationService)
 	postViewService := service.NewPostViewService(postViewRepo, postRepo, postLikeRepo)
