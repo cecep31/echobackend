@@ -19,7 +19,7 @@ Route yang membutuhkan login mengirim header:
 Authorization: Bearer <access_token>
 ```
 
-Token didapat dari `POST /api/auth/login` atau `POST /api/auth/refresh`. Claim JWT memuat `user_id` (UUID).
+Token didapat dari `POST /api/auth/login`, `POST /api/auth/refresh`, atau `POST /api/auth/oauth/exchange` setelah OAuth GitHub. Claim JWT memuat `user_id` (UUID).
 
 **Middleware auth** yang gagal (token hilang, tidak valid, atau user bukan super admin pada route admin) mengembalikan JSON Echo `{"message":"..."}`, bukan envelope `success` di bawah.
 

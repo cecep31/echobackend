@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"echobackend/config"
@@ -34,6 +35,8 @@ type AuthService interface {
 	GetGithubOAuthURL(state string) string
 	GetGithubToken(code string) (string, error)
 	SignInWithGithub(ctx context.Context, githubUser *GithubUser, ipAddress, userAgent string) (string, string, *model.User, error)
+	CreateOAuthExchangeCode(accessToken, refreshToken string, user *model.User) (string, error)
+	ExchangeOAuthCode(code string) (string, string, *model.User, error)
 }
 
 type GithubUser struct {
@@ -56,6 +59,15 @@ type authService struct {
 	refreshTokenExpiry     time.Duration
 	githubConfig           config.GitHubConfig
 	httpClient             *http.Client
+	oauthExchangeCodes     map[string]oauthExchangeEntry
+	oauthExchangeMu        sync.Mutex
+}
+
+type oauthExchangeEntry struct {
+	AccessToken  string
+	RefreshToken string
+	User         *model.User
+	ExpiresAt    time.Time
 }
 
 func NewAuthService(
@@ -77,6 +89,7 @@ func NewAuthService(
 		refreshTokenExpiry:     config.Auth.RefreshTokenExpiry,
 		githubConfig:           config.GitHub,
 		httpClient:             &http.Client{Timeout: 10 * time.Second},
+		oauthExchangeCodes:     make(map[string]oauthExchangeEntry),
 	}
 }
 
@@ -405,6 +418,51 @@ func (s *authService) SignInWithGithub(ctx context.Context, githubUser *GithubUs
 	_ = s.userRepo.Update(ctx, user)
 
 	return tokenString, refreshToken, user, nil
+}
+
+func (s *authService) CreateOAuthExchangeCode(accessToken, refreshToken string, user *model.User) (string, error) {
+	codeBytes, err := generateRandomBytes(32)
+	if err != nil {
+		return "", err
+	}
+	code := "oc_" + base64.RawURLEncoding.EncodeToString(codeBytes)
+
+	s.oauthExchangeMu.Lock()
+	defer s.oauthExchangeMu.Unlock()
+	s.cleanupExpiredOAuthExchangeCodesLocked(time.Now())
+	s.oauthExchangeCodes[code] = oauthExchangeEntry{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User:         user,
+		ExpiresAt:    time.Now().Add(2 * time.Minute),
+	}
+
+	return code, nil
+}
+
+func (s *authService) ExchangeOAuthCode(code string) (string, string, *model.User, error) {
+	s.oauthExchangeMu.Lock()
+	defer s.oauthExchangeMu.Unlock()
+
+	now := time.Now()
+	s.cleanupExpiredOAuthExchangeCodesLocked(now)
+
+	entry, ok := s.oauthExchangeCodes[code]
+	if !ok || now.After(entry.ExpiresAt) {
+		delete(s.oauthExchangeCodes, code)
+		return "", "", nil, apperrors.ErrInvalidToken
+	}
+
+	delete(s.oauthExchangeCodes, code)
+	return entry.AccessToken, entry.RefreshToken, entry.User, nil
+}
+
+func (s *authService) cleanupExpiredOAuthExchangeCodesLocked(now time.Time) {
+	for code, entry := range s.oauthExchangeCodes {
+		if now.After(entry.ExpiresAt) {
+			delete(s.oauthExchangeCodes, code)
+		}
+	}
 }
 
 func (s *authService) createTokenAndSession(ctx context.Context, user *model.User) (string, string, error) {

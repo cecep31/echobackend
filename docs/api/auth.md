@@ -18,9 +18,10 @@ Registrasi, login, OAuth, refresh token, reset password, ubah password, logout, 
 | PATCH | `/password` | Bearer | Global |
 | GET | `/activity-logs` | Bearer | Global |
 | GET | `/activity-logs/recent` | Bearer | Global |
-| GET | `/activity-logs/failed-logins` | Bearer | Global |
+| GET | `/activity-logs/failed-logins` | Bearer + super admin | Global |
 | GET | `/oauth/github` | Tidak | Global |
 | GET | `/oauth/github/callback` | Tidak | Global |
+| POST | `/oauth/exchange` | Tidak | Global |
 
 ---
 
@@ -373,6 +374,8 @@ Daftar login gagal (semua user, untuk admin monitoring).
 
 **Header:** `Authorization: Bearer <access_token>`
 
+**Akses:** hanya super admin.
+
 **Query Parameters**
 
 | Param | Tipe | Default | Keterangan |
@@ -399,8 +402,10 @@ Daftar login gagal (semua user, untuk admin monitoring).
 Redirect ke halaman otorisasi GitHub. Mengarahkan browser ke:
 
 ```
-https://github.com/login/oauth/authorize?client_id=...&redirect_uri=...&scope=user:email
+https://github.com/login/oauth/authorize?client_id=...&redirect_uri=...&scope=user:email&state=...
 ```
+
+Backend membuat cookie HttpOnly `github_oauth_state` dengan TTL 10 menit untuk validasi CSRF pada callback.
 
 **Sukses — 307** Redirect ke GitHub.
 
@@ -417,14 +422,17 @@ Jika email GitHub tidak tersedia, endpoint akan meminta email dari `https://api.
 | Param | Tipe | Keterangan |
 |-------|------|------------|
 | `code` | string | Kode otorisasi dari GitHub |
+| `state` | string | State CSRF yang harus cocok dengan cookie `github_oauth_state` |
 
 **Alur sukses — 307** Redirect ke:
 
 ```
-{FRONTEND_OAUTH_CALLBACK_URL}?access_token=eyJ...&refresh_token=pl_...
+{FRONTEND_OAUTH_CALLBACK_URL}?code=oc_...
 ```
 
 Default: `{FRONTEND_URL}/auth/callback` (`http://localhost:3000/auth/callback`).
+
+`code` adalah one-time exchange code dengan TTL 2 menit. Frontend harus menukarnya ke `POST /api/auth/oauth/exchange` untuk mendapat `access_token` dan `refresh_token`.
 
 **Alur gagal — 307** Redirect ke:
 
@@ -435,9 +443,58 @@ Default: `{FRONTEND_URL}/auth/callback` (`http://localhost:3000/auth/callback`).
 | Error type | Kondisi |
 |------------|---------|
 | `missing_code` | Parameter `code` kosong |
+| `invalid_state` | Parameter `state` hilang/tidak cocok dengan cookie |
 | `github_token_failed` | Gagal menukar code dengan token GitHub |
 | `github_user_failed` | Gagal mengambil profil GitHub |
 | `oauth_login_failed` | Gagal membuat/login user |
+| `oauth_exchange_failed` | Gagal membuat one-time exchange code |
+
+---
+
+## POST `/api/auth/oauth/exchange`
+
+Menukar one-time exchange code dari callback OAuth menjadi token aplikasi. Code hanya bisa dipakai sekali dan kedaluwarsa dalam 2 menit.
+
+**Body**
+
+| Field | Tipe | Wajib | Validasi |
+|-------|------|-------|----------|
+| `code` | string | Ya | One-time code dari query callback |
+
+**Contoh request**
+
+```json
+{
+  "code": "oc_..."
+}
+```
+
+**Sukses — 200**
+
+```json
+{
+  "success": true,
+  "message": "OAuth code exchanged successfully",
+  "data": {
+    "access_token": "eyJ...",
+    "refresh_token": "pl_...",
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "username": "johndoe"
+    }
+  }
+}
+```
+
+**Error**
+
+| HTTP | Kondisi |
+|------|---------|
+| 400 | Body tidak valid |
+| 401 | Code tidak valid, kedaluwarsa, atau sudah dipakai |
+| 422 | Validasi gagal |
+| 500 | Error server |
 
 ---
 

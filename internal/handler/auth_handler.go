@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -406,9 +407,42 @@ func (h *AuthHandler) GithubOAuthCallback(c *echo.Context) error {
 		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=oauth_login_failed")
 	}
 
-	redirectURL := fmt.Sprintf("%s?access_token=%s&refresh_token=%s", callbackURL, accessToken, refreshToken)
-	_ = user
+	exchangeCode, err := h.authService.CreateOAuthExchangeCode(accessToken, refreshToken, user)
+	if err != nil {
+		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=oauth_exchange_failed")
+	}
+
+	redirectURL := appendQueryParam(callbackURL, "code", exchangeCode)
 	return c.Redirect(http.StatusTemporaryRedirect, redirectURL)
+}
+
+func (h *AuthHandler) ExchangeOAuthCode(c *echo.Context) error {
+	var req dto.OAuthExchangeRequest
+	if err := c.Bind(&req); err != nil {
+		return response.BadRequest(c, "Invalid request format", err)
+	}
+
+	if err := c.Validate(req); err != nil {
+		return response.FromValidateError(c, err)
+	}
+
+	accessToken, refreshToken, user, err := h.authService.ExchangeOAuthCode(req.Code)
+	if err == apperrors.ErrInvalidToken {
+		return response.Unauthorized(c, "Invalid or expired OAuth code")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "Failed to exchange OAuth code", err)
+	}
+
+	return response.Success(c, "OAuth code exchanged successfully", map[string]any{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+		"user": map[string]any{
+			"id":       user.ID,
+			"email":    user.Email,
+			"username": user.Username,
+		},
+	})
 }
 
 func fetchGithubUser(token string) (*service.GithubUser, error) {
@@ -503,6 +537,17 @@ func clearGithubOAuthStateCookie(c *echo.Context) {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+func appendQueryParam(rawURL, key, value string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	q := u.Query()
+	q.Set(key, value)
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 func (h *AuthHandler) CheckEmail(c *echo.Context) error {

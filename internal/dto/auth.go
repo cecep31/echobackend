@@ -37,6 +37,10 @@ type LogoutRequest struct {
 	RefreshToken string `json:"refresh_token" validate:"required"`
 }
 
+type OAuthExchangeRequest struct {
+	Code string `json:"code" validate:"required"`
+}
+
 type AuthTokenResponse struct {
 	AccessToken  string     `json:"access_token"`
 	RefreshToken string     `json:"refresh_token"`

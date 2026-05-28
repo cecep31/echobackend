@@ -26,5 +26,6 @@ func (r *Routes) setupAuthRoutes(api *echo.Group) {
 		auth.GET("/activity-logs/failed-logins", r.authHandler.GetFailedLogins, r.authMiddleware.Auth(), r.authMiddleware.AuthAdmin())
 		auth.GET("/oauth/github", r.authHandler.GithubOAuthRedirect)
 		auth.GET("/oauth/github/callback", r.authHandler.GithubOAuthCallback)
+		auth.POST("/oauth/exchange", r.authHandler.ExchangeOAuthCode)
 	}
 }
