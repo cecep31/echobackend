@@ -181,7 +181,8 @@ func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Pos
 	err := activePostUserJoin(r.db.WithContext(ctx).Model(&model.Post{})).
 		Preload("User", preloadUserBrief).
 		Preload("Tags").
-		First(&post, "id = ?", id).Error
+		Where("posts.id = ?", id).
+		First(&post).Error
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
