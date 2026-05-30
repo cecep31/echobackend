@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"html"
 	"mime/multipart"
@@ -15,7 +16,10 @@ import (
 	"time"
 
 	"echobackend/config"
+	"echobackend/pkg/queue"
 )
+
+const taskTypePasswordReset = "email:password_reset"
 
 // Service sends application emails through SMTP.
 type Service struct {
@@ -26,11 +30,17 @@ type Service struct {
 	from     string
 	timeout  time.Duration
 	useTLS   bool
+	queue    *queue.Service
 }
 
-// NewService creates an SMTP-backed email service. An empty SMTP host disables delivery.
-func NewService(cfg config.EmailConfig) *Service {
-	return &Service{
+type passwordResetPayload struct {
+	To        string `json:"to"`
+	ResetLink string `json:"reset_link"`
+}
+
+// NewService creates an SMTP-backed email service and registers its background tasks.
+func NewService(cfg config.EmailConfig, taskQueue *queue.Service) *Service {
+	service := &Service{
 		host:     cfg.SMTPHost,
 		port:     cfg.SMTPPort,
 		username: cfg.SMTPUsername,
@@ -38,17 +48,59 @@ func NewService(cfg config.EmailConfig) *Service {
 		from:     cfg.From,
 		timeout:  cfg.Timeout,
 		useTLS:   cfg.UseTLS,
+		queue:    taskQueue,
 	}
+	service.registerQueueHandlers()
+	return service
 }
 
-// IsConfigured reports whether email delivery is enabled.
+func (s *Service) registerQueueHandlers() {
+	if s == nil || s.queue == nil {
+		return
+	}
+	s.queue.Handle(taskTypePasswordReset, s.handlePasswordResetTask)
+}
+
+// IsConfigured reports whether queued email delivery is enabled.
 func (s *Service) IsConfigured() bool {
+	return s != nil && s.hasSMTPConfig() && s.queue != nil && s.queue.IsConfigured()
+}
+
+func (s *Service) hasSMTPConfig() bool {
 	return s != nil && s.host != "" && s.port > 0 && s.from != ""
+}
+
+// Close is kept for DI cleanup compatibility.
+func (s *Service) Close() error {
+	return nil
+}
+
+// EnqueuePasswordResetEmail queues a password reset email for Asynq delivery.
+func (s *Service) EnqueuePasswordResetEmail(to, resetLink string) error {
+	if !s.IsConfigured() {
+		return fmt.Errorf("email service not configured")
+	}
+
+	payload := passwordResetPayload{To: to, ResetLink: resetLink}
+	return s.queue.EnqueueJSON(taskTypePasswordReset, payload, queue.TaskOptions{Timeout: s.timeout})
+}
+
+func (s *Service) handlePasswordResetTask(ctx context.Context, payloadBytes []byte) error {
+	var payload passwordResetPayload
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return fmt.Errorf("json.Unmarshal failed: %w: %w", err, queue.SkipRetry)
+	}
+
+	if payload.To == "" || payload.ResetLink == "" {
+		return fmt.Errorf("invalid password reset payload: %w", queue.SkipRetry)
+	}
+
+	return s.SendPasswordResetEmail(ctx, payload.To, payload.ResetLink)
 }
 
 // SendPasswordResetEmail sends the password reset link email.
 func (s *Service) SendPasswordResetEmail(ctx context.Context, to, resetLink string) error {
-	if !s.IsConfigured() {
+	if !s.hasSMTPConfig() {
 		return fmt.Errorf("email service not configured")
 	}
 

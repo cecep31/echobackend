@@ -160,7 +160,7 @@ Cek ketersediaan email sebelum registrasi.
 
 Meminta reset password. Respons **sama** untuk email terdaftar maupun tidak (anti-enumeration).
 
-Jika `SMTP_HOST` terisi, backend mengirim email reset password lewat SMTP. Link reset dibuat dari `FRONTEND_RESET_PASSWORD_URL` dengan query `token`. Jika SMTP belum dikonfigurasi, token tetap dibuat dan aktivitas dicatat sebagai mode dev di metadata log.
+Jika `SMTP_HOST` terisi dan queue Asynq tersedia lewat `QUEUE_REDIS_URL` atau `VALKEY_URL`, backend memasukkan email reset password ke background job queue dan worker mengirimnya lewat SMTP. Link reset dibuat dari `FRONTEND_RESET_PASSWORD_URL` dengan query `token`. Jika SMTP/queue belum dikonfigurasi, token tetap dibuat dan aktivitas dicatat sebagai mode dev di metadata log.
 
 **Env terkait**
 
@@ -173,6 +173,11 @@ Jika `SMTP_HOST` terisi, backend mengirim email reset password lewat SMTP. Link 
 | `SMTP_FROM` | Sender email, default `noreply@pilput.net` |
 | `SMTP_TLS` | `true` untuk implicit TLS (umumnya port 465), `false` untuk STARTTLS (umumnya port 587) |
 | `SMTP_TIMEOUT_SECONDS` | Timeout koneksi SMTP, default `10` |
+| `QUEUE_REDIS_URL` | URL Redis/Valkey untuk broker Asynq. Jika kosong, fallback ke `VALKEY_URL` |
+| `QUEUE_REDIS_TIMEOUT_MS` | Timeout koneksi/read/write Redis untuk Asynq, default `5000` |
+| `QUEUE_DEFAULT_NAME` | Nama queue default untuk semua background job, default `default` |
+| `QUEUE_CONCURRENCY` | Jumlah worker Asynq untuk semua job, default `1` |
+| `QUEUE_MAX_RETRY` | Maksimal retry task, default `5` |
 | `FRONTEND_RESET_PASSWORD_URL` | URL halaman reset password frontend |
 
 **Body**

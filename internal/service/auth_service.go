@@ -222,13 +222,13 @@ func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, user
 
 	resetLink := buildPasswordResetLink(s.frontendConfig.ResetPasswordURL, resetToken)
 	if s.emailService != nil && s.emailService.IsConfigured() {
-		if err := s.emailService.SendPasswordResetEmail(ctx, email, resetLink); err != nil {
-			errMsg := "Failed to send email"
+		if err := s.emailService.EnqueuePasswordResetEmail(email, resetLink); err != nil {
+			errMsg := "Failed to queue email"
 			s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusFailure, ipAddress, userAgent, &errMsg, nil)
-			slog.Error("failed to send password reset email", "error", err, "user_id", user.ID)
+			slog.Error("failed to queue password reset email", "error", err, "user_id", user.ID)
 			return nil
 		}
-		s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, nil)
+		s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, map[string]any{"emailQueued": true})
 		return nil
 	}
 

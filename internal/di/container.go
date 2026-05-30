@@ -12,6 +12,7 @@ import (
 	"echobackend/pkg/database"
 	"echobackend/pkg/email"
 	"echobackend/pkg/market"
+	"echobackend/pkg/queue"
 	"echobackend/pkg/storage"
 
 	"gorm.io/gorm"
@@ -45,8 +46,17 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		})
 	}
 
+	taskQueue := queue.NewService(cfg.Queue)
+	cleanup.Register(func() error {
+		return taskQueue.Close()
+	})
+
 	s3Storage := storage.NewS3Storage(cfg)
-	emailService := email.NewService(cfg.Email)
+	emailService := email.NewService(cfg.Email, taskQueue)
+	cleanup.Register(func() error {
+		return emailService.Close()
+	})
+	taskQueue.Start()
 
 	userRepo := repository.NewUserRepository(db)
 	postRepo := repository.NewPostRepository(db)
