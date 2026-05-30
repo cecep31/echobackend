@@ -3,39 +3,47 @@ package email
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"crypto/tls"
 	"fmt"
 	"html"
-	"io"
-	"net/http"
+	"mime/multipart"
+	"net"
+	"net/mail"
+	"net/smtp"
+	"net/textproto"
+	"strings"
 	"time"
 
 	"echobackend/config"
 )
 
-const resendAPIURL = "https://api.resend.com/emails"
-
-// Service sends application emails through Resend.
+// Service sends application emails through SMTP.
 type Service struct {
-	apiKey     string
-	from       string
-	httpClient *http.Client
+	host     string
+	port     int
+	username string
+	password string
+	from     string
+	timeout  time.Duration
+	useTLS   bool
 }
 
-// NewService creates a Resend-backed email service. An empty API key disables delivery.
+// NewService creates an SMTP-backed email service. An empty SMTP host disables delivery.
 func NewService(cfg config.EmailConfig) *Service {
 	return &Service{
-		apiKey: cfg.ResendAPIKey,
-		from:   cfg.From,
-		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		host:     cfg.SMTPHost,
+		port:     cfg.SMTPPort,
+		username: cfg.SMTPUsername,
+		password: cfg.SMTPPassword,
+		from:     cfg.From,
+		timeout:  cfg.Timeout,
+		useTLS:   cfg.UseTLS,
 	}
 }
 
 // IsConfigured reports whether email delivery is enabled.
 func (s *Service) IsConfigured() bool {
-	return s != nil && s.apiKey != ""
+	return s != nil && s.host != "" && s.port > 0 && s.from != ""
 }
 
 // SendPasswordResetEmail sends the password reset link email.
@@ -49,38 +57,156 @@ func (s *Service) SendPasswordResetEmail(ctx context.Context, to, resetLink stri
 }
 
 func (s *Service) send(ctx context.Context, to, subject, textBody, htmlBody string) error {
-	payload := map[string]any{
-		"from":    s.from,
-		"to":      to,
-		"subject": subject,
-		"text":    textBody,
-		"html":    htmlBody,
-	}
-
-	body, err := json.Marshal(payload)
+	message, err := buildMessage(s.from, to, subject, textBody, htmlBody)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, resendAPIURL, bytes.NewReader(body))
+	address := fmt.Sprintf("%s:%d", s.host, s.port)
+	dialer := net.Dialer{Timeout: s.timeout}
+	conn, err := dialer.DialContext(ctx, "tcp", address)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+s.apiKey)
-	req.Header.Set("Content-Type", "application/json")
+	defer conn.Close()
+	if s.timeout > 0 {
+		if err := conn.SetDeadline(time.Now().Add(s.timeout)); err != nil {
+			return err
+		}
+	}
 
-	resp, err := s.httpClient.Do(req)
+	var client *smtp.Client
+	if s.useTLS {
+		tlsConn := tls.Client(conn, &tls.Config{ServerName: s.host, MinVersion: tls.VersionTLS12})
+		if err := tlsConn.HandshakeContext(ctx); err != nil {
+			return err
+		}
+		client, err = smtp.NewClient(tlsConn, s.host)
+	} else {
+		client, err = smtp.NewClient(conn, s.host)
+	}
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer client.Close()
 
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return nil
+	if !s.useTLS {
+		if ok, _ := client.Extension("STARTTLS"); ok {
+			tlsConfig := &tls.Config{ServerName: s.host, MinVersion: tls.VersionTLS12}
+			if err := client.StartTLS(tlsConfig); err != nil {
+				return err
+			}
+		}
 	}
 
-	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-	return fmt.Errorf("resend returned %s: %s", resp.Status, string(respBody))
+	if s.username != "" || s.password != "" {
+		auth := smtp.PlainAuth("", s.username, s.password, s.host)
+		if err := client.Auth(auth); err != nil {
+			return err
+		}
+	}
+
+	fromAddress, err := parseAddress(s.from)
+	if err != nil {
+		return err
+	}
+	toAddress, err := parseAddress(to)
+	if err != nil {
+		return err
+	}
+
+	if err := client.Mail(fromAddress); err != nil {
+		return err
+	}
+	if err := client.Rcpt(toAddress); err != nil {
+		return err
+	}
+
+	writer, err := client.Data()
+	if err != nil {
+		return err
+	}
+	if _, err := writer.Write(message); err != nil {
+		_ = writer.Close()
+		return err
+	}
+	if err := writer.Close(); err != nil {
+		return err
+	}
+
+	return client.Quit()
+}
+
+func buildMessage(from, to, subject, textBody, htmlBody string) ([]byte, error) {
+	fromAddress, err := mail.ParseAddress(from)
+	if err != nil {
+		return nil, err
+	}
+	toAddress, err := mail.ParseAddress(to)
+	if err != nil {
+		return nil, err
+	}
+
+	var body bytes.Buffer
+	multipartWriter := multipart.NewWriter(&body)
+
+	textPart, err := multipartWriter.CreatePart(textproto.MIMEHeader{
+		"Content-Type":              {"text/plain; charset=utf-8"},
+		"Content-Transfer-Encoding": {"8bit"},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if _, err := textPart.Write([]byte(textBody)); err != nil {
+		return nil, err
+	}
+
+	htmlPart, err := multipartWriter.CreatePart(textproto.MIMEHeader{
+		"Content-Type":              {"text/html; charset=utf-8"},
+		"Content-Transfer-Encoding": {"8bit"},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if _, err := htmlPart.Write([]byte(htmlBody)); err != nil {
+		return nil, err
+	}
+
+	if err := multipartWriter.Close(); err != nil {
+		return nil, err
+	}
+
+	var message bytes.Buffer
+	headers := [][2]string{
+		{"From", fromAddress.String()},
+		{"To", toAddress.String()},
+		{"Subject", sanitizeHeader(subject)},
+		{"MIME-Version", "1.0"},
+		{"Content-Type", fmt.Sprintf("multipart/alternative; boundary=%q", multipartWriter.Boundary())},
+	}
+	for _, header := range headers {
+		message.WriteString(header[0])
+		message.WriteString(": ")
+		message.WriteString(header[1])
+		message.WriteString("\r\n")
+	}
+	message.WriteString("\r\n")
+	message.Write(body.Bytes())
+
+	return message.Bytes(), nil
+}
+
+func parseAddress(raw string) (string, error) {
+	address, err := mail.ParseAddress(raw)
+	if err != nil {
+		return "", err
+	}
+	return address.Address, nil
+}
+
+func sanitizeHeader(value string) string {
+	value = strings.ReplaceAll(value, "\r", "")
+	return strings.ReplaceAll(value, "\n", "")
 }
 
 func passwordResetTemplate(resetLink, expiresIn string) (string, string) {

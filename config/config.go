@@ -136,8 +136,13 @@ type FrontendConfig struct {
 
 // EmailConfig contains email delivery settings.
 type EmailConfig struct {
-	ResendAPIKey string
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUsername string
+	SMTPPassword string
 	From         string
+	Timeout      time.Duration
+	UseTLS       bool
 }
 
 // Load reads configuration from environment variables with defaults.
@@ -205,8 +210,13 @@ func Load() (*Config, error) {
 			MainDomain:       envString([]string{"MAIN_DOMAIN"}, "localhost"),
 		},
 		Email: EmailConfig{
-			ResendAPIKey: envString([]string{"RESEND_API_KEY"}, ""),
-			From:         envString([]string{"EMAIL_FROM"}, "noreply@pilput.net"),
+			SMTPHost:     envString([]string{"SMTP_HOST"}, ""),
+			SMTPPort:     envInt([]string{"SMTP_PORT"}, 587),
+			SMTPUsername: envString([]string{"SMTP_USERNAME"}, ""),
+			SMTPPassword: envString([]string{"SMTP_PASSWORD"}, ""),
+			From:         envString([]string{"SMTP_FROM", "EMAIL_FROM"}, "noreply@pilput.net"),
+			Timeout:      time.Duration(envInt([]string{"SMTP_TIMEOUT_SECONDS"}, 10)) * time.Second,
+			UseTLS:       envBool([]string{"SMTP_TLS"}, false),
 		},
 	}
 
@@ -242,6 +252,12 @@ func (c *Config) validate() error {
 	}
 	if c.HTTP.RateLimitRPS < 0 {
 		return fmt.Errorf("HTTP_RATE_LIMIT_RPS must be >= 0")
+	}
+	if c.Email.SMTPPort <= 0 || c.Email.SMTPPort > 65535 {
+		return fmt.Errorf("SMTP_PORT must be between 1 and 65535")
+	}
+	if c.Email.Timeout <= 0 {
+		return fmt.Errorf("SMTP_TIMEOUT_SECONDS must be > 0")
 	}
 	return nil
 }

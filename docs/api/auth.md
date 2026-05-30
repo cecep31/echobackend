@@ -160,14 +160,19 @@ Cek ketersediaan email sebelum registrasi.
 
 Meminta reset password. Respons **sama** untuk email terdaftar maupun tidak (anti-enumeration).
 
-Jika `RESEND_API_KEY` terisi, backend mengirim email reset password lewat Resend. Link reset dibuat dari `FRONTEND_RESET_PASSWORD_URL` dengan query `token`. Jika Resend belum dikonfigurasi, token tetap dibuat dan aktivitas dicatat sebagai mode dev di metadata log.
+Jika `SMTP_HOST` terisi, backend mengirim email reset password lewat SMTP. Link reset dibuat dari `FRONTEND_RESET_PASSWORD_URL` dengan query `token`. Jika SMTP belum dikonfigurasi, token tetap dibuat dan aktivitas dicatat sebagai mode dev di metadata log.
 
 **Env terkait**
 
 | Variable | Keterangan |
 |----------|------------|
-| `RESEND_API_KEY` | API key Resend untuk pengiriman email |
-| `EMAIL_FROM` | Sender email, default `noreply@pilput.net` |
+| `SMTP_HOST` | Host SMTP. Kosong berarti pengiriman email nonaktif |
+| `SMTP_PORT` | Port SMTP, default `587` |
+| `SMTP_USERNAME` | Username SMTP |
+| `SMTP_PASSWORD` | Password SMTP |
+| `SMTP_FROM` | Sender email, default `noreply@pilput.net` |
+| `SMTP_TLS` | `true` untuk implicit TLS (umumnya port 465), `false` untuk STARTTLS (umumnya port 587) |
+| `SMTP_TIMEOUT_SECONDS` | Timeout koneksi SMTP, default `10` |
 | `FRONTEND_RESET_PASSWORD_URL` | URL halaman reset password frontend |
 
 **Body**
