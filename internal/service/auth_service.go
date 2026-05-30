@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
 	"echobackend/pkg/cache"
+	emailservice "echobackend/pkg/email"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -59,6 +61,8 @@ type authService struct {
 	jwtExpiry              time.Duration
 	refreshTokenExpiry     time.Duration
 	githubConfig           config.GitHubConfig
+	frontendConfig         config.FrontendConfig
+	emailService           *emailservice.Service
 	httpClient             *http.Client
 	oauthExchangeCache     *cache.ValkeyCache
 	oauthExchangeCodes     map[string]oauthExchangeEntry
@@ -82,6 +86,7 @@ func NewAuthService(
 	activityService AuthActivityService,
 	config *config.Config,
 	oauthExchangeCache *cache.ValkeyCache,
+	emailService *emailservice.Service,
 ) AuthService {
 	return &authService{
 		authRepo:               authRepo,
@@ -93,6 +98,8 @@ func NewAuthService(
 		jwtExpiry:              config.Auth.JWTExpiry,
 		refreshTokenExpiry:     config.Auth.RefreshTokenExpiry,
 		githubConfig:           config.GitHub,
+		frontendConfig:         config.Frontend,
+		emailService:           emailService,
 		httpClient:             &http.Client{Timeout: 10 * time.Second},
 		oauthExchangeCache:     oauthExchangeCache,
 		oauthExchangeCodes:     make(map[string]oauthExchangeEntry),
@@ -213,7 +220,19 @@ func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, user
 		return err
 	}
 
-	s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, nil)
+	resetLink := buildPasswordResetLink(s.frontendConfig.ResetPasswordURL, resetToken)
+	if s.emailService != nil && s.emailService.IsConfigured() {
+		if err := s.emailService.SendPasswordResetEmail(ctx, email, resetLink); err != nil {
+			errMsg := "Failed to send email"
+			s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusFailure, ipAddress, userAgent, &errMsg, nil)
+			slog.Error("failed to send password reset email", "error", err, "user_id", user.ID)
+			return nil
+		}
+		s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, nil)
+		return nil
+	}
+
+	s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, map[string]any{"devMode": true, "resetLink": resetLink})
 
 	return nil
 }
@@ -537,6 +556,22 @@ func generateRandomBytes(n int) ([]byte, error) {
 		return nil, err
 	}
 	return b, nil
+}
+
+func buildPasswordResetLink(baseURL, token string) string {
+	if baseURL == "" {
+		baseURL = "http://localhost:3000/reset-password"
+	}
+
+	parsed, err := url.Parse(baseURL)
+	if err != nil {
+		return baseURL + "?token=" + url.QueryEscape(token)
+	}
+
+	q := parsed.Query()
+	q.Set("token", token)
+	parsed.RawQuery = q.Encode()
+	return parsed.String()
 }
 
 func ptrTime(t time.Time) *time.Time {

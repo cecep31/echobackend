@@ -66,7 +66,7 @@ The application requires the following mandatory environment variables to start:
 | `DATABASE_URL` | - | PostgreSQL connection string (DSN) |
 | `JWT_SECRET` | - | Secret key for JWT signing & verification |
 
-Other optional configurations (S3, Valkey, Rate Limiting, etc.) are documented in [`.env.example`](.env.example).
+Other optional configurations (S3, Valkey, Rate Limiting, Resend email, etc.) are documented in [`.env.example`](.env.example).
 
 ## Architecture
 

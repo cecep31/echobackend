@@ -9,6 +9,7 @@
 //	cfg.Database  // PostgreSQL DSN and pool tuning
 //	cfg.S3        // S3-compatible object storage
 //	cfg.Cache     // Valkey/Redis cache
+//	cfg.Email     // password reset email delivery
 //
 // Some env keys have fallback aliases (legacy names). The first-set key wins;
 // see Load() for the full list.
@@ -33,6 +34,7 @@ type Config struct {
 	OpenRouter OpenRouterConfig
 	GitHub     GitHubConfig
 	Frontend   FrontendConfig
+	Email      EmailConfig
 }
 
 // AppConfig contains application-level toggles.
@@ -132,6 +134,12 @@ type FrontendConfig struct {
 	MainDomain       string
 }
 
+// EmailConfig contains email delivery settings.
+type EmailConfig struct {
+	ResendAPIKey string
+	From         string
+}
+
 // Load reads configuration from environment variables with defaults.
 //
 // It loads a .env file if present, then reads environment variables.
@@ -195,6 +203,10 @@ func Load() (*Config, error) {
 			OAuthCallbackURL: envString([]string{"FRONTEND_OAUTH_CALLBACK_URL"}, "http://localhost:3000/auth/callback"),
 			ResetPasswordURL: envString([]string{"FRONTEND_RESET_PASSWORD_URL"}, "http://localhost:3000/reset-password"),
 			MainDomain:       envString([]string{"MAIN_DOMAIN"}, "localhost"),
+		},
+		Email: EmailConfig{
+			ResendAPIKey: envString([]string{"RESEND_API_KEY"}, ""),
+			From:         envString([]string{"EMAIL_FROM"}, "noreply@pilput.net"),
 		},
 	}
 

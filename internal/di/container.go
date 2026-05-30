@@ -10,6 +10,7 @@ import (
 	"echobackend/internal/service"
 	"echobackend/pkg/cache"
 	"echobackend/pkg/database"
+	"echobackend/pkg/email"
 	"echobackend/pkg/market"
 	"echobackend/pkg/storage"
 
@@ -45,6 +46,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	}
 
 	s3Storage := storage.NewS3Storage(cfg)
+	emailService := email.NewService(cfg.Email)
 
 	userRepo := repository.NewUserRepository(db)
 	postRepo := repository.NewPostRepository(db)
@@ -67,7 +69,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	userService := service.NewUserService(userRepo)
 	tagService := service.NewTagService(tagRepo)
 	postService := service.NewPostService(postRepo, tagService, s3Storage, valkeyCache)
-	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, passwordResetTokenRepo, authActivityService, cfg, valkeyCache)
+	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, passwordResetTokenRepo, authActivityService, cfg, valkeyCache, emailService)
 	notificationService := service.NewNotificationService(notificationRepo)
 	commentService := service.NewCommentService(commentRepo, postRepo, notificationService)
 	postViewService := service.NewPostViewService(postViewRepo, postRepo, postLikeRepo)
