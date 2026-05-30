@@ -2,8 +2,11 @@ package handler
 
 import (
 	"echobackend/internal/dto"
+	apperrors "echobackend/internal/errors"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
+	"errors"
+	"io"
 
 	"github.com/labstack/echo/v5"
 )
@@ -27,7 +30,7 @@ func (h *BookmarkHandler) ToggleBookmark(c *echo.Context) error {
 	}
 
 	var req dto.ToggleBookmarkRequest
-	if err := c.Bind(&req); err != nil {
+	if err := c.Bind(&req); err != nil && !errors.Is(err, io.EOF) {
 		return response.BadRequest(c, "Invalid request body", err)
 	}
 	if err := c.Validate(req); err != nil {
@@ -36,6 +39,9 @@ func (h *BookmarkHandler) ToggleBookmark(c *echo.Context) error {
 
 	result, err := h.bookmarkService.ToggleBookmark(c.Request().Context(), postID, userID, &req)
 	if err != nil {
+		if handled := handleBookmarkError(c, err); handled != nil {
+			return handled
+		}
 		return response.InternalServerError(c, "Failed to toggle bookmark", err)
 	}
 	return response.Success(c, "Bookmark toggled successfully", result)
@@ -58,6 +64,9 @@ func (h *BookmarkHandler) GetBookmarks(c *echo.Context) error {
 
 	bookmarks, total, err := h.bookmarkService.GetBookmarksByUser(c.Request().Context(), userID, folderID, limit, offset)
 	if err != nil {
+		if handled := handleBookmarkError(c, err); handled != nil {
+			return handled
+		}
 		return response.InternalServerError(c, "Failed to get bookmarks", err)
 	}
 
@@ -85,6 +94,9 @@ func (h *BookmarkHandler) UpdateBookmark(c *echo.Context) error {
 
 	bookmark, err := h.bookmarkService.UpdateBookmark(c.Request().Context(), bookmarkID, userID, &req)
 	if err != nil {
+		if handled := handleBookmarkError(c, err); handled != nil {
+			return handled
+		}
 		return response.InternalServerError(c, "Failed to update bookmark", err)
 	}
 	return response.Success(c, "Bookmark updated successfully", bookmark)
@@ -110,6 +122,9 @@ func (h *BookmarkHandler) MoveBookmark(c *echo.Context) error {
 
 	bookmark, err := h.bookmarkService.MoveBookmark(c.Request().Context(), bookmarkID, userID, req.FolderID)
 	if err != nil {
+		if handled := handleBookmarkError(c, err); handled != nil {
+			return handled
+		}
 		return response.InternalServerError(c, "Failed to move bookmark", err)
 	}
 	return response.Success(c, "Bookmark moved successfully", bookmark)
@@ -131,6 +146,9 @@ func (h *BookmarkHandler) CreateFolder(c *echo.Context) error {
 
 	folder, err := h.bookmarkService.CreateFolder(c.Request().Context(), userID, &req)
 	if err != nil {
+		if handled := handleBookmarkError(c, err); handled != nil {
+			return handled
+		}
 		return response.InternalServerError(c, "Failed to create folder", err)
 	}
 	return response.Created(c, "Folder created successfully", folder)
@@ -144,6 +162,9 @@ func (h *BookmarkHandler) GetFolders(c *echo.Context) error {
 
 	folders, err := h.bookmarkService.GetFoldersByUser(c.Request().Context(), userID)
 	if err != nil {
+		if handled := handleBookmarkError(c, err); handled != nil {
+			return handled
+		}
 		return response.InternalServerError(c, "Failed to get folders", err)
 	}
 	return response.Success(c, "Folders fetched successfully", folders)
@@ -169,6 +190,9 @@ func (h *BookmarkHandler) UpdateFolder(c *echo.Context) error {
 
 	folder, err := h.bookmarkService.UpdateFolder(c.Request().Context(), folderID, userID, &req)
 	if err != nil {
+		if handled := handleBookmarkError(c, err); handled != nil {
+			return handled
+		}
 		return response.InternalServerError(c, "Failed to update folder", err)
 	}
 	return response.Success(c, "Folder updated successfully", folder)
@@ -185,7 +209,25 @@ func (h *BookmarkHandler) DeleteFolder(c *echo.Context) error {
 	}
 
 	if err := h.bookmarkService.DeleteFolder(c.Request().Context(), folderID, userID); err != nil {
+		if handled := handleBookmarkError(c, err); handled != nil {
+			return handled
+		}
 		return response.InternalServerError(c, "Failed to delete folder", err)
 	}
 	return response.Success(c, "Folder deleted successfully", nil)
+}
+
+func handleBookmarkError(c *echo.Context, err error) error {
+	switch {
+	case errors.Is(err, apperrors.ErrInvalidPostID), errors.Is(err, apperrors.ErrInvalidUserID):
+		return response.BadRequest(c, err.Error(), nil)
+	case errors.Is(err, apperrors.ErrPostNotFound):
+		return response.NotFound(c, "Post not found", err)
+	case errors.Is(err, apperrors.ErrBookmarkNotFound):
+		return response.NotFound(c, "Bookmark not found", err)
+	case errors.Is(err, apperrors.ErrBookmarkFolderNotFound):
+		return response.NotFound(c, "Bookmark folder not found", err)
+	default:
+		return nil
+	}
 }

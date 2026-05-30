@@ -36,8 +36,8 @@ func NewPostLikeService(
 }
 
 func (s *postLikeService) LikePost(ctx context.Context, postID, userID string) error {
-	if err := validator.ValidatePostLikeInput(postID, userID); err != nil {
-		return fmt.Errorf("validation error: %w", err)
+	if err := validatePostLikeIDs(postID, userID); err != nil {
+		return err
 	}
 
 	_, err := s.postRepo.GetPostByID(ctx, postID)
@@ -65,8 +65,8 @@ func (s *postLikeService) LikePost(ctx context.Context, postID, userID string) e
 }
 
 func (s *postLikeService) UnlikePost(ctx context.Context, postID, userID string) error {
-	if err := validator.ValidatePostLikeInput(postID, userID); err != nil {
-		return fmt.Errorf("validation error: %w", err)
+	if err := validatePostLikeIDs(postID, userID); err != nil {
+		return err
 	}
 
 	_, err := s.postRepo.GetPostByID(ctx, postID)
@@ -117,9 +117,19 @@ func (s *postLikeService) GetLikeStats(ctx context.Context, postID string) (*dto
 }
 
 func (s *postLikeService) HasUserLikedPost(ctx context.Context, postID, userID string) (bool, error) {
-	if err := validator.ValidatePostLikeInput(postID, userID); err != nil {
-		return false, fmt.Errorf("validation error: %w", err)
+	if err := validatePostLikeIDs(postID, userID); err != nil {
+		return false, err
 	}
 
 	return s.postLikeRepo.HasUserLikedPost(ctx, postID, userID)
+}
+
+func validatePostLikeIDs(postID, userID string) error {
+	if !validator.IsValidUUID(postID) {
+		return apperrors.ErrInvalidPostID
+	}
+	if !validator.IsValidUUID(userID) {
+		return apperrors.ErrInvalidUserID
+	}
+	return nil
 }

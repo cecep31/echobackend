@@ -6,7 +6,7 @@ import (
 )
 
 type ToggleBookmarkRequest struct {
-	FolderID *string `json:"folder_id" validate:"omitempty,uuid4"`
+	FolderID *string `json:"folder_id" validate:"omitempty,uuid"`
 	Name     *string `json:"name" validate:"omitempty,max=255"`
 	Notes    *string `json:"notes" validate:"omitempty,max=2000"`
 }
@@ -17,7 +17,7 @@ type UpdateBookmarkRequest struct {
 }
 
 type MoveBookmarkRequest struct {
-	FolderID *string `json:"folder_id" validate:"omitempty,uuid4"`
+	FolderID *string `json:"folder_id" validate:"omitempty,uuid"`
 }
 
 type CreateBookmarkFolderRequest struct {

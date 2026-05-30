@@ -31,6 +31,12 @@ func (h *PostLikeHandler) LikePost(c *echo.Context) error {
 
 	err := h.postLikeService.LikePost(c.Request().Context(), postID, userID)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrInvalidPostID) || errors.Is(err, apperrors.ErrInvalidUserID) {
+			return response.BadRequest(c, err.Error(), nil)
+		}
+		if errors.Is(err, apperrors.ErrPostNotFound) {
+			return response.NotFound(c, "Post not found", err)
+		}
 		if errors.Is(err, apperrors.ErrAlreadyLiked) {
 			return response.BadRequest(c, "You have already liked this post", nil)
 		}
@@ -53,6 +59,12 @@ func (h *PostLikeHandler) UnlikePost(c *echo.Context) error {
 
 	err := h.postLikeService.UnlikePost(c.Request().Context(), postID, userID)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrInvalidPostID) || errors.Is(err, apperrors.ErrInvalidUserID) {
+			return response.BadRequest(c, err.Error(), nil)
+		}
+		if errors.Is(err, apperrors.ErrPostNotFound) {
+			return response.NotFound(c, "Post not found", err)
+		}
 		if errors.Is(err, apperrors.ErrNotLiked) {
 			return response.BadRequest(c, "You have not liked this post", nil)
 		}
@@ -72,6 +84,9 @@ func (h *PostLikeHandler) GetPostLikes(c *echo.Context) error {
 
 	likes, total, err := h.postLikeService.GetLikesByPostID(c.Request().Context(), postID, limit, offset)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrInvalidPostID) {
+			return response.BadRequest(c, err.Error(), nil)
+		}
 		return response.InternalServerError(c, "Failed to get post likes", err)
 	}
 
@@ -93,6 +108,9 @@ func (h *PostLikeHandler) GetPostLikeStats(c *echo.Context) error {
 
 	stats, err := h.postLikeService.GetLikeStats(c.Request().Context(), postID)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrInvalidPostID) {
+			return response.BadRequest(c, err.Error(), nil)
+		}
 		return response.InternalServerError(c, "Failed to get like stats", err)
 	}
 
@@ -112,6 +130,9 @@ func (h *PostLikeHandler) CheckUserLiked(c *echo.Context) error {
 
 	hasLiked, err := h.postLikeService.HasUserLikedPost(c.Request().Context(), postID, userID)
 	if err != nil {
+		if errors.Is(err, apperrors.ErrInvalidPostID) || errors.Is(err, apperrors.ErrInvalidUserID) {
+			return response.BadRequest(c, err.Error(), nil)
+		}
 		return response.InternalServerError(c, "Failed to check like status", err)
 	}
 

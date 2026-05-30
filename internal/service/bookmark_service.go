@@ -8,6 +8,7 @@ import (
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
+	"echobackend/pkg/validator"
 )
 
 type BookmarkService interface {
@@ -33,6 +34,10 @@ func NewBookmarkService(bookmarkRepo repository.BookmarkRepository, postRepo rep
 }
 
 func (s *bookmarkService) ToggleBookmark(ctx context.Context, postID, userID string, req *dto.ToggleBookmarkRequest) (*dto.ToggleBookmarkResponse, error) {
+	if err := validateBookmarkPostAndUser(postID, userID); err != nil {
+		return nil, err
+	}
+
 	if _, err := s.postRepo.GetPostByID(ctx, postID); err != nil {
 		return nil, err
 	}
@@ -77,6 +82,13 @@ func (s *bookmarkService) ToggleBookmark(ctx context.Context, postID, userID str
 }
 
 func (s *bookmarkService) GetBookmarksByUser(ctx context.Context, userID string, folderID *string, limit, offset int) ([]*dto.BookmarkResponse, int64, error) {
+	if !validator.IsValidUUID(userID) {
+		return nil, 0, apperrors.ErrInvalidUserID
+	}
+	if folderID != nil && *folderID != "" && !validator.IsValidUUID(*folderID) {
+		return nil, 0, apperrors.ErrBookmarkFolderNotFound
+	}
+
 	bookmarks, total, err := s.bookmarkRepo.GetBookmarksByUser(ctx, userID, folderID, limit, offset)
 	if err != nil {
 		return nil, 0, err
@@ -90,6 +102,10 @@ func (s *bookmarkService) GetBookmarksByUser(ctx context.Context, userID string,
 }
 
 func (s *bookmarkService) UpdateBookmark(ctx context.Context, bookmarkID, userID string, req *dto.UpdateBookmarkRequest) (*dto.BookmarkResponse, error) {
+	if err := validateBookmarkAndUser(bookmarkID, userID); err != nil {
+		return nil, err
+	}
+
 	bookmark, err := s.bookmarkRepo.FindBookmarkByID(ctx, bookmarkID, userID)
 	if err != nil {
 		return nil, err
@@ -115,6 +131,13 @@ func (s *bookmarkService) UpdateBookmark(ctx context.Context, bookmarkID, userID
 }
 
 func (s *bookmarkService) MoveBookmark(ctx context.Context, bookmarkID, userID string, folderID *string) (*dto.BookmarkResponse, error) {
+	if err := validateBookmarkAndUser(bookmarkID, userID); err != nil {
+		return nil, err
+	}
+	if folderID != nil && *folderID != "" && !validator.IsValidUUID(*folderID) {
+		return nil, apperrors.ErrBookmarkFolderNotFound
+	}
+
 	bookmark, err := s.bookmarkRepo.FindBookmarkByID(ctx, bookmarkID, userID)
 	if err != nil {
 		return nil, err
@@ -141,6 +164,10 @@ func (s *bookmarkService) MoveBookmark(ctx context.Context, bookmarkID, userID s
 }
 
 func (s *bookmarkService) CreateFolder(ctx context.Context, userID string, req *dto.CreateBookmarkFolderRequest) (*dto.BookmarkFolderResponse, error) {
+	if !validator.IsValidUUID(userID) {
+		return nil, apperrors.ErrInvalidUserID
+	}
+
 	folder := &model.BookmarkFolder{
 		UserID:      userID,
 		Name:        req.Name,
@@ -157,6 +184,10 @@ func (s *bookmarkService) CreateFolder(ctx context.Context, userID string, req *
 }
 
 func (s *bookmarkService) GetFoldersByUser(ctx context.Context, userID string) ([]*dto.BookmarkFolderResponse, error) {
+	if !validator.IsValidUUID(userID) {
+		return nil, apperrors.ErrInvalidUserID
+	}
+
 	folders, err := s.bookmarkRepo.GetFoldersByUser(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -170,6 +201,10 @@ func (s *bookmarkService) GetFoldersByUser(ctx context.Context, userID string) (
 }
 
 func (s *bookmarkService) UpdateFolder(ctx context.Context, folderID, userID string, req *dto.UpdateBookmarkFolderRequest) (*dto.BookmarkFolderResponse, error) {
+	if err := validateFolderAndUser(folderID, userID); err != nil {
+		return nil, err
+	}
+
 	folder, err := s.bookmarkRepo.FindFolderByID(ctx, folderID, userID)
 	if err != nil {
 		return nil, err
@@ -194,5 +229,38 @@ func (s *bookmarkService) UpdateFolder(ctx context.Context, folderID, userID str
 }
 
 func (s *bookmarkService) DeleteFolder(ctx context.Context, folderID, userID string) error {
+	if err := validateFolderAndUser(folderID, userID); err != nil {
+		return err
+	}
 	return s.bookmarkRepo.DeleteFolder(ctx, folderID, userID)
+}
+
+func validateBookmarkPostAndUser(postID, userID string) error {
+	if !validator.IsValidUUID(postID) {
+		return apperrors.ErrInvalidPostID
+	}
+	if !validator.IsValidUUID(userID) {
+		return apperrors.ErrInvalidUserID
+	}
+	return nil
+}
+
+func validateBookmarkAndUser(bookmarkID, userID string) error {
+	if !validator.IsValidUUID(bookmarkID) {
+		return apperrors.ErrBookmarkNotFound
+	}
+	if !validator.IsValidUUID(userID) {
+		return apperrors.ErrInvalidUserID
+	}
+	return nil
+}
+
+func validateFolderAndUser(folderID, userID string) error {
+	if !validator.IsValidUUID(folderID) {
+		return apperrors.ErrBookmarkFolderNotFound
+	}
+	if !validator.IsValidUUID(userID) {
+		return apperrors.ErrInvalidUserID
+	}
+	return nil
 }
