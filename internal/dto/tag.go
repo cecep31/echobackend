@@ -10,6 +10,14 @@ type TagResponse struct {
 	Name string `json:"name"`
 }
 
+type TrendingTagResponse struct {
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	TotalViews    int64  `json:"total_views"`
+	TotalLikes    int64  `json:"total_likes"`
+	TrendingScore int64  `json:"trending_score"`
+}
+
 func TagToResponse(t *model.Tag) *TagResponse {
 	if t == nil {
 		return nil

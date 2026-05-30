@@ -39,6 +39,15 @@ func (h *TagHandler) GetTags(c *echo.Context) error {
 	return response.Success(c, "Successfully retrieved tags", tags)
 }
 
+func (h *TagHandler) GetTrendingTags(c *echo.Context) error {
+	tags, err := h.service.GetTrendingTags(c.Request().Context())
+	if err != nil {
+		return response.InternalServerError(c, "Failed to get trending tags", err)
+	}
+
+	return response.Success(c, "Successfully retrieved trending tags", tags)
+}
+
 func (h *TagHandler) GetTagsForSitemap(c *echo.Context) error {
 	tags, err := h.service.GetTagsForSitemap(c.Request().Context(), 1000)
 	if err != nil {

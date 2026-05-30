@@ -6,6 +6,7 @@ Manajemen tag untuk post. Create butuh login; update/delete butuh **super admin*
 |--------|------|------|
 | POST | `` | Bearer |
 | GET | `` | Tidak |
+| GET | `/trending` | Tidak |
 | GET | `/sitemap` | Tidak |
 | GET | `/:id` | Tidak |
 | PUT | `/:id` | Bearer + super admin |
@@ -27,6 +28,20 @@ Manajemen tag untuk post. Create butuh login; update/delete butuh **super admin*
 | `name` | string |
 | `created_at` | string (opsional di respons) |
 
+### `TrendingTagResponse`
+
+```json
+{
+  "id": 1,
+  "name": "golang",
+  "total_views": 1500,
+  "total_likes": 80,
+  "trending_score": 1710
+}
+```
+
+`trending_score` dihitung dari agregasi post published: `like_count * 2 + bookmark_count * 2 + view_count`.
+
 ### `SitemapTag`
 
 ```json
@@ -46,6 +61,34 @@ Manajemen tag untuk post. Create butuh login; update/delete butuh **super admin*
 ## GET `/api/tags`
 
 **Sukses — 200** — `data`: array `TagResponse`.
+
+---
+
+## GET `/api/tags/trending`
+
+Mengambil 5 tag paling trending dari post published. Endpoint ini tidak menerima query parameter limit.
+
+**Cache:** hasil response di-cache di Valkey/Redis selama 30 menit dengan key `tags:trending` (mengikuti prefix cache jika dikonfigurasi).
+
+**Sukses — 200** — `data`: array `TrendingTagResponse`.
+
+Contoh response:
+
+```json
+{
+  "success": true,
+  "message": "Successfully retrieved trending tags",
+  "data": [
+    {
+      "id": 1,
+      "name": "golang",
+      "total_views": 1500,
+      "total_likes": 80,
+      "trending_score": 1710
+    }
+  ]
+}
+```
 
 ---
 

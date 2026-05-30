@@ -292,12 +292,13 @@ func (m *mockUserRepo) CheckUserByUsername(ctx context.Context, username string)
 // ---- TagRepository mock -------------------------------------------------------
 
 type mockTagRepo struct {
-	createFn     func(ctx context.Context, tag *model.Tag) error
-	findAllFn    func(ctx context.Context) ([]model.Tag, error)
-	findByIDFn   func(ctx context.Context, id uint) (*model.Tag, error)
-	findByNameFn func(ctx context.Context, name string) (*model.Tag, error)
-	updateFn     func(ctx context.Context, tag *model.Tag) error
-	deleteFn     func(ctx context.Context, id uint) error
+	createFn        func(ctx context.Context, tag *model.Tag) error
+	findAllFn       func(ctx context.Context) ([]model.Tag, error)
+	findByIDFn      func(ctx context.Context, id uint) (*model.Tag, error)
+	findByNameFn    func(ctx context.Context, name string) (*model.Tag, error)
+	getTrendingTags func(ctx context.Context, limit int) ([]*dto.TrendingTagResponse, error)
+	updateFn        func(ctx context.Context, tag *model.Tag) error
+	deleteFn        func(ctx context.Context, id uint) error
 }
 
 func (m *mockTagRepo) Create(ctx context.Context, tag *model.Tag) error {
@@ -323,6 +324,12 @@ func (m *mockTagRepo) FindByName(ctx context.Context, name string) (*model.Tag, 
 		return m.findByNameFn(ctx, name)
 	}
 	return nil, nil
+}
+func (m *mockTagRepo) GetTrendingTags(ctx context.Context, limit int) ([]*dto.TrendingTagResponse, error) {
+	if m.getTrendingTags != nil {
+		return m.getTrendingTags(ctx, limit)
+	}
+	panic("GetTrendingTags not stubbed")
 }
 func (m *mockTagRepo) GetTagsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapTag, error) {
 	panic("GetTagsForSitemap not stubbed")

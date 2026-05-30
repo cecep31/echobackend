@@ -2,15 +2,23 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"echobackend/internal/dto"
 	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/repository"
+	"echobackend/pkg/cache"
+)
+
+const (
+	trendingTagsLimit = 5
+	trendingTagsTTL   = 30 * time.Minute
 )
 
 type tagService struct {
 	tagRepo repository.TagRepository
+	cache   *cache.ValkeyCache
 }
 
 type TagService interface {
@@ -18,14 +26,19 @@ type TagService interface {
 	GetTags(ctx context.Context) ([]model.Tag, error)
 	GetTagByID(ctx context.Context, id uint) (*model.Tag, error)
 	GetTagByName(ctx context.Context, name string) (*model.Tag, error)
+	GetTrendingTags(ctx context.Context) ([]*dto.TrendingTagResponse, error)
 	GetTagsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapTag, error)
 	FindOrCreateByName(ctx context.Context, name string) (*model.Tag, error)
 	UpdateTag(ctx context.Context, tag *model.Tag) error
 	DeleteTag(ctx context.Context, id uint) error
 }
 
-func NewTagService(tagRepo repository.TagRepository) TagService {
-	return &tagService{tagRepo: tagRepo}
+func NewTagService(tagRepo repository.TagRepository, valkeyCache ...*cache.ValkeyCache) TagService {
+	var c *cache.ValkeyCache
+	if len(valkeyCache) > 0 {
+		c = valkeyCache[0]
+	}
+	return &tagService{tagRepo: tagRepo, cache: c}
 }
 
 func (s *tagService) CreateTag(ctx context.Context, tag *model.Tag) error {
@@ -49,6 +62,29 @@ func (s *tagService) UpdateTag(ctx context.Context, tag *model.Tag) error {
 
 func (s *tagService) GetTagByName(ctx context.Context, name string) (*model.Tag, error) {
 	return s.tagRepo.FindByName(ctx, name)
+}
+
+func (s *tagService) GetTrendingTags(ctx context.Context) ([]*dto.TrendingTagResponse, error) {
+	cacheKey := ""
+	if s.cache != nil {
+		cacheKey = s.cache.BuildKey("tags", "trending")
+		var cachedTags []*dto.TrendingTagResponse
+		found, err := s.cache.GetJSON(ctx, cacheKey, &cachedTags)
+		if err == nil && found {
+			return cachedTags, nil
+		}
+	}
+
+	tags, err := s.tagRepo.GetTrendingTags(ctx, trendingTagsLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	if cacheKey != "" {
+		_ = s.cache.SetJSONWithTTL(ctx, cacheKey, tags, trendingTagsTTL)
+	}
+
+	return tags, nil
 }
 
 func (s *tagService) GetTagsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapTag, error) {

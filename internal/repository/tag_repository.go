@@ -16,6 +16,7 @@ type TagRepository interface {
 	FindAll(ctx context.Context) ([]model.Tag, error)
 	FindByID(ctx context.Context, id uint) (*model.Tag, error)
 	FindByName(ctx context.Context, name string) (*model.Tag, error)
+	GetTrendingTags(ctx context.Context, limit int) ([]*dto.TrendingTagResponse, error)
 	GetTagsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapTag, error)
 	Update(ctx context.Context, tag *model.Tag) error
 	Delete(ctx context.Context, id uint) error
@@ -77,6 +78,27 @@ func (r *tagRepository) FindByName(ctx context.Context, name string) (*model.Tag
 		return nil, fmt.Errorf("failed to find tag by name %s: %w", name, err)
 	}
 	return &tag, nil
+}
+
+func (r *tagRepository) GetTrendingTags(ctx context.Context, limit int) ([]*dto.TrendingTagResponse, error) {
+	var tags []*dto.TrendingTagResponse
+
+	err := r.db.WithContext(ctx).
+		Table("tags").
+		Select("tags.id, tags.name, COALESCE(SUM(posts.view_count), 0) AS total_views, COALESCE(SUM(posts.like_count), 0) AS total_likes, COALESCE(SUM(posts.like_count * 2 + posts.bookmark_count * 2 + posts.view_count), 0) AS trending_score").
+		Joins("INNER JOIN posts_to_tags ON posts_to_tags.tag_id = tags.id").
+		Joins("INNER JOIN posts ON posts.id = posts_to_tags.post_id").
+		Joins("INNER JOIN users ON users.id = posts.created_by AND users.deleted_at IS NULL").
+		Where("posts.published = ? AND posts.deleted_at IS NULL", true).
+		Group("tags.id, tags.name").
+		Order("trending_score DESC, COUNT(posts_to_tags.post_id) DESC, tags.name ASC").
+		Limit(limit).
+		Scan(&tags).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get trending tags: %w", err)
+	}
+
+	return tags, nil
 }
 
 func (r *tagRepository) GetTagsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapTag, error) {
