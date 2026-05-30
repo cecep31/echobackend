@@ -77,7 +77,11 @@ Query: `limit` (default bervariasi per endpoint, **maksimum 100**), `offset` (de
 - Ukuran body request: **10 MB** (lebih besar → **413**).
 - CORS: `HTTP_ALLOW_ORIGINS` (default `*`).
 - Rate limit global: aktif jika `HTTP_RATE_LIMIT_RPS` > 0.
-- Rate limit khusus: `POST /api/auth/login` dan `POST /api/auth/forgot-password` — **5 request / 5 menit** per IP (burst 5).
+- Rate limit khusus auth memakai fixed window per IP. Jika `VALKEY_URL` aktif, counter disimpan di Valkey/Redis dan berlaku lintas instance; jika tidak, fallback ke memory per instance:
+  `register`, `login`, dan `reset-password` **5 / 5 menit**;
+  `forgot-password` **3 / 5 menit**;
+  `check-username`, `email/:email`, dan `refresh` **30 / menit**;
+  `oauth/exchange` **10 / menit**.
 
 ## Health & root
 

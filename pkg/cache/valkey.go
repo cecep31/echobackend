@@ -3,7 +3,9 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +20,15 @@ type ValkeyCache struct {
 	keyPrefix string
 	ttl       time.Duration
 }
+
+var fixedWindowIncrementScript = redis.NewScript(`
+local current = redis.call("INCR", KEYS[1])
+if current == 1 then
+	redis.call("PEXPIRE", KEYS[1], ARGV[1])
+end
+local ttl = redis.call("PTTL", KEYS[1])
+return {current, ttl}
+`)
 
 // NewValkeyCache creates a fail-open Valkey client. If config is missing or invalid,
 // it returns nil so the application can continue without caching.
@@ -130,6 +141,42 @@ func (c *ValkeyCache) SetJSONWithTTL(ctx context.Context, key string, value any,
 	return nil
 }
 
+func (c *ValkeyCache) IncrementFixedWindow(ctx context.Context, key string, window time.Duration) (int, time.Duration, error) {
+	if c == nil || c.client == nil || key == "" || window <= 0 {
+		return 0, 0, nil
+	}
+
+	result, err := fixedWindowIncrementScript.Run(ctx, c.client, []string{key}, window.Milliseconds()).Result()
+	if err != nil {
+		slog.Warn("cache: IncrementFixedWindow error", "key", key, "error", err)
+		return 0, 0, err
+	}
+
+	values, ok := result.([]interface{})
+	if !ok || len(values) != 2 {
+		err := fmt.Errorf("unexpected redis script result: %T", result)
+		slog.Warn("cache: IncrementFixedWindow invalid result", "key", key, "error", err)
+		return 0, 0, err
+	}
+
+	count, err := redisValueToInt64(values[0])
+	if err != nil {
+		slog.Warn("cache: IncrementFixedWindow invalid count", "key", key, "error", err)
+		return 0, 0, err
+	}
+
+	ttlMillis, err := redisValueToInt64(values[1])
+	if err != nil {
+		slog.Warn("cache: IncrementFixedWindow invalid ttl", "key", key, "error", err)
+		return 0, 0, err
+	}
+	if ttlMillis < 0 {
+		ttlMillis = 0
+	}
+
+	return int(count), time.Duration(ttlMillis) * time.Millisecond, nil
+}
+
 func (c *ValkeyCache) GetJSONAndDelete(ctx context.Context, key string, dest any) (bool, error) {
 	if c == nil || c.client == nil || key == "" {
 		return false, nil
@@ -150,4 +197,19 @@ func (c *ValkeyCache) GetJSONAndDelete(ctx context.Context, key string, dest any
 	}
 
 	return true, nil
+}
+
+func redisValueToInt64(value any) (int64, error) {
+	switch v := value.(type) {
+	case int64:
+		return v, nil
+	case int:
+		return int64(v), nil
+	case string:
+		return strconv.ParseInt(v, 10, 64)
+	case []byte:
+		return strconv.ParseInt(string(v), 10, 64)
+	default:
+		return 0, fmt.Errorf("unexpected integer value type: %T", value)
+	}
 }

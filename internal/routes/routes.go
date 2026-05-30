@@ -4,12 +4,14 @@ import (
 	"echobackend/config"
 	"echobackend/internal/handler"
 	"echobackend/internal/middleware"
+	"echobackend/pkg/cache"
 
 	"github.com/labstack/echo/v5"
 )
 
 type Routes struct {
 	config                  *config.Config
+	cache                   *cache.ValkeyCache
 	userHandler             *handler.UserHandler
 	postHandler             *handler.PostHandler
 	authHandler             *handler.AuthHandler
@@ -28,6 +30,7 @@ type Routes struct {
 
 func NewRoutes(
 	config *config.Config,
+	valkeyCache *cache.ValkeyCache,
 	userHandler *handler.UserHandler,
 	postHandler *handler.PostHandler,
 	authHandler *handler.AuthHandler,
@@ -45,6 +48,7 @@ func NewRoutes(
 ) *Routes {
 	return &Routes{
 		config:                  config,
+		cache:                   valkeyCache,
 		userHandler:             userHandler,
 		postHandler:             postHandler,
 		authHandler:             authHandler,

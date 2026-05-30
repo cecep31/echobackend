@@ -4,15 +4,17 @@ Registrasi, login, OAuth, refresh token, reset password, ubah password, logout, 
 
 ## Ringkasan endpoint
 
+Rate limit endpoint publik auth memakai fixed window per IP. Jika `VALKEY_URL` aktif, counter disimpan di Valkey/Redis dan berlaku lintas instance; jika tidak, backend fallback ke memory per instance.
+
 | Method | Path | Auth | Rate limit |
 |--------|------|------|------------|
-| POST | `/register` | Tidak | Global |
+| POST | `/register` | Tidak | 5 / 5 menit |
 | POST | `/login` | Tidak | 5 / 5 menit |
-| POST | `/check-username` | Tidak | Global |
-| GET | `/email/:email` | Tidak | Global |
-| POST | `/forgot-password` | Tidak | 5 / 5 menit |
-| POST | `/reset-password` | Tidak | Global |
-| POST | `/refresh` | Tidak | Global |
+| POST | `/check-username` | Tidak | 30 / menit |
+| GET | `/email/:email` | Tidak | 30 / menit |
+| POST | `/forgot-password` | Tidak | 3 / 5 menit |
+| POST | `/reset-password` | Tidak | 5 / 5 menit |
+| POST | `/refresh` | Tidak | 30 / menit |
 | POST | `/logout` | Bearer | Global |
 | GET | `/profile` | Bearer | Global |
 | PATCH | `/password` | Bearer | Global |
@@ -21,7 +23,7 @@ Registrasi, login, OAuth, refresh token, reset password, ubah password, logout, 
 | GET | `/activity-logs/failed-logins` | Bearer + super admin | Global |
 | GET | `/oauth/github` | Tidak | Global |
 | GET | `/oauth/github/callback` | Tidak | Global |
-| POST | `/oauth/exchange` | Tidak | Global |
+| POST | `/oauth/exchange` | Tidak | 10 / menit |
 
 ---
 

@@ -98,6 +98,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	authMiddleware := middleware.NewAuthMiddleware(cfg, userRepo)
 	appRoutes := routes.NewRoutes(
 		cfg,
+		valkeyCache,
 		userHandler,
 		postHandler,
 		authHandler,

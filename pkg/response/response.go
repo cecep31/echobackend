@@ -100,6 +100,19 @@ func Forbidden(c *echo.Context, message string) error {
 	})
 }
 
+// TooManyRequests sends a 429 rate-limit response.
+func TooManyRequests(c *echo.Context, message string) error {
+	slog.Warn("too many requests",
+		"message", message,
+	)
+
+	return c.JSON(http.StatusTooManyRequests, APIResponse{
+		Success: false,
+		Message: message,
+		Error:   "Rate limit exceeded",
+	})
+}
+
 // NotFound sends a not found error response
 func NotFound(c *echo.Context, message string, err error) error {
 	errorMsg := "Resource not found"
