@@ -23,6 +23,7 @@ type Routes struct {
 	userFollowHandler       *handler.UserFollowHandler
 	chatConversationHandler *handler.ChatConversationHandler
 	holdingHandler          *handler.HoldingHandler
+	exchangeRateHandler     *handler.ExchangeRateHandler
 	bookmarkHandler         *handler.BookmarkHandler
 	notificationHandler     *handler.NotificationHandler
 	reportHandler           *handler.ReportHandler
@@ -42,6 +43,7 @@ func NewRoutes(
 	userFollowHandler *handler.UserFollowHandler,
 	chatConversationHandler *handler.ChatConversationHandler,
 	holdingHandler *handler.HoldingHandler,
+	exchangeRateHandler *handler.ExchangeRateHandler,
 	bookmarkHandler *handler.BookmarkHandler,
 	notificationHandler *handler.NotificationHandler,
 	reportHandler *handler.ReportHandler,
@@ -60,6 +62,7 @@ func NewRoutes(
 		userFollowHandler:       userFollowHandler,
 		chatConversationHandler: chatConversationHandler,
 		holdingHandler:          holdingHandler,
+		exchangeRateHandler:     exchangeRateHandler,
 		bookmarkHandler:         bookmarkHandler,
 		notificationHandler:     notificationHandler,
 		reportHandler:           reportHandler,
@@ -79,6 +82,7 @@ func (r *Routes) setupAPIRoutes(api *echo.Group) {
 	r.setupTagRoutes(api)
 	r.setupChatConversationRoutes(api)
 	r.setupHoldingRoutes(api)
+	r.setupExchangeRateRoutes(api)
 	r.setupBookmarkRoutes(api)
 	r.setupNotificationRoutes(api)
 	r.setupReportRoutes(api)

@@ -100,6 +100,7 @@ Query: `limit` (default bervariasi per endpoint, **maksimum 100**), `offset` (de
 | Tags | `/api/tags` | [tags.md](./tags.md) |
 | Chat | `/api/chat/conversations`, `/api/chat/messages` | [chat.md](./chat.md) |
 | Holdings | `/api/holdings`, `/api/holding-types` | [holdings.md](./holdings.md) |
+| Exchange rates | `/api/exchange-rates` | [exchange-rates.md](./exchange-rates.md) |
 | Bookmarks | `/api/bookmarks` | [bookmarks.md](./bookmarks.md) |
 | Notifications | `/api/notifications` | [notifications.md](./notifications.md) |
 | Reports (admin) | `/api/reports` | [reports.md](./reports.md) |

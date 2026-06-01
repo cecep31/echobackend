@@ -88,6 +88,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	chatConversationService := service.NewChatConversationService(chatConversationRepo, openRouterService, cfg)
 	yahooClient := market.NewYahooClient(nil)
 	holdingService := service.NewHoldingService(holdingRepo, yahooClient)
+	exchangeRateService := service.NewExchangeRateService(yahooClient, valkeyCache)
 	bookmarkService := service.NewBookmarkService(bookmarkRepo, postRepo)
 	reportService := service.NewReportService(db)
 
@@ -101,6 +102,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	userFollowHandler := handler.NewUserFollowHandler(userFollowService)
 	chatConversationHandler := handler.NewChatConversationHandler(chatConversationService)
 	holdingHandler := handler.NewHoldingHandler(holdingService)
+	exchangeRateHandler := handler.NewExchangeRateHandler(exchangeRateService)
 	bookmarkHandler := handler.NewBookmarkHandler(bookmarkService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
 	reportHandler := handler.NewReportHandler(reportService)
@@ -120,6 +122,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		userFollowHandler,
 		chatConversationHandler,
 		holdingHandler,
+		exchangeRateHandler,
 		bookmarkHandler,
 		notificationHandler,
 		reportHandler,
