@@ -31,6 +31,7 @@ var (
 	ErrPaginationLimitExceeded  = errors.New("limit must not exceed 100")
 	ErrPaginationOffsetNegative = errors.New("offset must be non-negative")
 	ErrFileNil                  = errors.New("file cannot be nil")
+	ErrFileTooLarge             = errors.New("file size must not exceed 1 MB")
 	ErrStorageUnavailable       = errors.New("storage is unavailable")
 
 	ErrHoldingNotFound        = errors.New("holding not found")

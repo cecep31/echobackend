@@ -43,6 +43,8 @@ type trendingPostsCacheEntry struct {
 	Posts []*dto.PostResponse `json:"posts"`
 }
 
+const maxPostImageSize = 1 * 1024 * 1024
+
 func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage, valkeyCache *cache.ValkeyCache) PostService {
 	return &postService{postRepo: postRepo, tagService: tagService, s3storage: storageclient, cache: valkeyCache}
 }
@@ -375,6 +377,9 @@ func (s *postService) GetPostsForYou(ctx context.Context, userID string, offset 
 func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.FileHeader) error {
 	if file == nil {
 		return apperrors.ErrFileNil
+	}
+	if file.Size > maxPostImageSize {
+		return apperrors.ErrFileTooLarge
 	}
 	if s.s3storage == nil {
 		return apperrors.ErrStorageUnavailable
