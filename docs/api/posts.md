@@ -16,7 +16,7 @@ Post CRUD, image uploads, feeds, comments, views, and likes. Sub-resources use `
 | `bookmark_count` | number | |
 | `published` | boolean \| null | |
 | `published_at` | string \| null | |
-| `user` | `UserResponse` \| null | Author |
+| `user` | `UserBrief` \| null | Author (see below) |
 | `tags` | `TagResponse[]` | `{ id, name }` |
 | `created_at` | string \| null | |
 | `updated_at` | string \| null | |
@@ -25,6 +25,14 @@ Post CRUD, image uploads, feeds, comments, views, and likes. Sub-resources use `
 ### `TagResponse`
 
 `{ "id": number, "name": string }`
+
+### `UserBrief` (nested author on posts, comments, and likes)
+
+| Field | Type |
+|-------|------|
+| `id` | string (UUID) |
+| `username` | string \| null |
+| `image` | string \| null |
 
 ---
 
@@ -48,9 +56,9 @@ Post CRUD, image uploads, feeds, comments, views, and likes. Sub-resources use `
 | GET | `/username/:username` | No |
 | GET | `/u/:username/:slug` | No |
 | GET | `/tag/:tag` | No |
-| GET | `/:id` | Bearer + Admin |
-| PUT | `/:id` | Bearer + Admin |
-| DELETE | `/:id` | Bearer + Admin |
+| GET | `/:id` | Bearer + **super admin** |
+| PUT | `/:id` | Bearer + **super admin** |
+| DELETE | `/:id` | Bearer + **super admin** |
 
 ### POST `/api/posts`
 
@@ -90,7 +98,13 @@ Post CRUD, image uploads, feeds, comments, views, and likes. Sub-resources use `
 
 ### GET `/api/posts/trending`
 
-**Query:** `limit` (default 10).
+**Query:** `limit` (default 10, max 100).
+
+### GET `/api/posts/username/:username` and `/api/posts/tag/:tag`
+
+Paginated published posts for a user or tag name.
+
+**Query:** `limit`, `offset` (default limit 10, max 100).
 
 ### GET `/api/posts/me` and `/feed/for-you`
 
@@ -99,6 +113,8 @@ Post CRUD, image uploads, feeds, comments, views, and likes. Sub-resources use `
 ### GET / PUT / DELETE `/api/posts/me/:id`
 
 Read, update, or delete a post owned by the logged-in user. **Auth required.**
+
+**PUT success - 200** - `data`: full `PostResponse`.
 
 **Common errors**
 
@@ -182,7 +198,7 @@ Likes **received** by posts owned by the logged-in user, aggregated monthly. **A
 |-------|----------|-------|
 | `image` | Yes (file) | Max **1 MiB** / 1,048,576 bytes |
 
-**Success - 200** - stored URL/file (see service implementation; `data` may be `null` with a success message).
+**Success - 200** - `data`: `null` (upload succeeds with a success message only).
 
 **Error:** 400 when the file is empty, exceeds 1 MiB, or storage is unavailable.
 
@@ -200,11 +216,11 @@ Full detail for one post (body is not truncated).
 
 ### GET `/api/posts/:id`
 
-Full detail for one post, admin only. **Admin auth required.**
+Full detail for one post. **Super admin auth required.**
 
 ### PUT `/api/posts/:id`
 
-Update a post by ID, admin only. **Admin auth required.**
+Update a post by ID. **Super admin auth required.**
 
 **Body (`UpdatePostRequest`)** - all fields are optional; `published` is a boolean pointer.
 
@@ -216,7 +232,7 @@ Update a post by ID, admin only. **Admin auth required.**
 
 ### DELETE `/api/posts/:id`
 
-Delete a post by ID, admin only. **Admin auth required.**
+Delete a post by ID. **Super admin auth required.**
 
 **Success - 200** - `data`: `null`.
 
@@ -237,9 +253,9 @@ Delete a post by ID, admin only. **Admin auth required.**
 |-------|------|
 | `id` | string (UUID) |
 | `post_id` | string |
-| `parent_comment_id` | string \| null |
+| `parent_comment_id` | string \| null | Read-only in responses; not accepted on create |
 | `text` | string |
-| `user` | `UserResponse` \| null |
+| `user` | `UserBrief` \| null |
 | `created_at` | string \| null |
 | `updated_at` | string \| null |
 

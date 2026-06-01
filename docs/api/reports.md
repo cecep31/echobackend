@@ -13,26 +13,16 @@ Admin statistics dashboard. **All routes require a Bearer token and super admin 
 
 ---
 
-## Common Query Parameters (Optional)
+## Query Parameters
 
-| Param | Description |
-|-------|-------------|
-| `startDate` | Start period filter (string format; see service behavior) |
-| `endDate` | End period filter |
+Optional date filters use `startDate` and `endDate` query params in **`YYYY-MM-DD`** format.
 
-The `/users` and `/posts` endpoints also accept:
-
-| Param | Default | Description |
-|-------|---------|-------------|
-| `limit` | 10 | max 100 |
-
-The `/posts` endpoint also accepts:
-
-| Param | Description |
-|-------|-------------|
-| `tagId` | Numeric tag filter |
-
----
+| Endpoint | `startDate` / `endDate` | Other params |
+|----------|-------------------------|--------------|
+| GET `/overview` | Filters only the nested `engagement` object. The `overview` block is always current all-time / today snapshots (not date-filtered). | — |
+| GET `/users` | Filters period metrics (`newUsersThisPeriod`, `growthTrend`, etc.) | `limit` (default 10, max 100) |
+| GET `/posts` | Filters period post metrics | `limit` (default 10, max 100), `tagId` (numeric tag filter) |
+| GET `/engagement` | Filters engagement metrics and `periodComparison` | — |
 
 ## GET `/api/reports/overview`
 

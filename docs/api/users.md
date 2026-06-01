@@ -2,7 +2,9 @@
 
 User profiles, admin user lists, follow/unfollow, and social statistics.
 
-## Data Type: `UserResponse`
+## Data Types
+
+### `UserResponse` (admin routes: `GET /`, `GET /:id`)
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -21,6 +23,18 @@ User profiles, admin user lists, follow/unfollow, and social statistics.
 | `created_at` | string (ISO) \| null | |
 | `updated_at` | string (ISO) \| null | |
 | `deleted_at` | string (ISO) \| null | Admin routes only; set when the user has been soft-deleted |
+
+### `CurrentUserResponse` (`GET /me`)
+
+Same fields as `UserResponse`, except:
+
+- Always includes `is_super_admin` (not omitted).
+- Never includes `deleted_at` or `is_following`.
+- Includes `profile` when loaded.
+
+### `PublicUserResponse` (`GET /username/:username`)
+
+Public profile shape. Includes `email`, `name`, `profile`, and follow counts. Omits `is_super_admin` and `deleted_at`. `is_following` is omitted on this route (no auth middleware).
 
 ### `Profile`
 
@@ -50,7 +64,7 @@ User profiles, admin user lists, follow/unfollow, and social statistics.
 
 ### GET `/api/users/me`
 
-**Success - 200** - `data`: one `UserResponse`.
+**Success - 200** - `data`: one `CurrentUserResponse`.
 
 ### GET `/api/users` (admin)
 
@@ -93,7 +107,7 @@ GET /api/users/<uuid>?deleted=true
 
 ### GET `/api/users/username/:username`
 
-**Success - 200** - `data`: `UserResponse`. Public route - `is_following` is not set.
+**Success - 200** - `data`: `PublicUserResponse`.
 
 ### DELETE `/api/users/:id` (admin)
 

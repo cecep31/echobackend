@@ -273,7 +273,7 @@ Log out the user by deleting the refresh token session.
 
 ## GET `/api/auth/profile`
 
-Get the currently logged-in user's profile.
+Get the currently logged-in user's profile. Returns a flat subset of user fields (no `name` or nested `profile` object). For the full current-user payload including `profile`, use `GET /api/users/me`.
 
 **Header:** `Authorization: Bearer <access_token>`
 

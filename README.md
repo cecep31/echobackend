@@ -79,6 +79,10 @@ The project follows a modular layered architecture with manual dependency inject
 - **`internal/model/`**: GORM entities and shared domain models.
 - **`pkg/`**: Infrastructure-agnostic packages (Cache, Storage, Database setup).
 
+## API Documentation
+
+Full HTTP API reference for frontend integration lives in [`docs/api/README.md`](docs/api/README.md), with per-module docs for auth, users, posts, tags, chat, holdings, exchange rates, bookmarks, notifications, and admin reports.
+
 ### Standardized Responses
 
 All handlers use `pkg/response` helpers to ensure a consistent API contract:
