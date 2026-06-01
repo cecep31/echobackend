@@ -84,8 +84,8 @@ func TestPostViewService_GetMyPostsLikesByMonth(t *testing.T) {
 				Month string
 				Count int64
 			}{
-				{Month: "2026-04", Count: 5},
-				{Month: "2026-05", Count: 3},
+				{Month: start.AddDate(0, 1, 0).Format("2006-01"), Count: 5},
+				{Month: start.AddDate(0, 2, 0).Format("2006-01"), Count: 3},
 			}, nil
 		},
 	}
