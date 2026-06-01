@@ -1,47 +1,47 @@
-# Modul Auth — `/api/auth`
+# Auth Module - `/api/auth`
 
-Registrasi, login, OAuth, refresh token, reset password, ubah password, logout, profil, dan log aktivitas.
+Registration, login, OAuth, refresh tokens, password reset, password change, logout, profile, and activity logs.
 
-## Ringkasan endpoint
+## Endpoint Summary
 
-Rate limit endpoint publik auth memakai fixed window per IP. Jika `VALKEY_URL` aktif, counter disimpan di Valkey/Redis dan berlaku lintas instance; jika tidak, backend fallback ke memory per instance.
+Public auth endpoints use a fixed-window rate limit per IP. If `VALKEY_URL` is enabled, counters are stored in Valkey/Redis and work across instances; otherwise the backend falls back to in-memory counters per instance.
 
 | Method | Path | Auth | Rate limit |
 |--------|------|------|------------|
-| POST | `/register` | Tidak | 5 / 5 menit |
-| POST | `/login` | Tidak | 5 / 5 menit |
-| POST | `/check-username` | Tidak | 30 / menit |
-| GET | `/email/:email` | Tidak | 30 / menit |
-| POST | `/forgot-password` | Tidak | 3 / 5 menit |
-| POST | `/reset-password` | Tidak | 5 / 5 menit |
-| POST | `/refresh` | Tidak | 30 / menit |
+| POST | `/register` | No | 5 / 5 minutes |
+| POST | `/login` | No | 5 / 5 minutes |
+| POST | `/check-username` | No | 30 / minute |
+| GET | `/email/:email` | No | 30 / minute |
+| POST | `/forgot-password` | No | 3 / 5 minutes |
+| POST | `/reset-password` | No | 5 / 5 minutes |
+| POST | `/refresh` | No | 30 / minute |
 | POST | `/logout` | Bearer | Global |
 | GET | `/profile` | Bearer | Global |
 | PATCH | `/password` | Bearer | Global |
 | GET | `/activity-logs` | Bearer | Global |
 | GET | `/activity-logs/recent` | Bearer | Global |
 | GET | `/activity-logs/failed-logins` | Bearer + super admin | Global |
-| GET | `/oauth/github` | Tidak | Global |
-| GET | `/oauth/github/callback` | Tidak | Global |
-| POST | `/oauth/exchange` | Tidak | 10 / menit |
+| GET | `/oauth/github` | No | Global |
+| GET | `/oauth/github/callback` | No | Global |
+| POST | `/oauth/exchange` | No | 10 / minute |
 
 ---
 
 ## POST `/api/auth/register`
 
-Membuat akun baru.
+Create a new account.
 
 **Body**
 
-| Field | Tipe | Wajib | Validasi |
-|-------|------|-------|----------|
-| `email` | string | Ya | format email |
-| `username` | string | Ya | 3–30 karakter |
-| `password` | string | Ya | min 8 karakter |
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `email` | string | Yes | email format |
+| `username` | string | Yes | 3-30 characters |
+| `password` | string | Yes | min 8 characters |
 
-> **Catatan:** Disarankan min 8 karakter, huruf besar, huruf kecil, angka, dan karakter spesial.
+> **Note:** Recommended password strength is at least 8 characters with uppercase, lowercase, number, and special character.
 
-**Sukses — 201**
+**Success - 201**
 
 ```json
 {
@@ -55,29 +55,29 @@ Membuat akun baru.
 }
 ```
 
-**Error**
+**Errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 400 | Body tidak valid |
-| 422 | Validasi gagal |
-| 409 | Email atau username sudah dipakai |
-| 500 | Error server |
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid body |
+| 422 | Validation failed |
+| 409 | Email or username already in use |
+| 500 | Server error |
 
 ---
 
 ## POST `/api/auth/login`
 
-Login dengan email **atau** username di field `identifier`.
+Login with email **or** username in the `identifier` field.
 
 **Body**
 
-| Field | Tipe | Wajib | Validasi |
-|-------|------|-------|----------|
-| `identifier` | string | Ya | — |
-| `password` | string | Ya | min 6 |
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `identifier` | string | Yes | - |
+| `password` | string | Yes | min 6 |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -95,28 +95,28 @@ Login dengan email **atau** username di field `identifier`.
 }
 ```
 
-**Error**
+**Errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 400 | Body tidak valid |
-| 401 | Kredensial salah |
-| 429 | Rate limit |
-| 500 | Error server |
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid body |
+| 401 | Wrong credentials |
+| 429 | Rate limited |
+| 500 | Server error |
 
 ---
 
 ## POST `/api/auth/check-username`
 
-Cek ketersediaan username sebelum registrasi.
+Check username availability before registration.
 
 **Body**
 
-| Field | Tipe | Wajib | Validasi |
-|-------|------|-------|----------|
-| `username` | string | Ya | 3–30 karakter |
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `username` | string | Yes | 3-30 characters |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -133,15 +133,15 @@ Cek ketersediaan username sebelum registrasi.
 
 ## GET `/api/auth/email/:email`
 
-Cek ketersediaan email sebelum registrasi.
+Check email availability before registration.
 
-**Parameter Path**
+**Path Parameter**
 
-| Param | Tipe | Wajib |
-|-------|------|-------|
-| `email` | string | Ya |
+| Param | Type | Required |
+|-------|------|----------|
+| `email` | string | Yes |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -158,35 +158,35 @@ Cek ketersediaan email sebelum registrasi.
 
 ## POST `/api/auth/forgot-password`
 
-Meminta reset password. Respons **sama** untuk email terdaftar maupun tidak (anti-enumeration).
+Request a password reset. The response is the **same** whether the email is registered or not (anti-enumeration).
 
-Jika `SMTP_HOST` terisi dan queue Asynq tersedia lewat `QUEUE_REDIS_URL` atau `VALKEY_URL`, backend memasukkan email reset password ke background job queue dan worker mengirimnya lewat SMTP. Link reset dibuat dari `FRONTEND_RESET_PASSWORD_URL` dengan query `token`. Jika SMTP/queue belum dikonfigurasi, token tetap dibuat dan aktivitas dicatat sebagai mode dev di metadata log.
+If `SMTP_HOST` is set and the Asynq queue is available through `QUEUE_REDIS_URL` or `VALKEY_URL`, the backend enqueues the password reset email and a worker sends it through SMTP. The reset link is built from `FRONTEND_RESET_PASSWORD_URL` with a `token` query parameter. If SMTP/queue is not configured, the token is still created and activity is recorded in dev mode metadata.
 
-**Env terkait**
+**Related env vars**
 
-| Variable | Keterangan |
-|----------|------------|
-| `SMTP_HOST` | Host SMTP. Kosong berarti pengiriman email nonaktif |
-| `SMTP_PORT` | Port SMTP, default `587` |
-| `SMTP_USERNAME` | Username SMTP |
-| `SMTP_PASSWORD` | Password SMTP |
+| Variable | Description |
+|----------|-------------|
+| `SMTP_HOST` | SMTP host. Empty means email delivery is disabled |
+| `SMTP_PORT` | SMTP port, default `587` |
+| `SMTP_USERNAME` | SMTP username |
+| `SMTP_PASSWORD` | SMTP password |
 | `SMTP_FROM` | Sender email, default `noreply@pilput.net` |
-| `SMTP_TLS` | `true` untuk implicit TLS (umumnya port 465), `false` untuk STARTTLS (umumnya port 587) |
-| `SMTP_TIMEOUT_SECONDS` | Timeout koneksi SMTP, default `10` |
-| `QUEUE_REDIS_URL` | URL Redis/Valkey untuk broker Asynq. Jika kosong, fallback ke `VALKEY_URL` |
-| `QUEUE_REDIS_TIMEOUT_MS` | Timeout koneksi/read/write Redis untuk Asynq, default `5000` |
-| `QUEUE_DEFAULT_NAME` | Nama queue default untuk semua background job, default `default` |
-| `QUEUE_CONCURRENCY` | Jumlah worker Asynq untuk semua job, default `1` |
-| `QUEUE_MAX_RETRY` | Maksimal retry task, default `5` |
-| `FRONTEND_RESET_PASSWORD_URL` | URL halaman reset password frontend |
+| `SMTP_TLS` | `true` for implicit TLS (commonly port 465), `false` for STARTTLS (commonly port 587) |
+| `SMTP_TIMEOUT_SECONDS` | SMTP connection timeout, default `10` |
+| `QUEUE_REDIS_URL` | Redis/Valkey URL for the Asynq broker. Falls back to `VALKEY_URL` when empty |
+| `QUEUE_REDIS_TIMEOUT_MS` | Redis connection/read/write timeout for Asynq, default `5000` |
+| `QUEUE_DEFAULT_NAME` | Default queue name for all background jobs, default `default` |
+| `QUEUE_CONCURRENCY` | Number of Asynq workers for all jobs, default `1` |
+| `QUEUE_MAX_RETRY` | Maximum task retry count, default `5` |
+| `FRONTEND_RESET_PASSWORD_URL` | Frontend reset password page URL |
 
 **Body**
 
-| Field | Tipe | Wajib |
-|-------|------|-------|
-| `email` | string | Ya (email) |
+| Field | Type | Required |
+|-------|------|----------|
+| `email` | string | Yes (email) |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -200,16 +200,16 @@ Jika `SMTP_HOST` terisi dan queue Asynq tersedia lewat `QUEUE_REDIS_URL` atau `V
 
 ## POST `/api/auth/reset-password`
 
-Set password baru dengan token reset.
+Set a new password using a reset token.
 
 **Body**
 
-| Field | Tipe | Wajib | Validasi |
-|-------|------|-------|----------|
-| `token` | string | Ya | — |
-| `password` | string | Ya | min 8 |
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `token` | string | Yes | - |
+| `password` | string | Yes | min 8 |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -219,47 +219,47 @@ Set password baru dengan token reset.
 }
 ```
 
-**Error**
+**Errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 400 | Token tidak valid / kedaluwarsa / sudah dipakai |
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid / expired / already-used token |
 
 ---
 
 ## POST `/api/auth/refresh`
 
-Perpanjang sesi dengan refresh token. Menghasilkan access token dan refresh token baru (rotasi).
+Extend a session with a refresh token. Returns a new access token and refresh token (rotation).
 
 **Body**
 
-| Field | Tipe | Wajib |
-|-------|------|-------|
-| `refresh_token` | string | Ya |
+| Field | Type | Required |
+|-------|------|----------|
+| `refresh_token` | string | Yes |
 
-**Sukses — 200** — Bentuk `data` sama seperti login (`access_token`, `refresh_token`, `user`).
+**Success - 200** - `data` has the same shape as login (`access_token`, `refresh_token`, `user`).
 
-**Error**
+**Errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 401 | Refresh token tidak valid / kedaluwarsa |
+| HTTP | Condition |
+|------|-----------|
+| 401 | Invalid / expired refresh token |
 
 ---
 
 ## POST `/api/auth/logout`
 
-Logout user dengan menghapus session refresh token.
+Log out the user by deleting the refresh token session.
 
 **Header:** `Authorization: Bearer <access_token>`
 
 **Body**
 
-| Field | Tipe | Wajib |
-|-------|------|-------|
-| `refresh_token` | string | Ya |
+| Field | Type | Required |
+|-------|------|----------|
+| `refresh_token` | string | Yes |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -273,11 +273,11 @@ Logout user dengan menghapus session refresh token.
 
 ## GET `/api/auth/profile`
 
-Mendapatkan profil user yang sedang login.
+Get the currently logged-in user's profile.
 
 **Header:** `Authorization: Bearer <access_token>`
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -301,42 +301,42 @@ Mendapatkan profil user yang sedang login.
 
 ## PATCH `/api/auth/password`
 
-Ubah password user yang sedang login.
+Change the currently logged-in user's password.
 
 **Header:** `Authorization: Bearer <access_token>`
 
 **Body**
 
-| Field | Tipe | Wajib | Validasi |
-|-------|------|-------|----------|
-| `current_password` | string | Ya | min 8 |
-| `new_password` | string | Ya | min 8 |
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `current_password` | string | Yes | min 8 |
+| `new_password` | string | Yes | min 8 |
 
-**Sukses — 200** — `data`: `null`.
+**Success - 200** - `data`: `null`.
 
-**Error**
+**Errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 401 | Tidak login atau password lama salah |
+| HTTP | Condition |
+|------|-----------|
+| 401 | Not authenticated or old password is wrong |
 
 ---
 
 ## GET `/api/auth/activity-logs`
 
-Daftar log aktivitas auth user yang sedang login (paginasi).
+Paginated auth activity logs for the currently logged-in user.
 
 **Header:** `Authorization: Bearer <access_token>`
 
 **Query Parameters**
 
-| Param | Tipe | Default | Keterangan |
-|-------|------|---------|------------|
-| `limit` | int | 20 | Maks 100 |
-| `offset` | int | 0 | — |
-| `activity_type` | string | — | Filter: `login`, `login_failed`, `logout`, `register`, `password_change`, `password_reset_request`, `password_reset`, `token_refresh`, `oauth_login`, `oauth_login_failed` |
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `limit` | int | 20 | Max 100 |
+| `offset` | int | 0 | - |
+| `activity_type` | string | - | Filter: `login`, `login_failed`, `logout`, `register`, `password_change`, `password_reset_request`, `password_reset`, `token_refresh`, `oauth_login`, `oauth_login_failed` |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -368,17 +368,17 @@ Daftar log aktivitas auth user yang sedang login (paginasi).
 
 ## GET `/api/auth/activity-logs/recent`
 
-Log aktivitas terbaru user yang sedang login.
+Recent activity logs for the currently logged-in user.
 
 **Header:** `Authorization: Bearer <access_token>`
 
 **Query Parameters**
 
-| Param | Tipe | Default | Keterangan |
-|-------|------|---------|------------|
-| `limit` | int | 10 | Maks 50 |
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `limit` | int | 10 | Max 50 |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -392,21 +392,21 @@ Log aktivitas terbaru user yang sedang login.
 
 ## GET `/api/auth/activity-logs/failed-logins`
 
-Daftar login gagal (semua user, untuk admin monitoring).
+Failed login list (all users, for admin monitoring).
 
 **Header:** `Authorization: Bearer <access_token>`
 
-**Akses:** hanya super admin.
+**Access:** super admin only.
 
 **Query Parameters**
 
-| Param | Tipe | Default | Keterangan |
-|-------|------|---------|------------|
-| `limit` | int | 20 | Maks 100 |
-| `offset` | int | 0 | — |
-| `since_hours` | int | 24 | Jam terakhir |
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `limit` | int | 20 | Max 100 |
+| `offset` | int | 0 | - |
+| `since_hours` | int | 24 | Last N hours |
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -421,71 +421,71 @@ Daftar login gagal (semua user, untuk admin monitoring).
 
 ## GET `/api/auth/oauth/github`
 
-Redirect ke halaman otorisasi GitHub. Mengarahkan browser ke:
+Redirect to GitHub's authorization page. The browser is redirected to:
 
-```
+```text
 https://github.com/login/oauth/authorize?client_id=...&redirect_uri=...&scope=user:email&state=...
 ```
 
-Backend membuat cookie HttpOnly `github_oauth_state` dengan TTL 10 menit untuk validasi CSRF pada callback.
+The backend creates an HttpOnly `github_oauth_state` cookie with a 10-minute TTL for CSRF validation on callback.
 
-**Sukses — 307** Redirect ke GitHub.
+**Success - 307** Redirect to GitHub.
 
 ---
 
 ## GET `/api/auth/oauth/github/callback`
 
-Callback dari GitHub setelah user otorisasi. Menukar `code` dengan access token GitHub, mengambil profil GitHub, lalu membuat/mencari user lokal.
+Callback from GitHub after user authorization. Exchanges `code` for a GitHub access token, fetches the GitHub profile, then creates/finds the local user.
 
-Jika email GitHub tidak tersedia, endpoint akan meminta email dari `https://api.github.com/user/emails`.
+If GitHub email is unavailable, the endpoint requests email from `https://api.github.com/user/emails`.
 
 **Query Parameters**
 
-| Param | Tipe | Keterangan |
-|-------|------|------------|
-| `code` | string | Kode otorisasi dari GitHub |
-| `state` | string | State CSRF yang harus cocok dengan cookie `github_oauth_state` |
+| Param | Type | Description |
+|-------|------|-------------|
+| `code` | string | Authorization code from GitHub |
+| `state` | string | CSRF state that must match the `github_oauth_state` cookie |
 
-**Alur sukses — 307** Redirect ke:
+**Success flow - 307** Redirect to:
 
-```
+```text
 {FRONTEND_OAUTH_CALLBACK_URL}?code=oc_...
 ```
 
 Default: `{FRONTEND_URL}/auth/callback` (`http://localhost:3000/auth/callback`).
 
-`code` adalah one-time exchange code dengan TTL 2 menit. Frontend harus menukarnya ke `POST /api/auth/oauth/exchange` untuk mendapat `access_token` dan `refresh_token`. Jika Valkey/Redis aktif, code disimpan di cache dengan atomic get-delete; jika cache nonaktif, backend memakai fallback in-memory untuk local/dev.
+`code` is a one-time exchange code with a 2-minute TTL. The frontend must exchange it with `POST /api/auth/oauth/exchange` to get `access_token` and `refresh_token`. If Valkey/Redis is enabled, the code is stored in cache with atomic get-delete; if cache is disabled, the backend uses an in-memory fallback for local/dev.
 
-**Alur gagal — 307** Redirect ke:
+**Failure flow - 307** Redirect to:
 
-```
+```text
 {FRONTEND_OAUTH_CALLBACK_URL}?error=<error_type>
 ```
 
-| Error type | Kondisi |
-|------------|---------|
-| `missing_code` | Parameter `code` kosong |
-| `invalid_state` | Parameter `state` hilang/tidak cocok dengan cookie |
-| `github_token_failed` | Gagal menukar code dengan token GitHub |
-| `github_user_failed` | Gagal mengambil profil GitHub |
-| `oauth_login_failed` | Gagal membuat/login user |
-| `oauth_exchange_failed` | Gagal membuat one-time exchange code |
+| Error type | Condition |
+|------------|-----------|
+| `missing_code` | Empty `code` parameter |
+| `invalid_state` | Missing `state` parameter or cookie mismatch |
+| `github_token_failed` | Failed to exchange code with GitHub token |
+| `github_user_failed` | Failed to fetch GitHub profile |
+| `oauth_login_failed` | Failed to create/login user |
+| `oauth_exchange_failed` | Failed to create one-time exchange code |
 
 ---
 
 ## POST `/api/auth/oauth/exchange`
 
-Menukar one-time exchange code dari callback OAuth menjadi token aplikasi. Code hanya bisa dipakai sekali dan kedaluwarsa dalam 2 menit.
+Exchange the one-time code from the OAuth callback for application tokens. The code can only be used once and expires in 2 minutes.
 
-Di production, aktifkan `VALKEY_URL` agar exchange code bisa dipakai lintas instance backend. Tanpa Valkey/Redis, fallback in-memory hanya aman untuk single-instance/local dev.
+In production, enable `VALKEY_URL` so exchange codes work across backend instances. Without Valkey/Redis, the in-memory fallback is safe only for single-instance/local dev.
 
 **Body**
 
-| Field | Tipe | Wajib | Validasi |
-|-------|------|-------|----------|
-| `code` | string | Ya | One-time code dari query callback |
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `code` | string | Yes | One-time code from callback query |
 
-**Contoh request**
+**Example request**
 
 ```json
 {
@@ -493,7 +493,7 @@ Di production, aktifkan `VALKEY_URL` agar exchange code bisa dipakai lintas inst
 }
 ```
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -511,32 +511,32 @@ Di production, aktifkan `VALKEY_URL` agar exchange code bisa dipakai lintas inst
 }
 ```
 
-**Error**
+**Errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 400 | Body tidak valid |
-| 401 | Code tidak valid, kedaluwarsa, atau sudah dipakai |
-| 422 | Validasi gagal |
-| 500 | Error server |
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid body |
+| 401 | Invalid, expired, or already-used code |
+| 422 | Validation failed |
+| 500 | Server error |
 
 ---
 
-## Log Aktivitas Auth
+## Auth Activity Log
 
-Semua operasi auth dicatat ke `auth_activity_logs` dengan tipe berikut:
+All auth operations are recorded in `auth_activity_logs` with these types:
 
-| Tipe | Keterangan |
-|------|------------|
-| `login` | Login berhasil |
-| `login_failed` | Login gagal |
+| Type | Description |
+|------|-------------|
+| `login` | Successful login |
+| `login_failed` | Failed login |
 | `logout` | Logout |
-| `register` | Registrasi berhasil |
-| `password_change` | Perubahan password |
-| `password_reset_request` | Permintaan reset password |
-| `password_reset` | Reset password berhasil |
-| `token_refresh` | Refresh token |
-| `oauth_login` | Login via OAuth (GitHub) |
-| `oauth_login_failed` | Login OAuth gagal |
+| `register` | Successful registration |
+| `password_change` | Password change |
+| `password_reset_request` | Password reset request |
+| `password_reset` | Successful password reset |
+| `token_refresh` | Token refresh |
+| `oauth_login` | OAuth login (GitHub) |
+| `oauth_login_failed` | Failed OAuth login |
 
-Setiap log menyimpan: `user_id`, `activity_type`, `ip_address`, `user_agent`, `status` (success/failure/pending), `error_message`, `metadata` (JSON), `created_at`.
+Each log stores: `user_id`, `activity_type`, `ip_address`, `user_agent`, `status` (success/failure/pending), `error_message`, `metadata` (JSON), `created_at`.

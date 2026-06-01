@@ -1,11 +1,11 @@
-# Modul Holdings — `/api/holdings` & `/api/holding-types`
+# Holdings Module - `/api/holdings` & `/api/holding-types`
 
-Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holding-types membutuhkan Bearer token.**
+Investment portfolio records per user per month/year. **All holdings and holding-types routes require a Bearer token.**
 
-## Tipe data: `Holding`
+## Data Type: `Holding`
 
-| Field | Tipe | Keterangan |
-|-------|------|------------|
+| Field | Type | Description |
+|-------|------|-------------|
 | `id` | number | int64 |
 | `user_id` | string (UUID) | |
 | `name` | string | |
@@ -13,9 +13,9 @@ Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holdin
 | `platform` | string | |
 | `holding_type_id` | number | |
 | `holding_type` | object \| null | `HoldingType` |
-| `currency` | string | 3 huruf, mis. `IDR` |
-| `invested_amount` | string | Desimal |
-| `current_value` | string | Desimal |
+| `currency` | string | 3 letters, for example `IDR` |
+| `invested_amount` | string | Decimal |
+| `current_value` | string | Decimal |
 | `gain_amount` | string | Read-only (DB) |
 | `gain_percent` | string | Read-only |
 | `units` | string \| null | |
@@ -23,7 +23,7 @@ Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holdin
 | `current_price` | string \| null | |
 | `last_updated` | string \| null | |
 | `notes` | string \| null | |
-| `month` | number | 1–12 |
+| `month` | number | 1-12 |
 | `year` | number | |
 | `created_at` | string | |
 | `updated_at` | string | |
@@ -36,68 +36,68 @@ Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holdin
 
 ---
 
-## Holdings — ringkasan route
+## Holdings - Route Summary
 
-| Method | Path | Keterangan |
-|--------|------|------------|
-| GET | `` | List + filter bulan/tahun |
-| GET | `/summary` | Agregat portofolio |
-| GET | `/trends` | Tren multi-tahun |
-| GET | `/compare` | Banding dua bulan |
-| GET | `/monthly` | Seri bulanan |
-| POST | `` | Buat holding |
-| POST | `/duplicate` | Salin bulan ke bulan |
-| POST | `/sync` | Sinkron harga |
-| GET | `/:id` | Detail by id |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `` | List + month/year filters |
+| GET | `/summary` | Portfolio aggregate |
+| GET | `/trends` | Multi-year trends |
+| GET | `/compare` | Compare two months |
+| GET | `/monthly` | Monthly series |
+| POST | `` | Create holding |
+| POST | `/duplicate` | Copy one month to another |
+| POST | `/sync` | Sync prices |
+| GET | `/:id` | Detail by ID |
 | PUT | `/:id` | Update |
-| DELETE | `/:id` | Hapus |
+| DELETE | `/:id` | Delete |
 
 ## GET `/api/holdings`
 
 **Query**
 
-| Param | Default | Keterangan |
-|-------|---------|------------|
-| `month` | Bulan berjalan | 1–12 |
-| `year` | Tahun berjalan | |
+| Param | Default | Description |
+|-------|---------|-------------|
+| `month` | Current month | 1-12 |
+| `year` | Current year | |
 | `sortBy` | `created_at` | `created_at`, `updated_at`, `name`, `platform`, `invested_amount`, `current_value`, `holding_type` |
 | `order` | `desc` | `asc` / `desc` |
 
-**Sukses — 200** — `data`: `Holding[]`.
+**Success - 200** - `data`: `Holding[]`.
 
 ---
 
 ## GET `/api/holdings/summary`
 
-**Query:** `month`, `year` (opsional).
+**Query:** `month`, `year` (optional).
 
-**Sukses — 200** — `data` (`HoldingSummaryResponse`):
+**Success - 200** - `data` (`HoldingSummaryResponse`):
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `totalInvested` | string |
 | `totalCurrentValue` | string |
 | `totalProfitLoss` | string |
 | `totalProfitLossPercentage` | string |
 | `holdingsCount` | number |
-| `typeBreakdown` | array breakdown per tipe |
-| `platformBreakdown` | array breakdown per platform |
+| `typeBreakdown` | breakdown array by type |
+| `platformBreakdown` | breakdown array by platform |
 
 ---
 
 ## GET `/api/holdings/trends`
 
-**Query:** `years` — tahun dipisah koma, mis. `2024,2025`.
+**Query:** `years` - comma-separated years, for example `2024,2025`.
 
-**Sukses — 200** — `data`: `HoldingTrendResponse[]` (`date`, `invested`, `current`, `profitLoss`, `profitLossPercentage`).
+**Success - 200** - `data`: `HoldingTrendResponse[]` (`date`, `invested`, `current`, `profitLoss`, `profitLossPercentage`).
 
 ---
 
 ## GET `/api/holdings/compare`
 
-**Query:** `fromMonth`, `fromYear`, `toMonth`, `toYear` (default periode: bulan lalu → sekarang).
+**Query:** `fromMonth`, `fromYear`, `toMonth`, `toYear` (default period: previous month -> current month).
 
-**Sukses — 200** — perbandingan `fromMonth` / `toMonth`, `summary`, `typeComparison`, `platformComparison`.
+**Success - 200** - comparison of `fromMonth` / `toMonth`, `summary`, `typeComparison`, `platformComparison`.
 
 ---
 
@@ -105,12 +105,12 @@ Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holdin
 
 **Query**
 
-| Param | Default | Keterangan |
-|-------|---------|------------|
-| `startMonth`, `startYear` | Bulan/tahun berjalan | Awal rentang |
-| `endMonth`, `endYear` | 11 bulan sebelum start | Akhir rentang (jika tidak diisi) |
+| Param | Default | Description |
+|-------|---------|-------------|
+| `startMonth`, `startYear` | Current month/year | Range start |
+| `endMonth`, `endYear` | 11 months before start | Range end when omitted |
 
-**Sukses — 200** — `data`: `HoldingMonthlyDataResponse[]`.
+**Success - 200** - `data`: `HoldingMonthlyDataResponse[]`.
 
 ---
 
@@ -118,19 +118,19 @@ Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holdin
 
 **Body (`CreateHoldingRequest`)**
 
-| Field | Wajib | Validasi |
-|-------|-------|----------|
-| `name` | Ya | |
-| `platform` | Ya | |
-| `holding_type_id` | Ya | |
-| `currency` | Ya | panjang 3 |
-| `invested_amount` | Ya | string desimal |
-| `current_value` | Ya | string desimal |
-| `month` | Ya | 1–12 |
-| `year` | Ya | min 2000 |
-| `symbol`, `units`, `avg_buy_price`, `current_price`, `last_updated`, `notes` | Tidak | |
+| Field | Required | Validation |
+|-------|----------|------------|
+| `name` | Yes | |
+| `platform` | Yes | |
+| `holding_type_id` | Yes | |
+| `currency` | Yes | length 3 |
+| `invested_amount` | Yes | decimal string |
+| `current_value` | Yes | decimal string |
+| `month` | Yes | 1-12 |
+| `year` | Yes | min 2000 |
+| `symbol`, `units`, `avg_buy_price`, `current_price`, `last_updated`, `notes` | No | |
 
-**Sukses — 201** — `data`: array `Holding` (satu elemen).
+**Success - 201** - `data`: `Holding[]` (one element).
 
 ---
 
@@ -138,52 +138,52 @@ Portofolio investasi per user per bulan/tahun. **Semua route holdings dan holdin
 
 **Body**
 
-| Field | Wajib |
-|-------|-------|
-| `fromMonth`, `fromYear`, `toMonth`, `toYear` | Ya (1–12 / 1900–2100) |
+| Field | Required |
+|-------|----------|
+| `fromMonth`, `fromYear`, `toMonth`, `toYear` | Yes (1-12 / 1900-2100) |
 | `overwrite` | boolean |
 
-**Sukses — 201** — `data`: `DuplicateResultItem[]` (`id`, `name`, `month`, `year`).
+**Success - 201** - `data`: `DuplicateResultItem[]` (`id`, `name`, `month`, `year`).
 
-**Error 400** jika bulan sumber = tujuan.
+**Error 400** when source month = destination month.
 
 ---
 
 ## POST `/api/holdings/sync`
 
-Sinkron harga untuk periode aktif user.
+Sync prices for the user's active period.
 
-**Sukses — 200** — `data`: `{ "syncedCount", "month", "year" }`.
+**Success - 200** - `data`: `{ "syncedCount", "month", "year" }`.
 
 ---
 
 ## GET `/api/holdings/:id`
 
-**Path:** `id` numerik.
+**Path:** numeric `id`.
 
-| HTTP | Kondisi |
-|------|---------|
-| 404 | Holding tidak ada |
-| 403 | Bukan pemilik |
+| HTTP | Condition |
+|------|-----------|
+| 404 | Holding not found |
+| 403 | Not the owner |
 
 ---
 
 ## PUT `/api/holdings/:id`
 
-**Body:** `UpdateHoldingRequest` — field opsional; handler tidak selalu memanggil validator global pada body.
+**Body:** `UpdateHoldingRequest` - optional fields; the handler does not always call global body validation.
 
-**Sukses — 200** — `data`: `[Holding]`.
+**Success - 200** - `data`: `[Holding]`.
 
 ---
 
 ## DELETE `/api/holdings/:id`
 
-**Sukses — 200** — `data`: `null`.
+**Success - 200** - `data`: `null`.
 
 ---
 
 ## GET `/api/holding-types`
 
-**Sukses — 200** — `data`: `HoldingType[]`.
+**Success - 200** - `data`: `HoldingType[]`.
 
-Daftar tipe aset (saham, reksadana, dll.) untuk dropdown form.
+Asset type list (stocks, mutual funds, etc.) for form dropdowns.

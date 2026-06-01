@@ -1,30 +1,30 @@
-# Modul Exchange Rates — `/api/exchange-rates`
+# Exchange Rates Module - `/api/exchange-rates`
 
-Nilai tukar mata uang dari Yahoo Finance. **Semua route membutuhkan Bearer token.**
+Currency exchange rates from Yahoo Finance. **All routes require a Bearer token.**
 
-Hasil disimpan di Valkey/Redis selama 15 menit jika `VALKEY_URL` aktif. Jika cache tidak aktif, endpoint tetap berjalan dan selalu fetch ke provider.
+Results are stored in Valkey/Redis for 15 minutes when `VALKEY_URL` is enabled. If cache is disabled, the endpoint still works and fetches from the provider on each request.
 
 ## GET `/api/exchange-rates`
 
-Ambil nilai tukar dari satu mata uang ke mata uang lain.
+Fetch the exchange rate from one currency to another.
 
 **Query**
 
-| Param | Wajib | Keterangan |
-|-------|-------|------------|
-| `from` | Ya | Kode mata uang 3 huruf, mis. `USD` |
-| `to` | Ya | Kode mata uang 3 huruf, mis. `IDR` |
+| Param | Required | Description |
+|-------|----------|-------------|
+| `from` | Yes | 3-letter currency code, for example `USD` |
+| `to` | Yes | 3-letter currency code, for example `IDR` |
 
-Kode mata uang dinormalisasi ke uppercase. Input selain 3 huruf alfabet mengembalikan `400`.
+Currency codes are normalized to uppercase. Inputs other than 3 alphabetic letters return `400`.
 
-**Contoh**
+**Example**
 
 ```http
 GET /api/exchange-rates?from=USD&to=IDR
 Authorization: Bearer <access_token>
 ```
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -42,25 +42,25 @@ Authorization: Bearer <access_token>
 }
 ```
 
-| Field | Tipe | Keterangan |
-|-------|------|------------|
-| `from` | string | Mata uang asal |
-| `to` | string | Mata uang tujuan |
-| `symbol` | string | Symbol Yahoo Finance yang dipakai |
-| `rate` | number | Nilai 1 `from` dalam `to` |
-| `source` | string | Provider data |
-| `cached` | boolean | `true` jika response berasal dari cache |
-| `fetchedAt` | string | Waktu fetch/cache record dibuat, RFC3339 UTC |
+| Field | Type | Description |
+|-------|------|-------------|
+| `from` | string | Source currency |
+| `to` | string | Target currency |
+| `symbol` | string | Yahoo Finance symbol used |
+| `rate` | number | Value of 1 `from` in `to` |
+| `source` | string | Data provider |
+| `cached` | boolean | `true` when the response came from cache |
+| `fetchedAt` | string | Time when the fetch/cache record was created, RFC3339 UTC |
 
-**Catatan provider**
+**Provider Notes**
 
-Service mencoba direct pair lebih dulu, misalnya `USDIDR=X`. Jika tidak ada, service mencoba inverse pair, misalnya `IDRUSD=X`, lalu menghitung `1 / rate`.
+The service first tries the direct pair, for example `USDIDR=X`. If it is unavailable, the service tries the inverse pair, for example `IDRUSD=X`, then calculates `1 / rate`.
 
-Untuk `from` dan `to` yang sama, response langsung `rate = 1`.
+When `from` and `to` are the same, the response returns `rate = 1`.
 
-**Error**
+**Errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 400 | `from` atau `to` bukan kode mata uang 3 huruf |
-| 500 | Provider gagal atau pair tidak ditemukan |
+| HTTP | Condition |
+|------|-----------|
+| 400 | `from` or `to` is not a 3-letter currency code |
+| 500 | Provider failure or pair not found |

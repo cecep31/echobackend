@@ -1,26 +1,26 @@
-# Modul Posts — `/api/posts`
+# Posts Module - `/api/posts`
 
-CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai path `:id` = UUID post.
+Post CRUD, image uploads, feeds, comments, views, and likes. Sub-resources use `:id` as the post UUID.
 
-## Tipe data: `PostResponse`
+## Data Type: `PostResponse`
 
-| Field | Tipe | Keterangan |
-|-------|------|------------|
+| Field | Type | Description |
+|-------|------|-------------|
 | `id` | string (UUID) | |
 | `title` | string \| null | |
 | `photo_url` | string \| null | |
-| `body` | string \| null | List feed dipotong ~250 rune + `" ..."` |
+| `body` | string \| null | Feed lists truncate this to about 250 runes + `" ..."` |
 | `slug` | string \| null | |
 | `view_count` | number | |
 | `like_count` | number | |
 | `bookmark_count` | number | |
 | `published` | boolean \| null | |
 | `published_at` | string \| null | |
-| `user` | `UserResponse` \| null | Penulis |
+| `user` | `UserResponse` \| null | Author |
 | `tags` | `TagResponse[]` | `{ id, name }` |
 | `created_at` | string \| null | |
 | `updated_at` | string \| null | |
-| `deleted_at` | string \| null | Soft delete |
+| `deleted_at` | string \| null | Soft delete timestamp |
 
 ### `TagResponse`
 
@@ -28,14 +28,14 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 
 ---
 
-## CRUD & listing
+## CRUD & Listing
 
 | Method | Path | Auth |
 |--------|------|------|
 | POST | `` | Bearer |
-| GET | `` | Tidak |
-| GET | `/random` | Tidak |
-| GET | `/trending` | Tidak |
+| GET | `` | No |
+| GET | `/random` | No |
+| GET | `/trending` | No |
 | GET | `/me` | Bearer |
 | GET | `/me/:id` | Bearer |
 | PUT | `/me/:id` | Bearer |
@@ -44,10 +44,10 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 | GET | `/me/analytics/likes-by-month` | Bearer |
 | GET | `/feed/for-you` | Bearer |
 | POST | `/image` | Bearer |
-| GET | `/sitemap` | Tidak |
-| GET | `/username/:username` | Tidak |
-| GET | `/u/:username/:slug` | Tidak |
-| GET | `/tag/:tag` | Tidak |
+| GET | `/sitemap` | No |
+| GET | `/username/:username` | No |
+| GET | `/u/:username/:slug` | No |
+| GET | `/tag/:tag` | No |
 | GET | `/:id` | Bearer + Admin |
 | PUT | `/:id` | Bearer + Admin |
 | DELETE | `/:id` | Bearer + Admin |
@@ -56,33 +56,33 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 
 **Body (`CreatePostRequest`)**
 
-| Field | Tipe | Wajib | Validasi |
-|-------|------|-------|----------|
-| `title` | string | Ya | min 7 |
-| `slug` | string | Ya | min 7 |
-| `body` | string | Ya | min 10 |
-| `photo_url` | string | Tidak | |
-| `published` | boolean | Tidak | default false |
-| `tags` | string[] | Tidak | Nama tag |
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `title` | string | Yes | min 7 |
+| `slug` | string | Yes | min 7 |
+| `body` | string | Yes | min 10 |
+| `photo_url` | string | No | |
+| `published` | boolean | No | default false |
+| `tags` | string[] | No | Tag names |
 
-**Sukses — 201** — `data`: `{ "id": "uuid" }`.
+**Success - 201** - `data`: `{ "id": "uuid" }`.
 
 ### GET `/api/posts`
 
 **Query**
 
-| Param | Keterangan |
-|-------|------------|
-| `search` | Teks pencarian |
+| Param | Description |
+|-------|-------------|
+| `search` | Search text |
 | `sort_by` | `id`, `title`, `created_at`, `updated_at`, `view_count`, `like_count` |
 | `sort_order` | `asc` / `desc` (default `desc`) |
-| `start_date`, `end_date` | Filter tanggal |
-| `created_by` | UUID penulis |
+| `start_date`, `end_date` | Date filters |
+| `created_by` | Author UUID |
 | `published` | `true` / `false` |
-| `tags` | Comma-separated |
-| `limit`, `offset` | Paginasi (default limit 10) |
+| `tags` | Comma-separated list |
+| `limit`, `offset` | Pagination (default limit 10) |
 
-**Sukses — 200** — `data`: `PostResponse[]`, `meta`: paginasi.
+**Success - 200** - `data`: `PostResponse[]`, `meta`: pagination.
 
 ### GET `/api/posts/random`
 
@@ -92,34 +92,34 @@ CRUD post, upload gambar, feed, komentar, view, dan like. Sub-resource memakai p
 
 **Query:** `limit` (default 10).
 
-### GET `/api/posts/me` dan `/feed/for-you`
+### GET `/api/posts/me` and `/feed/for-you`
 
-**Query:** `limit`, `offset`. **Auth wajib.**
+**Query:** `limit`, `offset`. **Auth required.**
 
 ### GET / PUT / DELETE `/api/posts/me/:id`
 
-Detail, update, atau hapus post milik user login. **Auth wajib.**
+Read, update, or delete a post owned by the logged-in user. **Auth required.**
 
-**Error umum**
+**Common errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 400 | ID post tidak valid |
-| 403 | Bukan penulis |
-| 404 | Post tidak ada |
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid post ID |
+| 403 | Not the author |
+| 404 | Post not found |
 
 ### GET `/api/posts/me/analytics`
 
-Data agregat untuk chart performa post milik user login. **Auth wajib.**
+Aggregated chart data for posts owned by the logged-in user. **Auth required.**
 
-**Query (opsional)**
+**Query (optional)**
 
-| Param | Default | Keterangan |
-|-------|---------|------------|
-| `start_date` | 30 hari lalu | Format `YYYY-MM-DD` |
-| `end_date` | Hari ini | Format `YYYY-MM-DD` |
+| Param | Default | Description |
+|-------|---------|-------------|
+| `start_date` | 30 days ago | Format `YYYY-MM-DD` |
+| `end_date` | Today | Format `YYYY-MM-DD` |
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 {
@@ -135,8 +135,8 @@ Data agregat untuk chart performa post milik user login. **Auth wajib.**
   "top_posts": [
     {
       "id": "uuid",
-      "title": "Judul post",
-      "slug": "judul-post",
+      "title": "Post title",
+      "slug": "post-title",
       "view_count": 500,
       "like_count": 80
     }
@@ -144,20 +144,20 @@ Data agregat untuk chart performa post milik user login. **Auth wajib.**
 }
 ```
 
-- `view_trend` — seri harian untuk line/area chart (satu titik per hari dalam rentang, termasuk hari tanpa view = 0).
-- `top_posts` — maks. 5 post dengan `view_count` tertinggi (bar chart / ranking).
+- `view_trend`: daily series for line/area charts (one point per day in the range, including days with zero views).
+- `top_posts`: up to 5 posts with the highest `view_count` (bar chart / ranking).
 
 ### GET `/api/posts/me/analytics/likes-by-month`
 
-Like yang **diterima** post milik user login, diagregasi per bulan. **Auth wajib.**
+Likes **received** by posts owned by the logged-in user, aggregated monthly. **Auth required.**
 
-**Query (opsional)**
+**Query (optional)**
 
-| Param | Default | Keterangan |
-|-------|---------|------------|
-| `months` | 12 | 1–24; N bulan kalender terakhir (termasuk bulan berjalan) |
+| Param | Default | Description |
+|-------|---------|-------------|
+| `months` | 12 | 1-24; last N calendar months, including the current month |
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 {
@@ -171,24 +171,24 @@ Like yang **diterima** post milik user login, diagregasi per bulan. **Auth wajib
 }
 ```
 
-- `series` — satu titik per bulan (`YYYY-MM`), zero-fill untuk bulan tanpa like.
-- `total` — jumlah like dalam rentang `months`.
+- `series`: one point per month (`YYYY-MM`), zero-filled for months without likes.
+- `total`: total likes within the `months` range.
 
 ### POST `/api/posts/image`
 
 **Content-Type:** `multipart/form-data`
 
-| Field | Wajib |
-|-------|-------|
-| `image` | Ya (file) |
+| Field | Required | Limit |
+|-------|----------|-------|
+| `image` | Yes (file) | Max **1 MiB** / 1,048,576 bytes |
 
-**Sukses — 200** — URL/file tersimpan (lihat implementasi service; `data` dapat `null` dengan message sukses).
+**Success - 200** - stored URL/file (see service implementation; `data` may be `null` with a success message).
 
-**Error:** 400 jika file kosong atau storage tidak tersedia.
+**Error:** 400 when the file is empty, exceeds 1 MiB, or storage is unavailable.
 
 ### GET `/api/posts/sitemap`
 
-**Sukses — 200** — `data`: `SitemapPost[]`:
+**Success - 200** - `data`: `SitemapPost[]`:
 
 ```json
 { "username": "...", "slug": "...", "created_at": "...", "updated_at": "..." }
@@ -196,44 +196,44 @@ Like yang **diterima** post milik user login, diagregasi per bulan. **Auth wajib
 
 ### GET `/api/posts/u/:username/:slug`
 
-Detail penuh satu post (body tidak dipotong).
+Full detail for one post (body is not truncated).
 
 ### GET `/api/posts/:id`
 
-Detail penuh satu post untuk admin. **Auth admin wajib.**
+Full detail for one post, admin only. **Admin auth required.**
 
 ### PUT `/api/posts/:id`
 
-Update post by ID untuk admin. **Auth admin wajib.**
+Update a post by ID, admin only. **Admin auth required.**
 
-**Body (`UpdatePostRequest`)** — semua field opsional; `published` boolean pointer.
+**Body (`UpdatePostRequest`)** - all fields are optional; `published` is a boolean pointer.
 
-**Error umum**
+**Common errors**
 
-| HTTP | Kondisi |
-|------|---------|
-| 404 | Post tidak ada |
+| HTTP | Condition |
+|------|-----------|
+| 404 | Post not found |
 
 ### DELETE `/api/posts/:id`
 
-Hapus post by ID untuk admin. **Auth admin wajib.**
+Delete a post by ID, admin only. **Admin auth required.**
 
-**Sukses — 200** — `data`: `null`.
+**Success - 200** - `data`: `null`.
 
 ---
 
-## Komentar — `/api/posts/:id/comments`
+## Comments - `/api/posts/:id/comments`
 
 | Method | Path | Auth |
 |--------|------|------|
-| GET | `/:id/comments` | Tidak |
+| GET | `/:id/comments` | No |
 | POST | `/:id/comments` | Bearer |
 | PUT | `/:id/comments/:comment_id` | Bearer |
 | DELETE | `/:id/comments/:comment_id` | Bearer |
 
 ### `CommentResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `id` | string (UUID) |
 | `post_id` | string |
@@ -243,32 +243,32 @@ Hapus post by ID untuk admin. **Auth admin wajib.**
 | `created_at` | string \| null |
 | `updated_at` | string \| null |
 
-### POST — body
+### POST body
 
-| Field | Wajib | Validasi |
-|-------|-------|----------|
-| `text` | Ya | 1–1000 karakter |
+| Field | Required | Validation |
+|-------|----------|------------|
+| `text` | Yes | 1-1000 characters |
 
-**Sukses — 201** — `data`: `CommentResponse`.
+**Success - 201** - `data`: `CommentResponse`.
 
 ---
 
-## View — `/api/posts/:id/view*`
+## Views - `/api/posts/:id/view*`
 
 | Method | Path | Auth |
 |--------|------|------|
 | POST | `/:id/view` | Bearer |
 | GET | `/:id/views` | Bearer |
-| GET | `/:id/view-stats` | Tidak |
+| GET | `/:id/view-stats` | No |
 | GET | `/:id/viewed` | Bearer |
 
 ### POST `/api/posts/:id/view`
 
-Catat view untuk user login.
+Record a view for the logged-in user.
 
 ### GET `/api/posts/:id/view-stats`
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 {
@@ -282,31 +282,31 @@ Catat view untuk user login.
 
 ### GET `/api/posts/:id/viewed`
 
-**Sukses — 200** — `data`: `{ "has_viewed": true }`.
+**Success - 200** - `data`: `{ "has_viewed": true }`.
 
 ### GET `/api/posts/:id/views`
 
-List view (model internal: `id`, `post_id`, `user_id`, `ip_address`, `user_agent`, timestamps) + `meta` paginasi.
+List views (internal model: `id`, `post_id`, `user_id`, `ip_address`, `user_agent`, timestamps) + pagination `meta`.
 
 ---
 
-## Like — `/api/posts/:id/like*`
+## Likes - `/api/posts/:id/like*`
 
 | Method | Path | Auth |
 |--------|------|------|
 | POST | `/:id/like` | Bearer |
 | DELETE | `/:id/like` | Bearer |
-| GET | `/:id/likes` | Tidak |
-| GET | `/:id/like-stats` | Tidak |
+| GET | `/:id/likes` | No |
+| GET | `/:id/like-stats` | No |
 | GET | `/:id/liked` | Bearer |
 
 ### POST / DELETE like
 
-**Error 400** jika sudah like / belum like.
+**Error 400** when already liked / not yet liked.
 
 ### GET `/api/posts/:id/likes`
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 {

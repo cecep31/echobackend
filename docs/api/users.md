@@ -1,30 +1,30 @@
-# Modul Users & Follow — `/api/users`
+# Users & Follow Module - `/api/users`
 
-Profil user, daftar admin, follow/unfollow, dan statistik sosial.
+User profiles, admin user lists, follow/unfollow, and social statistics.
 
-## Tipe data: `UserResponse`
+## Data Type: `UserResponse`
 
-| Field | Tipe | Keterangan |
-|-------|------|------------|
+| Field | Type | Description |
+|-------|------|-------------|
 | `id` | string (UUID) | |
 | `email` | string | |
-| `name` | string | Gabungan first + last name |
+| `name` | string | Combined first + last name |
 | `username` | string \| null | |
-| `image` | string \| null | URL avatar |
+| `image` | string \| null | Avatar URL |
 | `first_name` | string \| null | |
 | `last_name` | string \| null | |
 | `followers_count` | number | |
 | `following_count` | number | |
-| `is_following` | boolean \| null | Hanya terisi pada route yang memuat konteks auth (mis. admin `GET /:id`) |
-| `is_super_admin` | boolean \| null | Hanya pada route admin (`GET /`, `GET /:id`) |
-| `profile` | object \| null | Tidak di-load pada `GET /` (admin list); ada pada route lain |
+| `is_following` | boolean \| null | Present only on routes with auth context, for example admin `GET /:id` |
+| `is_super_admin` | boolean \| null | Present only on admin routes (`GET /`, `GET /:id`) |
+| `profile` | object \| null | Not loaded on `GET /` (admin list); available on other routes |
 | `created_at` | string (ISO) \| null | |
 | `updated_at` | string (ISO) \| null | |
-| `deleted_at` | string (ISO) \| null | Hanya pada route admin; terisi jika user sudah di-soft-delete |
+| `deleted_at` | string (ISO) \| null | Admin routes only; set when the user has been soft-deleted |
 
 ### `Profile`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `id` | number |
 | `user_id` | string (UUID) |
@@ -37,36 +37,36 @@ Profil user, daftar admin, follow/unfollow, dan statistik sosial.
 
 ---
 
-## Profil & admin
+## Profiles & Admin
 
-| Method | Path | Auth | Keterangan |
-|--------|------|------|------------|
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
 | GET | `/:id` | Bearer + **super admin** | By UUID |
-| GET | `/username/:username` | Tidak | By username |
-| GET | `/me` | Bearer | User dari token |
-| GET | `` | Bearer + **super admin** | List user (paginated); filter soft-delete via query |
+| GET | `/username/:username` | No | By username |
+| GET | `/me` | Bearer | User from token |
+| GET | `` | Bearer + **super admin** | User list (paginated); soft-delete filter via query |
 | DELETE | `/:id` | Bearer + **super admin** | Soft-delete user |
-| POST | `/:id/restore` | Bearer + **super admin** | Restore user yang sudah di-soft-delete |
+| POST | `/:id/restore` | Bearer + **super admin** | Restore a soft-deleted user |
 
 ### GET `/api/users/me`
 
-**Sukses — 200** — `data`: satu `UserResponse`.
+**Success - 200** - `data`: one `UserResponse`.
 
 ### GET `/api/users` (admin)
 
 **Query**
 
-| Param | Tipe | Default | Keterangan |
-|-------|------|---------|------------|
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
 | `limit` | number | 10 | Max 100 |
 | `offset` | number | 0 | |
-| `deleted` | string | *(kosong)* | Filter soft-delete: `false` atau kosong = hanya user aktif; `true` = hanya user terhapus; `all` = semua user |
+| `deleted` | string | *(empty)* | Soft-delete filter: `false` or empty = active users only; `true` = deleted users only; `all` = all users |
 
-Nilai `deleted` selain `true`, `false`, `all`, atau kosong → **400 Bad Request**.
+Any `deleted` value other than `true`, `false`, `all`, or empty returns **400 Bad Request**.
 
-**Sukses — 200** — `data`: array `UserResponse`, `meta`: paginasi.
+**Success - 200** - `data`: `UserResponse[]`, `meta`: pagination.
 
-Contoh:
+Examples:
 
 ```http
 GET /api/users?deleted=true&limit=10&offset=0
@@ -77,15 +77,15 @@ GET /api/users?deleted=all
 
 **Query**
 
-| Param | Tipe | Default | Keterangan |
-|-------|------|---------|------------|
-| `deleted` | string | *(kosong)* | `true` = ambil user yang sudah di-soft-delete by UUID |
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `deleted` | string | *(empty)* | `true` = fetch a soft-deleted user by UUID |
 
-Tanpa `deleted=true`, hanya user **aktif** yang ditemukan. User terhapus tidak muncul kecuali query di atas dipakai.
+Without `deleted=true`, only **active** users are returned. Deleted users are hidden unless the query above is used.
 
-**Sukses — 200** — `data`: `UserResponse`. `is_following` terisi jika requester login (route admin sudah memakai auth). `deleted_at` terisi jika user sudah di-soft-delete.
+**Success - 200** - `data`: `UserResponse`. `is_following` is set when the requester is logged in (the admin route already uses auth). `deleted_at` is set when the user has been soft-deleted.
 
-Contoh:
+Example:
 
 ```http
 GET /api/users/<uuid>?deleted=true
@@ -93,28 +93,28 @@ GET /api/users/<uuid>?deleted=true
 
 ### GET `/api/users/username/:username`
 
-**Sukses — 200** — `data`: `UserResponse`. Route publik — `is_following` tidak terisi.
+**Success - 200** - `data`: `UserResponse`. Public route - `is_following` is not set.
 
 ### DELETE `/api/users/:id` (admin)
 
-Soft-delete user (set `deleted_at`; baris tidak dihapus permanen dari database).
+Soft-delete a user (sets `deleted_at`; the row is not permanently removed from the database).
 
-**Sukses — 200** — `data`: `null`.
+**Success - 200** - `data`: `null`.
 
 ### POST `/api/users/:id/restore` (admin)
 
-Mengembalikan user yang sudah di-soft-delete (`deleted_at` → `null`).
+Restore a soft-deleted user (`deleted_at` -> `null`).
 
-**Sukses — 200** — `data`: `UserResponse` user yang sudah aktif kembali.
+**Success - 200** - `data`: reactivated `UserResponse`.
 
-**Error**
+**Errors**
 
-| Status | Kondisi |
-|--------|---------|
-| 404 | User tidak ditemukan atau belum di-soft-delete |
-| 409 | Email atau username sudah dipakai user aktif lain |
+| Status | Condition |
+|--------|-----------|
+| 404 | User not found or not soft-deleted |
+| 409 | Email or username is already used by another active user |
 
-Contoh:
+Example:
 
 ```http
 POST /api/users/<uuid>/restore
@@ -130,36 +130,36 @@ POST /api/users/<uuid>/restore
 | DELETE | `/:id/follow` | Bearer |
 | GET | `/:id/follow-status` | Bearer |
 | GET | `/:id/mutual-follows` | Bearer |
-| GET | `/:id/followers` | Tidak |
-| GET | `/:id/following` | Tidak |
-| GET | `/:id/follow-stats` | Tidak |
+| GET | `/:id/followers` | No |
+| GET | `/:id/following` | No |
+| GET | `/:id/follow-stats` | No |
 
 ### POST `/api/users/follow`
 
 **Body**
 
-| Field | Tipe | Wajib | Validasi |
-|-------|------|-------|----------|
-| `user_id` | string | Ya | UUID |
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `user_id` | string | Yes | UUID |
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 {
   "is_following": true,
-  "message": "Pesan dari service"
+  "message": "Message from service"
 }
 ```
 
 ### DELETE `/api/users/:id/follow`
 
-Unfollow user dengan UUID di path.
+Unfollow the user with the UUID in the path.
 
-**Sukses — 200** — `data`: `FollowResponse` (bentuk sama seperti follow).
+**Success - 200** - `data`: `FollowResponse` (same shape as follow).
 
 ### GET `/api/users/:id/follow-status`
 
-**Sukses — 200**
+**Success - 200**
 
 ```json
 {
@@ -169,17 +169,17 @@ Unfollow user dengan UUID di path.
 
 ### GET `/api/users/:id/mutual-follows`
 
-**Sukses — 200** — `data`: array `UserResponse`.
+**Success - 200** - `data`: `UserResponse[]`.
 
-### GET `/api/users/:id/followers` dan `/:id/following`
+### GET `/api/users/:id/followers` and `/:id/following`
 
 **Query:** `limit`, `offset`.
 
-**Sukses — 200** — `data`: array `UserResponse`, `meta`: paginasi.
+**Success - 200** - `data`: `UserResponse[]`, `meta`: pagination.
 
 ### GET `/api/users/:id/follow-stats`
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 {
@@ -189,4 +189,4 @@ Unfollow user dengan UUID di path.
 }
 ```
 
-**Catatan:** Beberapa error domain follow (user tidak ditemukan, sudah follow, dll.) saat ini dapat mengembalikan **500** di layer handler, bukan 4xx khusus.
+**Note:** Some follow domain errors (user not found, already following, etc.) can currently return **500** from the handler layer instead of a specific 4xx.

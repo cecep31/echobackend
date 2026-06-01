@@ -1,37 +1,37 @@
-# Modul Chat — `/api/chat/conversations` & `/api/chat/messages`
+# Chat Module - `/api/chat/conversations` & `/api/chat/messages`
 
-CRUD percakapan chat per user, pesan, dan streaming respons AI. Semua route **wajib** `Authorization: Bearer <token>`.
+Per-user chat conversation CRUD, messages, and streaming AI responses. All routes **require** `Authorization: Bearer <token>`.
 
-## Ringkasan route
+## Route Summary
 
-### Conversations — `/api/chat/conversations`
+### Conversations - `/api/chat/conversations`
 
-| Method | Path | Keterangan |
-|--------|------|------------|
-| POST | `` | Buat percakapan |
-| POST | `/stream` | Buat percakapan + pesan pertama (SSE) |
-| GET | `` | List percakapan user |
-| GET | `/:id` | Detail percakapan |
-| PUT | `/:id` | Update judul / pin |
-| DELETE | `/:id` | Hapus percakapan |
-| POST | `/:conversationId/messages` | Kirim pesan |
-| POST | `/:conversationId/messages/stream` | Kirim pesan + stream respons AI (SSE) |
-| GET | `/:conversationId/messages` | List pesan dalam percakapan |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `` | Create conversation |
+| POST | `/stream` | Create conversation + first message (SSE) |
+| GET | `` | List user conversations |
+| GET | `/:id` | Conversation detail |
+| PUT | `/:id` | Update title / pin |
+| DELETE | `/:id` | Delete conversation |
+| POST | `/:conversationId/messages` | Send message |
+| POST | `/:conversationId/messages/stream` | Send message + stream AI response (SSE) |
+| GET | `/:conversationId/messages` | List messages in a conversation |
 
-### Messages — `/api/chat/messages`
+### Messages - `/api/chat/messages`
 
-| Method | Path | Keterangan |
-|--------|------|------------|
-| GET | `/:messageId` | Detail satu pesan |
-| DELETE | `/:messageId` | Hapus pesan |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/:messageId` | Message detail |
+| DELETE | `/:messageId` | Delete message |
 
 ---
 
-## Tipe data
+## Data Types
 
 ### `ChatConversationResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `id` | string (UUID) |
 | `title` | string |
@@ -39,13 +39,13 @@ CRUD percakapan chat per user, pesan, dan streaming respons AI. Semua route **wa
 | `is_pinned` | boolean |
 | `pinned_at` | string \| null |
 | `message_count` | number |
-| `chat_messages` | array `ChatMessageResponse` (hanya pada GET `/:id`; urutan kronologis) |
+| `chat_messages` | `ChatMessageResponse[]` (only on GET `/:id`; chronological order) |
 | `created_at` | string (ISO) |
 | `updated_at` | string (ISO) |
 
 ### `ChatMessageResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `id` | string (UUID) |
 | `conversation_id` | string (UUID) |
@@ -65,42 +65,42 @@ CRUD percakapan chat per user, pesan, dan streaming respons AI. Semua route **wa
 
 **Body**
 
-| Field | Wajib | Validasi |
-|-------|-------|----------|
-| `title` | Ya | max 255 karakter |
+| Field | Required | Validation |
+|-------|----------|------------|
+| `title` | Yes | max 255 characters |
 
-**Sukses — 201** — `data`: `ChatConversationResponse`.
+**Success - 201** - `data`: `ChatConversationResponse`.
 
 ---
 
 ## POST `/api/chat/conversations/stream`
 
-Buat percakapan baru sekaligus kirim pesan pertama; respons AI di-stream via SSE jika AI tersedia.
+Create a new conversation and send the first message; the AI response is streamed via SSE when AI is available.
 
 **Body**
 
-| Field | Wajib | Validasi |
-|-------|-------|----------|
-| `content` | Ya | 1–10000 karakter |
-| `title` | Tidak | 1–255 karakter |
-| `model` | Tidak | max 100 karakter |
-| `temperature` | Tidak | 0–2 |
+| Field | Required | Validation |
+|-------|----------|------------|
+| `content` | Yes | 1-10000 characters |
+| `title` | No | 1-255 characters |
+| `model` | No | max 100 characters |
+| `temperature` | No | 0-2 |
 
-**Respons**
+**Response**
 
-- Jika streaming tidak tersedia: **201** — `data`: array berisi `ChatMessageResponse` user.
-- Jika streaming aktif: **200** — `Content-Type: text/event-stream`.
+- If streaming is unavailable: **201** - `data`: array containing the user `ChatMessageResponse`.
+- If streaming is active: **200** - `Content-Type: text/event-stream`.
 
-Event SSE (urutan):
+SSE event order:
 
 | `type` | `data` |
 |--------|--------|
 | `conversation_created` | `{ conversation_id, user_message }` |
-| `ai_chunk` | string (potongan teks) |
-| `ai_complete` | `ChatMessageResponse` (pesan AI) |
-| `error` | pesan error generik |
+| `ai_chunk` | string (text chunk) |
+| `ai_complete` | `ChatMessageResponse` (AI message) |
+| `error` | generic error message |
 
-Stream diakhiri dengan `data: [DONE]`.
+The stream ends with `data: [DONE]`.
 
 ---
 
@@ -108,15 +108,15 @@ Stream diakhiri dengan `data: [DONE]`.
 
 **Query:** `limit`, `offset` (default limit 10, max 100).
 
-**Sukses — 200** — `data`: array percakapan, `meta`: paginasi.
+**Success - 200** - `data`: conversation array, `meta`: pagination.
 
 ---
 
 ## GET `/api/chat/conversations/:id`
 
-**Sukses — 200** — `data`: satu `ChatConversationResponse` termasuk `chat_messages` (semua pesan, `created_at` naik).
+**Success - 200** - `data`: one `ChatConversationResponse` including `chat_messages` (all messages, ascending `created_at`).
 
-Hanya percakapan milik user dari token.
+Only conversations owned by the token user are returned.
 
 ---
 
@@ -124,18 +124,18 @@ Hanya percakapan milik user dari token.
 
 **Body**
 
-| Field | Wajib | Validasi |
-|-------|-------|----------|
-| `title` | Tidak | max 255 |
-| `is_pinned` | Tidak | boolean |
+| Field | Required | Validation |
+|-------|----------|------------|
+| `title` | No | max 255 |
+| `is_pinned` | No | boolean |
 
-**Sukses — 200** — `data`: percakapan terbaru.
+**Success - 200** - `data`: updated conversation.
 
 ---
 
 ## DELETE `/api/chat/conversations/:id`
 
-**Sukses — 200** — `data`: `null`.
+**Success - 200** - `data`: `null`.
 
 ---
 
@@ -143,55 +143,55 @@ Hanya percakapan milik user dari token.
 
 **Body**
 
-| Field | Wajib | Validasi |
-|-------|-------|----------|
-| `content` | Ya | 1–10000 karakter |
-| `role` | Tidak | max 20 karakter |
-| `model` | Tidak | max 100 karakter |
-| `temperature` | Tidak | 0–2 |
+| Field | Required | Validation |
+|-------|----------|------------|
+| `content` | Yes | 1-10000 characters |
+| `role` | No | max 20 characters |
+| `model` | No | max 100 characters |
+| `temperature` | No | 0-2 |
 
-**Sukses — 201** — `data`: array pesan (user + respons AI jika ada).
+**Success - 201** - `data`: message array (user + AI response when available).
 
 ---
 
 ## POST `/api/chat/conversations/:conversationId/messages/stream`
 
-Sama seperti endpoint non-stream, tetapi respons AI di-stream via SSE.
+Same as the non-stream endpoint, but the AI response is streamed via SSE.
 
-Event SSE:
+SSE events:
 
 | `type` | `data` |
 |--------|--------|
 | `user_message` | `ChatMessageResponse` |
 | `ai_chunk` | string |
 | `ai_complete` | `ChatMessageResponse` |
-| `error` | pesan error generik |
+| `error` | generic error message |
 
 ---
 
 ## GET `/api/chat/conversations/:conversationId/messages`
 
-**Sukses — 200** — `data`: array `ChatMessageResponse`.
+**Success - 200** - `data`: `ChatMessageResponse[]`.
 
 ---
 
 ## GET `/api/chat/messages/:messageId`
 
-**Sukses — 200** — `data`: satu `ChatMessageResponse`.
+**Success - 200** - `data`: one `ChatMessageResponse`.
 
 ---
 
 ## DELETE `/api/chat/messages/:messageId`
 
-**Sukses — 200** — `data`: pesan yang dihapus.
+**Success - 200** - `data`: deleted message.
 
 ---
 
-## Error umum
+## Common Errors
 
-| HTTP | Kondisi |
-|------|---------|
-| 404 | Percakapan / pesan tidak ditemukan |
-| 403 | Bukan pemilik percakapan |
-| 422 | Validasi body gagal |
-| 500 | Error server lainnya |
+| HTTP | Condition |
+|------|-----------|
+| 404 | Conversation / message not found |
+| 403 | Not the conversation owner |
+| 422 | Body validation failed |
+| 500 | Other server error |

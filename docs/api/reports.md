@@ -1,42 +1,42 @@
-# Modul Reports — `/api/reports`
+# Reports Module - `/api/reports`
 
-Dashboard statistik admin. **Semua route membutuhkan Bearer token + super admin.**
+Admin statistics dashboard. **All routes require a Bearer token and super admin access.**
 
-## Ringkasan route
+## Route Summary
 
-| Method | Path | Keterangan |
-|--------|------|------------|
-| GET | `/overview` | Ringkasan + engagement |
-| GET | `/users` | Laporan user |
-| GET | `/posts` | Laporan post |
-| GET | `/engagement` | Metrik engagement |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/overview` | Overview + engagement |
+| GET | `/users` | User report |
+| GET | `/posts` | Post report |
+| GET | `/engagement` | Engagement metrics |
 
 ---
 
-## Query umum (opsional)
+## Common Query Parameters (Optional)
 
-| Param | Keterangan |
-|-------|------------|
-| `startDate` | Filter awal periode (format string, lihat service) |
-| `endDate` | Filter akhir periode |
+| Param | Description |
+|-------|-------------|
+| `startDate` | Start period filter (string format; see service behavior) |
+| `endDate` | End period filter |
 
-Endpoint `/users` dan `/posts` juga menerima:
+The `/users` and `/posts` endpoints also accept:
 
-| Param | Default | Keterangan |
-|-------|---------|------------|
+| Param | Default | Description |
+|-------|---------|-------------|
 | `limit` | 10 | max 100 |
 
-Endpoint `/posts` tambahan:
+The `/posts` endpoint also accepts:
 
-| Param | Keterangan |
-|-------|------------|
-| `tagId` | Filter numerik by tag |
+| Param | Description |
+|-------|-------------|
+| `tagId` | Numeric tag filter |
 
 ---
 
 ## GET `/api/reports/overview`
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 {
@@ -47,7 +47,7 @@ Endpoint `/posts` tambahan:
 
 ### `OverviewStatsResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `totalUsers` | number |
 | `totalPosts` | number |
@@ -62,9 +62,9 @@ Endpoint `/posts` tambahan:
 
 ## GET `/api/reports/users`
 
-**Sukses — 200** — `data`: `UserReportResponse`
+**Success - 200** - `data`: `UserReportResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `totalUsers` | number |
 | `newUsersThisPeriod` | number |
@@ -76,9 +76,9 @@ Endpoint `/posts` tambahan:
 
 ## GET `/api/reports/posts`
 
-**Sukses — 200** — `data`: `PostReportResponse`
+**Success - 200** - `data`: `PostReportResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `totalPosts` | number |
 | `newPostsThisPeriod` | number |
@@ -86,16 +86,16 @@ Endpoint `/posts` tambahan:
 | `totalLikes` | number |
 | `totalComments` | number |
 | `avgEngagementRate` | number |
-| `topPosts` | array performa post |
-| `tagPerformance` | array performa tag |
+| `topPosts` | post performance array |
+| `tagPerformance` | tag performance array |
 
 ---
 
 ## GET `/api/reports/engagement`
 
-**Sukses — 200** — `data`: `EngagementMetricsResponse`
+**Success - 200** - `data`: `EngagementMetricsResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `totalEngagements` | number |
 | `avgLikesPerPost` | number |
@@ -105,10 +105,10 @@ Endpoint `/posts` tambahan:
 
 ---
 
-## Error umum
+## Common Errors
 
-| HTTP | Kondisi |
-|------|---------|
-| 401 | Tidak login |
-| 403 | Bukan super admin |
-| 500 | Error server |
+| HTTP | Condition |
+|------|-----------|
+| 401 | Not authenticated |
+| 403 | Not a super admin |
+| 500 | Server error |

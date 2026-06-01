@@ -1,41 +1,41 @@
-# Dokumentasi API — echobackend
+# API Documentation - echobackend
 
-Referensi HTTP API untuk integrasi frontend. Semua route bisnis berada di bawah prefix `/api`, kecuali health check di root.
+HTTP API reference for frontend integration. All business routes are under the `/api` prefix, except the root health check endpoints.
 
 ## Base URL
 
-| Lingkungan | URL |
-|------------|-----|
-| Lokal | `http://localhost:<PORT>` (lihat `PORT` di `.env`) |
-| Produksi | URL deploy Fly.io / reverse proxy Anda |
+| Environment | URL |
+|-------------|-----|
+| Local | `http://localhost:<PORT>` (see `PORT` in `.env`) |
+| Production | Fly.io deployment URL / your reverse proxy URL |
 
-Contoh penuh: `GET /api/posts`, `POST /api/auth/login`.
+Full examples: `GET /api/posts`, `POST /api/auth/login`.
 
-## Autentikasi
+## Authentication
 
-Route yang membutuhkan login mengirim header:
+Routes that require login must send this header:
 
 ```http
 Authorization: Bearer <access_token>
 ```
 
-Token didapat dari `POST /api/auth/login`, `POST /api/auth/refresh`, atau `POST /api/auth/oauth/exchange` setelah OAuth GitHub. Claim JWT memuat `user_id` (UUID).
+Tokens are returned by `POST /api/auth/login`, `POST /api/auth/refresh`, or `POST /api/auth/oauth/exchange` after GitHub OAuth. JWT claims include `user_id` (UUID).
 
-**Middleware auth** yang gagal (token hilang, tidak valid, atau user bukan super admin pada route admin) mengembalikan JSON Echo `{"message":"..."}`, bukan envelope `success` di bawah.
+Failed auth middleware responses (missing token, invalid token, or non-super-admin user on admin routes) return Echo JSON `{"message":"..."}`, not the standard `success` envelope below.
 
-| Situasi | HTTP |
-|---------|------|
-| Token tidak ada / tidak valid | 401 |
-| Bukan super admin pada route admin | 403 |
+| Situation | HTTP |
+|-----------|------|
+| Missing / invalid token | 401 |
+| Not a super admin on an admin route | 403 |
 
-## Format respons standar
+## Standard Response Format
 
-Mayoritas handler memakai envelope dari `pkg/response`:
+Most handlers use the `pkg/response` envelope:
 
 ```json
 {
   "success": true,
-  "message": "Pesan human-readable",
+  "message": "Human-readable message",
   "data": {},
   "meta": {},
   "error": "",
@@ -43,21 +43,21 @@ Mayoritas handler memakai envelope dari `pkg/response`:
 }
 ```
 
-| Helper | HTTP | Catatan |
-|--------|------|---------|
-| Sukses | 200 | `success: true`, `data` opsional |
-| Dibuat | 201 | Sama seperti sukses |
-| Bad request | 400 | `success: false`, `error` berisi detail |
+| Helper | HTTP | Notes |
+|--------|------|-------|
+| Success | 200 | `success: true`, optional `data` |
+| Created | 201 | Same envelope as success |
+| Bad request | 400 | `success: false`, `error` contains details |
 | Unauthorized | 401 | `error`: `"Unauthorized access"` |
 | Forbidden | 403 | `error`: `"Access forbidden"` |
 | Not found | 404 | |
-| Conflict | 409 | Duplikat resource |
-| Validasi | 422 | `errors` berisi array field (`field`, `message`, `value`, `tag`) |
-| Server error | 500 | Pesan generik; detail hanya di log server |
+| Conflict | 409 | Duplicate resource |
+| Validation | 422 | `errors` contains field errors (`field`, `message`, `value`, `tag`) |
+| Server error | 500 | Generic client message; details are logged server-side only |
 
-### Paginasi (`meta`)
+### Pagination (`meta`)
 
-List yang dipaginasi memakai `SuccessWithMeta`:
+Paginated lists use `SuccessWithMeta`:
 
 ```json
 {
@@ -70,33 +70,33 @@ List yang dipaginasi memakai `SuccessWithMeta`:
 }
 ```
 
-Query: `limit` (default bervariasi per endpoint, **maksimum 100**), `offset` (default `0`).
+Query: `limit` (default varies by endpoint, **maximum 100**), `offset` (default `0`).
 
-## Batasan global
+## Global Limits
 
-- Ukuran body request: **10 MB** (lebih besar → **413**).
+- Request body size: **10 MB** (larger requests return **413**).
 - CORS: `HTTP_ALLOW_ORIGINS` (default `*`).
-- Rate limit global: aktif jika `HTTP_RATE_LIMIT_RPS` > 0.
-- Rate limit khusus auth memakai fixed window per IP. Jika `VALKEY_URL` aktif, counter disimpan di Valkey/Redis dan berlaku lintas instance; jika tidak, fallback ke memory per instance:
-  `register`, `login`, dan `reset-password` **5 / 5 menit**;
-  `forgot-password` **3 / 5 menit**;
-  `check-username`, `email/:email`, dan `refresh` **30 / menit**;
-  `oauth/exchange` **10 / menit**.
+- Global rate limit: enabled when `HTTP_RATE_LIMIT_RPS` > 0.
+- Auth-specific rate limits use a fixed window per IP. If `VALKEY_URL` is set, counters are stored in Valkey/Redis and work across instances; otherwise they fall back to in-memory per instance:
+  `register`, `login`, and `reset-password` **5 / 5 minutes**;
+  `forgot-password` **3 / 5 minutes**;
+  `check-username`, `email/:email`, and `refresh` **30 / minute**;
+  `oauth/exchange` **10 / minute**.
 
-## Health & root
+## Health & Root
 
-| Method | Path | Auth | Respons |
-|--------|------|------|---------|
-| GET | `/` | Tidak | Envelope sukses (pesan welcome) |
-| GET | `/health` | Tidak | `200` `{"status":"ok"}` atau `503` `{"status":"unhealthy","reason":"database unreachable"}` |
+| Method | Path | Auth | Response |
+|--------|------|------|----------|
+| GET | `/` | No | Success envelope with welcome message |
+| GET | `/health` | No | `200` `{"status":"ok"}` or `503` `{"status":"unhealthy","reason":"database unreachable"}` |
 
-## Modul
+## Modules
 
-| Modul | Base path | Dokumen |
-|-------|-----------|---------|
+| Module | Base path | Document |
+|--------|-----------|----------|
 | Auth | `/api/auth` | [auth.md](./auth.md) |
 | Users & follow | `/api/users` | [users.md](./users.md) |
-| Posts (komentar, view, like) | `/api/posts` | [posts.md](./posts.md) |
+| Posts (comments, views, likes) | `/api/posts` | [posts.md](./posts.md) |
 | Tags | `/api/tags` | [tags.md](./tags.md) |
 | Chat | `/api/chat/conversations`, `/api/chat/messages` | [chat.md](./chat.md) |
 | Holdings | `/api/holdings`, `/api/holding-types` | [holdings.md](./holdings.md) |
@@ -105,11 +105,11 @@ Query: `limit` (default bervariasi per endpoint, **maksimum 100**), `offset` (de
 | Notifications | `/api/notifications` | [notifications.md](./notifications.md) |
 | Reports (admin) | `/api/reports` | [reports.md](./reports.md) |
 
-Debug (`/api/debug/pprof/*`) hanya saat `APP_DEBUG=true` — tidak untuk frontend.
+Debug routes (`/api/debug/pprof/*`) are registered only when `APP_DEBUG=true`; they are not intended for frontend use.
 
-## Konvensi tipe
+## Type Conventions
 
-- **UUID**: string, primary key user/post/komentar/konversasi.
-- **Waktu**: ISO 8601 / RFC3339 (`2026-05-12T08:00:00Z`).
-- **Nullable**: field pointer di Go → `null` atau dihilangkan (`omitempty`).
-- **Angka finansial (holdings)**: string desimal di JSON (mis. `"1500000.00"`), bukan number.
+- **UUID**: string primary key for users, posts, comments, and conversations.
+- **Time**: ISO 8601 / RFC3339 (`2026-05-12T08:00:00Z`).
+- **Nullable**: Go pointer fields may be `null` or omitted (`omitempty`).
+- **Financial numbers (holdings)**: decimal strings in JSON (for example `"1500000.00"`), not numbers.

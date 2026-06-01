@@ -1,23 +1,23 @@
-# Modul Notifications — `/api/notifications`
+# Notifications Module - `/api/notifications`
 
-Notifikasi in-app untuk user login. **Semua route membutuhkan Bearer token.**
+In-app notifications for the logged-in user. **All routes require a Bearer token.**
 
-Notifikasi dibuat otomatis oleh sistem (mis. saat ada komentar baru atau follow baru). Tidak ada endpoint HTTP publik untuk membuat notifikasi.
+Notifications are created automatically by the system, for example when a new comment or follow event occurs. There is no public HTTP endpoint for creating notifications.
 
-## Ringkasan route
+## Route Summary
 
-| Method | Path | Keterangan |
-|--------|------|------------|
-| GET | `` | List notifikasi |
-| GET | `/unread-count` | Jumlah belum dibaca |
-| PATCH | `/:id/read` | Tandai satu sebagai dibaca |
-| PATCH | `/read-all` | Tandai semua sebagai dibaca |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `` | List notifications |
+| GET | `/unread-count` | Unread count |
+| PATCH | `/:id/read` | Mark one notification as read |
+| PATCH | `/read-all` | Mark all notifications as read |
 
 ---
 
-## Tipe data: `NotificationResponse`
+## Data Type: `NotificationResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `id` | string (UUID) |
 | `user_id` | string (UUID) |
@@ -29,12 +29,12 @@ Notifikasi dibuat otomatis oleh sistem (mis. saat ada komentar baru atau follow 
 | `created_at` | string \| null |
 | `updated_at` | string \| null |
 
-### Tipe notifikasi yang dipakai saat ini
+### Notification Types Currently Used
 
-| `type` | Pemicu |
-|--------|--------|
-| `comment` | Komentar baru pada post milik user |
-| `follow` | User lain mengikuti akun |
+| `type` | Trigger |
+|--------|---------|
+| `comment` | New comment on the user's post |
+| `follow` | Another user follows the account |
 
 ---
 
@@ -42,19 +42,19 @@ Notifikasi dibuat otomatis oleh sistem (mis. saat ada komentar baru atau follow 
 
 **Query**
 
-| Param | Default | Keterangan |
-|-------|---------|------------|
-| `unread` | — | `true` = hanya belum dibaca |
+| Param | Default | Description |
+|-------|---------|-------------|
+| `unread` | - | `true` = unread only |
 | `limit` | 20 | max 100 |
 | `offset` | 0 | |
 
-**Sukses — 200** — `data`: `NotificationResponse[]`, `meta`: paginasi.
+**Success - 200** - `data`: `NotificationResponse[]`, `meta`: pagination.
 
 ---
 
 ## GET `/api/notifications/unread-count`
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 { "unread_count": 3 }
@@ -64,13 +64,13 @@ Notifikasi dibuat otomatis oleh sistem (mis. saat ada komentar baru atau follow 
 
 ## PATCH `/api/notifications/:id/read`
 
-**Sukses — 200** — `data`: `NotificationResponse` yang sudah `read: true`.
+**Success - 200** - `data`: `NotificationResponse` with `read: true`.
 
 ---
 
 ## PATCH `/api/notifications/read-all`
 
-**Sukses — 200** — `data`:
+**Success - 200** - `data`:
 
 ```json
 { "updated_count": 5 }

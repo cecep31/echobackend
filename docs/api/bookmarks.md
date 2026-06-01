@@ -1,27 +1,27 @@
-# Modul Bookmarks — `/api/bookmarks`
+# Bookmarks Module - `/api/bookmarks`
 
-Bookmark post dan organisasi folder. **Semua route membutuhkan Bearer token.**
+Post bookmarking and folder organization. **All routes require a Bearer token.**
 
-## Ringkasan route
+## Route Summary
 
-| Method | Path | Keterangan |
-|--------|------|------------|
-| POST | `/:post_id` | Toggle bookmark (buat/hapus) |
-| GET | `` | List bookmark user |
-| PATCH | `/:bookmark_id` | Update nama/catatan |
-| PATCH | `/:bookmark_id/move` | Pindah ke folder |
-| POST | `/folders` | Buat folder |
-| GET | `/folders` | List folder |
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/:post_id` | Toggle bookmark (create/delete) |
+| GET | `` | List user bookmarks |
+| PATCH | `/:bookmark_id` | Update name/notes |
+| PATCH | `/:bookmark_id/move` | Move to folder |
+| POST | `/folders` | Create folder |
+| GET | `/folders` | List folders |
 | PATCH | `/folders/:folder_id` | Update folder |
-| DELETE | `/folders/:folder_id` | Hapus folder |
+| DELETE | `/folders/:folder_id` | Delete folder |
 
 ---
 
-## Tipe data
+## Data Types
 
 ### `BookmarkResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `id` | string (UUID) |
 | `post_id` | string (UUID) |
@@ -36,7 +36,7 @@ Bookmark post dan organisasi folder. **Semua route membutuhkan Bearer token.**
 
 ### `BookmarkFolderResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `id` | string (UUID) |
 | `user_id` | string (UUID) |
@@ -48,7 +48,7 @@ Bookmark post dan organisasi folder. **Semua route membutuhkan Bearer token.**
 
 ### `ToggleBookmarkResponse`
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `action` | string (`added` / `removed`) |
 | `bookmark` | `BookmarkResponse` \| null |
@@ -57,17 +57,17 @@ Bookmark post dan organisasi folder. **Semua route membutuhkan Bearer token.**
 
 ## POST `/api/bookmarks/:post_id`
 
-Toggle bookmark pada post. Jika sudah ada, dihapus; jika belum, dibuat.
+Toggle a bookmark on a post. If it already exists, it is removed; otherwise it is created.
 
-**Body (`ToggleBookmarkRequest`)** — semua opsional
+**Body (`ToggleBookmarkRequest`)** - all fields are optional
 
-| Field | Validasi |
-|-------|----------|
+| Field | Validation |
+|-------|------------|
 | `folder_id` | UUID |
 | `name` | max 255 |
 | `notes` | max 2000 |
 
-**Sukses — 200** — `data`: `ToggleBookmarkResponse`.
+**Success - 200** - `data`: `ToggleBookmarkResponse`.
 
 ---
 
@@ -75,12 +75,12 @@ Toggle bookmark pada post. Jika sudah ada, dihapus; jika belum, dibuat.
 
 **Query**
 
-| Param | Keterangan |
-|-------|------------|
-| `folder_id` | UUID folder; `null` = bookmark tanpa folder |
-| `limit`, `offset` | Paginasi (default limit 50, max 100) |
+| Param | Description |
+|-------|-------------|
+| `folder_id` | Folder UUID; `null` = bookmarks without a folder |
+| `limit`, `offset` | Pagination (default limit 50, max 100) |
 
-**Sukses — 200** — `data`: `BookmarkResponse[]`, `meta`: paginasi.
+**Success - 200** - `data`: `BookmarkResponse[]`, `meta`: pagination.
 
 ---
 
@@ -88,12 +88,12 @@ Toggle bookmark pada post. Jika sudah ada, dihapus; jika belum, dibuat.
 
 **Body (`UpdateBookmarkRequest`)**
 
-| Field | Validasi |
-|-------|----------|
+| Field | Validation |
+|-------|------------|
 | `name` | max 255 |
 | `notes` | max 2000 |
 
-**Sukses — 200** — `data`: `BookmarkResponse`.
+**Success - 200** - `data`: `BookmarkResponse`.
 
 ---
 
@@ -101,11 +101,11 @@ Toggle bookmark pada post. Jika sudah ada, dihapus; jika belum, dibuat.
 
 **Body**
 
-| Field | Wajib | Validasi |
-|-------|-------|----------|
-| `folder_id` | Tidak | UUID; `null` = keluarkan dari folder |
+| Field | Required | Validation |
+|-------|----------|------------|
+| `folder_id` | No | UUID; `null` = remove from folder |
 
-**Sukses — 200** — `data`: `BookmarkResponse`.
+**Success - 200** - `data`: `BookmarkResponse`.
 
 ---
 
@@ -113,29 +113,29 @@ Toggle bookmark pada post. Jika sudah ada, dihapus; jika belum, dibuat.
 
 **Body**
 
-| Field | Wajib | Validasi |
-|-------|-------|----------|
-| `name` | Ya | 1–100 karakter |
-| `description` | Tidak | max 1000 |
+| Field | Required | Validation |
+|-------|----------|------------|
+| `name` | Yes | 1-100 characters |
+| `description` | No | max 1000 |
 
-**Sukses — 201** — `data`: `BookmarkFolderResponse`.
+**Success - 201** - `data`: `BookmarkFolderResponse`.
 
 ---
 
 ## GET `/api/bookmarks/folders`
 
-**Sukses — 200** — `data`: `BookmarkFolderResponse[]`.
+**Success - 200** - `data`: `BookmarkFolderResponse[]`.
 
 ---
 
 ## PATCH `/api/bookmarks/folders/:folder_id`
 
-**Body** — field opsional: `name` (1–100), `description` (max 1000).
+**Body** - optional fields: `name` (1-100), `description` (max 1000).
 
-**Sukses — 200** — `data`: `BookmarkFolderResponse`.
+**Success - 200** - `data`: `BookmarkFolderResponse`.
 
 ---
 
 ## DELETE `/api/bookmarks/folders/:folder_id`
 
-**Sukses — 200** — `data`: `null`.
+**Success - 200** - `data`: `null`.

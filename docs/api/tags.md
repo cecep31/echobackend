@@ -1,32 +1,32 @@
-# Modul Tags — `/api/tags`
+# Tags Module - `/api/tags`
 
-Manajemen tag untuk post. Create butuh login; update/delete butuh **super admin**.
+Tag management for posts. Create requires login; update/delete requires **super admin** access.
 
 | Method | Path | Auth |
 |--------|------|------|
 | POST | `` | Bearer |
-| GET | `` | Tidak |
-| GET | `/trending` | Tidak |
-| GET | `/sitemap` | Tidak |
-| GET | `/:id` | Tidak |
+| GET | `` | No |
+| GET | `/trending` | No |
+| GET | `/sitemap` | No |
+| GET | `/:id` | No |
 | PUT | `/:id` | Bearer + super admin |
 | DELETE | `/:id` | Bearer + super admin |
 
-## Tipe data
+## Data Types
 
-### `TagResponse` (list / nested di post)
+### `TagResponse` (list / nested in posts)
 
 ```json
 { "id": 1, "name": "golang" }
 ```
 
-### Model tag (create / get by id / update)
+### Tag model (create / get by id / update)
 
-| Field | Tipe |
+| Field | Type |
 |-------|------|
 | `id` | number |
 | `name` | string |
-| `created_at` | string (opsional di respons) |
+| `created_at` | string (optional in response) |
 
 ### `TrendingTagResponse`
 
@@ -40,7 +40,7 @@ Manajemen tag untuk post. Create butuh login; update/delete butuh **super admin*
 }
 ```
 
-`trending_score` dihitung dari agregasi post published: `like_count * 2 + bookmark_count * 2 + view_count`.
+`trending_score` is calculated from published post aggregation: `like_count * 2 + bookmark_count * 2 + view_count`.
 
 ### `SitemapTag`
 
@@ -52,27 +52,27 @@ Manajemen tag untuk post. Create butuh login; update/delete butuh **super admin*
 
 ## POST `/api/tags`
 
-**Body:** JSON tag — field utama `name` (string). Tidak ada validasi struct tag di handler; error bisnis → 500.
+**Body:** tag JSON - primary field is `name` (string). The handler does not have struct-tag validation; business errors return 500.
 
-**Sukses — 201** — `data`: objek tag.
+**Success - 201** - `data`: tag object.
 
 ---
 
 ## GET `/api/tags`
 
-**Sukses — 200** — `data`: array `TagResponse`.
+**Success - 200** - `data`: `TagResponse[]`.
 
 ---
 
 ## GET `/api/tags/trending`
 
-Mengambil 5 tag paling trending dari post published. Endpoint ini tidak menerima query parameter limit.
+Returns the 5 most trending tags from published posts. This endpoint does not accept a `limit` query parameter.
 
-**Cache:** hasil response di-cache di Valkey/Redis selama 30 menit dengan key `tags:trending` (mengikuti prefix cache jika dikonfigurasi).
+**Cache:** the response is cached in Valkey/Redis for 30 minutes with key `tags:trending` (using the configured cache prefix, if any).
 
-**Sukses — 200** — `data`: array `TrendingTagResponse`.
+**Success - 200** - `data`: `TrendingTagResponse[]`.
 
-Contoh response:
+Example response:
 
 ```json
 {
@@ -94,28 +94,28 @@ Contoh response:
 
 ## GET `/api/tags/sitemap`
 
-**Sukses — 200** — `data`: array `SitemapTag`.
+**Success - 200** - `data`: `SitemapTag[]`.
 
 ---
 
 ## GET `/api/tags/:id`
 
-**Path:** `id` numerik.
+**Path:** numeric `id`.
 
-| HTTP | Kondisi |
-|------|---------|
-| 400 | ID tidak valid |
-| 404 | Tag tidak ada |
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid ID |
+| 404 | Tag not found |
 | 200 | `data`: tag |
 
 ---
 
 ## PUT `/api/tags/:id`
 
-**Body:** objek tag (mis. `name` baru). Hanya super admin.
+**Body:** tag object (for example, a new `name`). Super admin only.
 
 ---
 
 ## DELETE `/api/tags/:id`
 
-**Sukses — 200** — `data`: `null`.
+**Success - 200** - `data`: `null`.
