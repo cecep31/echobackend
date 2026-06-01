@@ -1,0 +1,83 @@
+package config
+
+import (
+	"testing"
+	"time"
+)
+
+func TestEnvString(t *testing.T) {
+	const primary = "ECHOBACKEND_TEST_ENV_STRING_PRIMARY"
+	const fallback = "ECHOBACKEND_TEST_ENV_STRING_FALLBACK"
+
+	if got := envString([]string{primary, fallback}, "default"); got != "default" {
+		t.Fatalf("expected default, got %q", got)
+	}
+
+	t.Setenv(fallback, "fallback-value")
+	if got := envString([]string{primary, fallback}, "default"); got != "fallback-value" {
+		t.Fatalf("expected fallback value, got %q", got)
+	}
+
+	t.Setenv(primary, "primary-value")
+	if got := envString([]string{primary, fallback}, "default"); got != "primary-value" {
+		t.Fatalf("expected primary value, got %q", got)
+	}
+}
+
+func TestEnvInt(t *testing.T) {
+	const primary = "ECHOBACKEND_TEST_ENV_INT_PRIMARY"
+	const fallback = "ECHOBACKEND_TEST_ENV_INT_FALLBACK"
+
+	if got := envInt([]string{primary, fallback}, 10); got != 10 {
+		t.Fatalf("expected default, got %d", got)
+	}
+
+	t.Setenv(fallback, "20")
+	if got := envInt([]string{primary, fallback}, 10); got != 20 {
+		t.Fatalf("expected fallback int, got %d", got)
+	}
+
+	t.Setenv(primary, "invalid")
+	if got := envInt([]string{primary, fallback}, 10); got != 10 {
+		t.Fatalf("expected default for invalid primary, got %d", got)
+	}
+}
+
+func TestEnvBool(t *testing.T) {
+	const primary = "ECHOBACKEND_TEST_ENV_BOOL_PRIMARY"
+	const fallback = "ECHOBACKEND_TEST_ENV_BOOL_FALLBACK"
+
+	if got := envBool([]string{primary, fallback}, true); got != true {
+		t.Fatalf("expected default true, got %v", got)
+	}
+
+	t.Setenv(fallback, "false")
+	if got := envBool([]string{primary, fallback}, true); got != false {
+		t.Fatalf("expected fallback false, got %v", got)
+	}
+
+	t.Setenv(primary, "not-a-bool")
+	if got := envBool([]string{primary, fallback}, true); got != true {
+		t.Fatalf("expected default for invalid primary, got %v", got)
+	}
+}
+
+func TestEnvDuration(t *testing.T) {
+	const primary = "ECHOBACKEND_TEST_ENV_DURATION_PRIMARY"
+	const fallback = "ECHOBACKEND_TEST_ENV_DURATION_FALLBACK"
+	defaultValue := 5 * time.Second
+
+	if got := envDuration([]string{primary, fallback}, defaultValue); got != defaultValue {
+		t.Fatalf("expected default duration, got %s", got)
+	}
+
+	t.Setenv(fallback, "2m")
+	if got := envDuration([]string{primary, fallback}, defaultValue); got != 2*time.Minute {
+		t.Fatalf("expected fallback duration, got %s", got)
+	}
+
+	t.Setenv(primary, "invalid")
+	if got := envDuration([]string{primary, fallback}, defaultValue); got != defaultValue {
+		t.Fatalf("expected default for invalid primary, got %s", got)
+	}
+}
