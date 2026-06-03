@@ -266,7 +266,7 @@ func passwordResetTemplate(resetLink, expiresIn string) (string, string) {
 	escapedExpiresIn := html.EscapeString(expiresIn)
 
 	textBody := fmt.Sprintf(
-		"You requested a password reset. Click the link below to reset your password:\n\n%s\n\nThis link expires in %s. If you didn't request this, please ignore this email.",
+		"We received a request to reset your password.\n\nReset your password here:\n%s\n\nThis link expires in %s. If you did not request a password reset, you can safely ignore this email.",
 		resetLink,
 		expiresIn,
 	)
@@ -278,28 +278,55 @@ func passwordResetTemplate(resetLink, expiresIn string) (string, string) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reset Your Password</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .container { background: #f9f9f9; border-radius: 8px; padding: 30px; }
-    h1 { color: #2563eb; font-size: 24px; margin-bottom: 20px; }
-    .button { display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-    .link { word-break: break-all; color: #2563eb; }
-    .footer { margin-top: 30px; font-size: 14px; color: #666; }
+    body { margin: 0; padding: 0; background: #f3f4f6; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
+    .page { width: 100%%; padding: 32px 16px; background: #f3f4f6; }
+    .container { max-width: 560px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+    .header { padding: 28px 32px 20px; border-bottom: 1px solid #eef2f7; }
+    .brand { margin: 0 0 14px; color: #2563eb; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    h1 { margin: 0; color: #111827; font-size: 24px; line-height: 1.25; font-weight: 700; }
+    .content { padding: 28px 32px 32px; }
+    p { margin: 0 0 16px; color: #374151; font-size: 16px; line-height: 1.6; }
+    .button-wrap { margin: 26px 0; }
+    .button { display: inline-block; background: #2563eb; color: #ffffff; padding: 13px 22px; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 700; }
+    .meta { margin: 24px 0; padding: 14px 16px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px; color: #1e3a8a; font-size: 14px; line-height: 1.5; }
+    .fallback { margin-top: 18px; padding-top: 18px; border-top: 1px solid #eef2f7; }
+    .fallback p { color: #6b7280; font-size: 13px; line-height: 1.5; }
+    .link { color: #2563eb; word-break: break-all; overflow-wrap: anywhere; }
+    .footer { max-width: 560px; margin: 18px auto 0; text-align: center; }
+    .footer p { color: #6b7280; font-size: 12px; line-height: 1.5; }
+    @media (max-width: 480px) {
+      .page { padding: 16px 10px; }
+      .header, .content { padding-left: 20px; padding-right: 20px; }
+      h1 { font-size: 22px; }
+      .button { display: block; text-align: center; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Reset Your Password</h1>
-    <p>You requested a password reset. Click the button below to reset your password:</p>
-    <a href="%s" class="button">Reset Password</a>
-    <p>Or copy and paste this link into your browser:</p>
-    <p class="link">%s</p>
+  <div class="page">
+    <div class="container">
+      <div class="header">
+        <p class="brand">Pilput</p>
+        <h1>Reset your password</h1>
+      </div>
+      <div class="content">
+        <p>We received a request to reset the password for your account. Use the secure button below to choose a new password.</p>
+        <div class="button-wrap">
+          <a href="%s" class="button">Reset password</a>
+        </div>
+        <div class="meta">This link expires in <strong>%s</strong>. For your security, do not forward this email or share the reset link.</div>
+        <div class="fallback">
+          <p>If the button does not work, copy and paste this link into your browser:</p>
+          <p><a href="%s" class="link">%s</a></p>
+        </div>
+      </div>
+    </div>
     <div class="footer">
-      <p>This link expires in <strong>%s</strong>.</p>
-      <p>If you didn't request this, please ignore this email.</p>
+      <p>If you did not request a password reset, you can safely ignore this email.</p>
     </div>
   </div>
 </body>
-</html>`, escapedLink, escapedLink, escapedExpiresIn)
+</html>`, escapedLink, escapedExpiresIn, escapedLink, escapedLink)
 
 	return textBody, htmlBody
 }
