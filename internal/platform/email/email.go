@@ -278,22 +278,22 @@ func passwordResetTemplate(resetLink, expiresIn string) (string, string) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reset Your Password</title>
   <style>
-    body { margin: 0; padding: 0; background: #f3f4f6; color: #111827; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
-    .page { width: 100%%; padding: 32px 16px; background: #f3f4f6; }
-    .container { max-width: 560px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
-    .header { padding: 28px 32px 20px; border-bottom: 1px solid #eef2f7; }
-    .brand { margin: 0 0 14px; color: #2563eb; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-    h1 { margin: 0; color: #111827; font-size: 24px; line-height: 1.25; font-weight: 700; }
-    .content { padding: 28px 32px 32px; }
-    p { margin: 0 0 16px; color: #374151; font-size: 16px; line-height: 1.6; }
-    .button-wrap { margin: 26px 0; }
-    .button { display: inline-block; background: #2563eb; color: #ffffff; padding: 13px 22px; text-decoration: none; border-radius: 6px; font-size: 15px; font-weight: 700; }
-    .meta { margin: 24px 0; padding: 14px 16px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 6px; color: #1e3a8a; font-size: 14px; line-height: 1.5; }
-    .fallback { margin-top: 18px; padding-top: 18px; border-top: 1px solid #eef2f7; }
-    .fallback p { color: #6b7280; font-size: 13px; line-height: 1.5; }
-    .link { color: #2563eb; word-break: break-all; overflow-wrap: anywhere; }
-    .footer { max-width: 560px; margin: 18px auto 0; text-align: center; }
-    .footer p { color: #6b7280; font-size: 12px; line-height: 1.5; }
+    body { margin: 0; padding: 0; background: #ffffff; color: #111111; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
+    .page { width: 100%%; padding: 32px 16px; background: #ffffff; }
+    .container { max-width: 560px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; }
+    .header { padding: 28px 32px 18px; border-bottom: 1px solid #eeeeee; }
+    .brand { margin: 0 0 12px; color: #555555; font-size: 13px; font-weight: 600; }
+    h1 { margin: 0; color: #111111; font-size: 23px; line-height: 1.3; font-weight: 600; }
+    .content { padding: 26px 32px 32px; }
+    p { margin: 0 0 16px; color: #333333; font-size: 16px; line-height: 1.6; }
+    .button-wrap { margin: 24px 0; }
+    .button { display: inline-block; background: #111111; color: #ffffff; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-size: 15px; font-weight: 600; }
+    .meta { margin: 22px 0; padding: 14px 0; border-top: 1px solid #eeeeee; border-bottom: 1px solid #eeeeee; color: #555555; font-size: 14px; line-height: 1.5; }
+    .fallback { margin-top: 18px; padding-top: 18px; border-top: 1px solid #eeeeee; }
+    .fallback p { color: #666666; font-size: 13px; line-height: 1.5; }
+    .link { color: #111111; word-break: break-all; overflow-wrap: anywhere; }
+    .footer { max-width: 560px; margin: 16px auto 0; text-align: center; }
+    .footer p { color: #777777; font-size: 12px; line-height: 1.5; }
     @media (max-width: 480px) {
       .page { padding: 16px 10px; }
       .header, .content { padding-left: 20px; padding-right: 20px; }
@@ -310,7 +310,7 @@ func passwordResetTemplate(resetLink, expiresIn string) (string, string) {
         <h1>Reset your password</h1>
       </div>
       <div class="content">
-        <p>We received a request to reset the password for your account. Use the secure button below to choose a new password.</p>
+        <p>We received a request to reset the password for your account. Use the button below to choose a new password.</p>
         <div class="button-wrap">
           <a href="%s" class="button">Reset password</a>
         </div>
