@@ -6,7 +6,7 @@ import (
 	"mime/multipart"
 	"testing"
 
-	apperrors "echobackend/internal/errors"
+	apperrors "echobackend/internal/apperror"
 )
 
 func TestUploadImagePostsRejectsFilesLargerThanOneMiB(t *testing.T) {

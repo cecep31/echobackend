@@ -3,7 +3,7 @@ package validator
 import (
 	"unicode"
 
-	apperrors "echobackend/internal/errors"
+	apperrors "echobackend/internal/apperror"
 )
 
 func ValidatePasswordStrength(password string) error {

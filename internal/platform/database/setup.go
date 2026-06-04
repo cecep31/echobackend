@@ -17,7 +17,6 @@ import (
 
 // NewDatabase creates a new database connection using the provided configuration
 func NewDatabase(config *config.Config) *gorm.DB {
-	// Configure GORM logger
 	var gormLogLevel logger.LogLevel
 	if config.App.Debug {
 		gormLogLevel = logger.Info
@@ -29,7 +28,6 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		Logger: logger.Default.LogMode(gormLogLevel),
 	}
 
-	// Parse database configuration
 	pgxConfig, err := pgx.ParseConfig(config.Database.DSN)
 	if err != nil {
 		panic(fmt.Errorf("failed to parse database config: %w", err))
@@ -41,11 +39,16 @@ func NewDatabase(config *config.Config) *gorm.DB {
 
 	// Create database connection with retry logic
 	var db *gorm.DB
-	var sqldb *sql.DB
 
 	// Retry connection with exponential backoff
 	maxRetries := 3
 	baseDelay := 1 * time.Second
+	poolConfig := connectionPoolConfig{
+		maxOpenConns:    defaultInt(config.Database.MaxOpenConns, 25),
+		maxIdleConns:    defaultInt(config.Database.MaxIdleConns, 5),
+		connMaxLifetime: defaultDuration(config.Database.ConnMaxLifetime, time.Hour),
+		connMaxIdleTime: 30 * time.Minute,
+	}
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		if attempt > 0 {
@@ -54,28 +57,8 @@ func NewDatabase(config *config.Config) *gorm.DB {
 			slog.Info("retrying database connection", "attempt", attempt+1, "max", maxRetries)
 		}
 
-		sqldb = stdlib.OpenDB(*pgxConfig)
-
-		// Configure connection pool with better defaults
-		maxOpenConns := config.Database.MaxOpenConns
-		if maxOpenConns == 0 {
-			maxOpenConns = 25
-		}
-
-		maxIdleConns := config.Database.MaxIdleConns
-		if maxIdleConns == 0 {
-			maxIdleConns = 5
-		}
-
-		connMaxLifetime := config.Database.ConnMaxLifetime
-		if connMaxLifetime == 0 {
-			connMaxLifetime = 1 * time.Hour
-		}
-
-		sqldb.SetMaxOpenConns(maxOpenConns)
-		sqldb.SetMaxIdleConns(maxIdleConns)
-		sqldb.SetConnMaxLifetime(connMaxLifetime)
-		sqldb.SetConnMaxIdleTime(30 * time.Minute)
+		sqldb := stdlib.OpenDB(*pgxConfig)
+		configureConnectionPool(sqldb, poolConfig)
 
 		// Create GORM DB instance
 		db, err = gorm.Open(postgres.New(postgres.Config{
@@ -93,6 +76,7 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		sqlDB, err := db.DB()
 		if err != nil {
 			slog.Error("failed to get underlying sql.DB", "attempt", attempt+1, "max", maxRetries, "error", err)
+			_ = sqldb.Close()
 			continue
 		}
 
@@ -106,7 +90,7 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		}
 
 		// Connection successful
-		slog.Info("database: connected", "max_open", maxOpenConns, "max_idle", maxIdleConns, "conn_lifetime", connMaxLifetime)
+		slog.Info("database: connected", "max_open", poolConfig.maxOpenConns, "max_idle", poolConfig.maxIdleConns, "conn_lifetime", poolConfig.connMaxLifetime)
 		break
 	}
 
@@ -115,4 +99,32 @@ func NewDatabase(config *config.Config) *gorm.DB {
 	}
 
 	return db
+}
+
+type connectionPoolConfig struct {
+	maxOpenConns    int
+	maxIdleConns    int
+	connMaxLifetime time.Duration
+	connMaxIdleTime time.Duration
+}
+
+func configureConnectionPool(db *sql.DB, cfg connectionPoolConfig) {
+	db.SetMaxOpenConns(cfg.maxOpenConns)
+	db.SetMaxIdleConns(cfg.maxIdleConns)
+	db.SetConnMaxLifetime(cfg.connMaxLifetime)
+	db.SetConnMaxIdleTime(cfg.connMaxIdleTime)
+}
+
+func defaultInt(value, fallback int) int {
+	if value == 0 {
+		return fallback
+	}
+	return value
+}
+
+func defaultDuration(value, fallback time.Duration) time.Duration {
+	if value == 0 {
+		return fallback
+	}
+	return value
 }

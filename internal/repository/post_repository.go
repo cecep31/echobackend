@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
-	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 
 	"gorm.io/gorm"

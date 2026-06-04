@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
-	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 )
 

@@ -94,21 +94,27 @@ func (c *ValkeyCache) BuildKey(parts ...string) string {
 }
 
 func (c *ValkeyCache) GetJSON(ctx context.Context, key string, dest any) (bool, error) {
-	if c == nil || c.client == nil || key == "" {
-		return false, nil
-	}
-
-	value, err := c.client.Get(ctx, key).Bytes()
-	if err != nil {
-		if err == redis.Nil {
-			return false, nil
-		}
-		slog.Warn("cache: GetJSON error", "key", key, "error", err)
-		return false, err
+	value, found, err := c.getBytes(ctx, key, false)
+	if err != nil || !found {
+		return found, err
 	}
 
 	if err := json.Unmarshal(value, dest); err != nil {
 		slog.Warn("cache: GetJSON unmarshal error", "key", key, "error", err)
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (c *ValkeyCache) GetJSONAndDelete(ctx context.Context, key string, dest any) (bool, error) {
+	value, found, err := c.getBytes(ctx, key, true)
+	if err != nil || !found {
+		return found, err
+	}
+
+	if err := json.Unmarshal(value, dest); err != nil {
+		slog.Warn("cache: GetJSONAndDelete unmarshal error", "key", key, "error", err)
 		return false, err
 	}
 
@@ -177,26 +183,30 @@ func (c *ValkeyCache) IncrementFixedWindow(ctx context.Context, key string, wind
 	return int(count), time.Duration(ttlMillis) * time.Millisecond, nil
 }
 
-func (c *ValkeyCache) GetJSONAndDelete(ctx context.Context, key string, dest any) (bool, error) {
+func (c *ValkeyCache) getBytes(ctx context.Context, key string, deleteAfterRead bool) ([]byte, bool, error) {
 	if c == nil || c.client == nil || key == "" {
-		return false, nil
+		return nil, false, nil
 	}
 
-	value, err := c.client.GetDel(ctx, key).Bytes()
+	cmd := c.client.Get(ctx, key)
+	if deleteAfterRead {
+		cmd = c.client.GetDel(ctx, key)
+	}
+
+	value, err := cmd.Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return false, nil
+			return nil, false, nil
 		}
-		slog.Warn("cache: GetJSONAndDelete error", "key", key, "error", err)
-		return false, err
+		operation := "GetJSON"
+		if deleteAfterRead {
+			operation = "GetJSONAndDelete"
+		}
+		slog.Warn("cache: "+operation+" error", "key", key, "error", err)
+		return nil, false, err
 	}
 
-	if err := json.Unmarshal(value, dest); err != nil {
-		slog.Warn("cache: GetJSONAndDelete unmarshal error", "key", key, "error", err)
-		return false, err
-	}
-
-	return true, nil
+	return value, true, nil
 }
 
 func redisValueToInt64(value any) (int64, error) {

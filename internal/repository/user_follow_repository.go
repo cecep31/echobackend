@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	apperrors "echobackend/internal/errors"
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/model"
 
 	"echobackend/internal/dto"

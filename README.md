@@ -77,7 +77,9 @@ The project follows a modular layered architecture with manual dependency inject
 - **`internal/service/`**: Core business logic and service orchestration.
 - **`internal/repository/`**: Data access layer using GORM.
 - **`internal/model/`**: GORM entities and shared domain models.
-- **`pkg/`**: Infrastructure-agnostic packages (Cache, Storage, Database setup).
+- **`internal/platform/`**: App-owned infrastructure adapters for cache, database, email, queue, and storage.
+- **`internal/apperror/`**: Shared application error sentinels.
+- **`pkg/`**: Reusable helper packages such as market data, response formatting, and validation.
 
 ## API Documentation
 

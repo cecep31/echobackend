@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"echobackend/pkg/cache"
+	"echobackend/internal/platform/cache"
 	"echobackend/pkg/response"
 
 	"github.com/labstack/echo/v5"

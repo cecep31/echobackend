@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"mime/multipart"
 
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
-	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
+	"echobackend/internal/platform/cache"
+	"echobackend/internal/platform/storage"
 	"echobackend/internal/repository"
-	"echobackend/pkg/cache"
-	"echobackend/pkg/storage"
 )
 
 type PostService interface {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	apperrors "echobackend/internal/errors"
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/model"
 
 	"github.com/jackc/pgx/v5/pgconn"

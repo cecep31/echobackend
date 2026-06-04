@@ -3,7 +3,7 @@ package handler
 import (
 	"errors"
 
-	apperrors "echobackend/internal/errors"
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/repository"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"

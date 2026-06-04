@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"echobackend/config"
-	apperrors "echobackend/internal/errors"
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/model"
+	"echobackend/internal/platform/cache"
+	emailservice "echobackend/internal/platform/email"
 	"echobackend/internal/repository"
-	"echobackend/pkg/cache"
-	emailservice "echobackend/pkg/email"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"

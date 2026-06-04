@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"echobackend/config"
-	"echobackend/pkg/queue"
+	"echobackend/internal/platform/queue"
 )
 
 const taskTypePasswordReset = "email:password_reset"

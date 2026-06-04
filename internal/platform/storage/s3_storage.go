@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"echobackend/config"
+	"fmt"
 	"io"
 	"log/slog"
 	"time"
@@ -17,8 +18,18 @@ type S3Storage struct {
 	bucket string
 }
 
+const (
+	s3SaveTimeout   = 30 * time.Second
+	s3GetTimeout    = 30 * time.Second
+	s3DeleteTimeout = 10 * time.Second
+)
+
 func NewS3Storage(cfg *config.Config) *S3Storage {
-	// Initialize MinIO client
+	if cfg == nil || cfg.S3.Endpoint == "" || cfg.S3.Bucket == "" {
+		slog.Warn("storage: S3 configuration missing, storage disabled")
+		return nil
+	}
+
 	minioClient, err := minio.New(cfg.S3.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.S3.AccessKey, cfg.S3.SecretKey, ""),
 		Secure: cfg.S3.UseSSL,
@@ -35,17 +46,20 @@ func NewS3Storage(cfg *config.Config) *S3Storage {
 }
 
 func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader) error {
-	// Add timeout to context
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	if s == nil || s.client == nil {
+		return fmt.Errorf("storage is not configured")
+	}
+	if file == nil {
+		return fmt.Errorf("file cannot be nil")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, s3SaveTimeout)
 	defer cancel()
 
-	// If file is a ReadCloser, ensure it's closed after the operation
 	if rc, ok := file.(io.ReadCloser); ok {
 		defer rc.Close()
 	}
 
-	// Read the entire file into memory to get the size
-	// For larger files, consider using a streaming approach with known size
 	data, err := io.ReadAll(file)
 	if err != nil {
 		return err
@@ -56,10 +70,11 @@ func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader) error
 }
 
 func (s *S3Storage) Get(ctx context.Context, path string) (io.ReadCloser, error) {
-	// Add timeout to context
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
+	if s == nil || s.client == nil {
+		return nil, fmt.Errorf("storage is not configured")
+	}
 
+	ctx, cancel := context.WithTimeout(ctx, s3GetTimeout)
 	object, err := s.client.GetObject(ctx, s.bucket, path, minio.GetObjectOptions{})
 	if err != nil {
 		cancel()
@@ -71,14 +86,16 @@ func (s *S3Storage) Get(ctx context.Context, path string) (io.ReadCloser, error)
 }
 
 func (s *S3Storage) Delete(ctx context.Context, path string) error {
-	// Add timeout to context
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	if s == nil || s.client == nil {
+		return fmt.Errorf("storage is not configured")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, s3DeleteTimeout)
 	defer cancel()
 
 	return s.client.RemoveObject(ctx, s.bucket, path, minio.RemoveObjectOptions{})
 }
 
-// readCloserWithCancel wraps a ReadCloser with a context cancellation function
 type readCloserWithCancel struct {
 	io.ReadCloser
 	cancel context.CancelFunc
@@ -86,6 +103,6 @@ type readCloserWithCancel struct {
 
 func (r *readCloserWithCancel) Close() error {
 	err := r.ReadCloser.Close()
-	r.cancel() // Cancel the context when closing
+	r.cancel()
 	return err
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	apperrors "echobackend/internal/errors"
+	apperrors "echobackend/internal/apperror"
 )
 
 func TestValidatePasswordStrength(t *testing.T) {

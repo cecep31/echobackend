@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"echobackend/config"
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
-	apperrors "echobackend/internal/errors"
 	"echobackend/internal/model"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"

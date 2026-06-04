@@ -4,7 +4,7 @@ import (
 	"echobackend/config"
 	"echobackend/internal/handler"
 	"echobackend/internal/middleware"
-	"echobackend/pkg/cache"
+	"echobackend/internal/platform/cache"
 
 	"github.com/labstack/echo/v5"
 )

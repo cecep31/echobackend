@@ -1,8 +1,8 @@
 package handler
 
 import (
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
-	apperrors "echobackend/internal/errors"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
 	"errors"

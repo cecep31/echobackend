@@ -7,7 +7,7 @@ go run cmd/main.go          # Run server (requires .env with DATABASE_URL + JWT_
 air                         # Hot reload (reads .env automatically)
 go test ./...               # All tests (service + pkg layers only; no DB integration tests)
 go test ./internal/service/...  # Service tests only
-go test ./pkg/...           # Package tests only
+go test ./pkg/...           # Reusable package tests only
 go test -race ./...         # Race checker
 go vet ./...                # Static analysis
 go fmt ./...                # Format
@@ -33,8 +33,9 @@ scripts/migrate-up.ps1
 - **Entry point**: `cmd/main.go` — loads config → creates DI container → registers routes → starts server with graceful shutdown.
 - **DI**: Manual wiring in `internal/di/container.go`. All handler/service/repo instances created there.
 - **Layering**: `handler` → `service` → `repository`. No DI framework.
-- **`pkg/`**: Infra-agnostic packages (`cache`, `database`, `market`, `response`, `storage`, `validator`).
-- **`internal/dto/`**: Request/response structs. `internal/errors/` for shared error types.
+- **`internal/platform/`**: App-owned infrastructure adapters (`cache`, `database`, `email`, `queue`, `storage`).
+- **`pkg/`**: Reusable helper packages (`market`, `response`, `validator`).
+- **`internal/dto/`**: Request/response structs. `internal/apperror/` for shared app error sentinels.
 - **API routes**: All under `/api/*`, defined in `internal/routes/*Routes.go`. Auth-protected routes use `r.authMiddleware.Auth()`.
 - **Health**: `GET /health` — pings DB (200/503). Used by Fly.io and Docker HEALTHCHECK.
 - **Debug routes**: `GET /api/debug/pprof/*` — only registered when `APP_DEBUG=true`.
@@ -51,7 +52,7 @@ scripts/migrate-up.ps1
 
 ## Testing
 
-- Tests exist in `internal/service/` and `pkg/` only. No handler or repository tests.
+- Tests exist mostly in `internal/service/`, `internal/handler/`, `internal/middleware/`, `internal/validator/`, `config/`, and `pkg/`. No repository or DB integration tests.
 - **No external test dependencies** — service tests use hand-written mocks (`internal/service/mocks_test.go`). No mockgen or code-gen.
 - No testcontainers or integration test harness. Running `go test ./...` does not require PostgreSQL.
 - Test file pattern: `*_test.go` in the same package (white-box).

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	apperrors "echobackend/internal/errors"
+	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/model"
 
 	"gorm.io/gorm"
