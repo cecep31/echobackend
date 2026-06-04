@@ -86,9 +86,6 @@ func (r *Routes) setupAPIRoutes(api *echo.Group) {
 	r.setupBookmarkRoutes(api)
 	r.setupNotificationRoutes(api)
 	r.setupReportRoutes(api)
-	if r.config.App.Debug {
-		r.setupDebugRoutes(api)
-	}
 }
 
 func (r *Routes) setupChatConversationRoutes(api *echo.Group) {

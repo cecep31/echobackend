@@ -58,7 +58,6 @@ type CurrentUserResponse struct {
 
 type PublicUserResponse struct {
 	ID             string         `json:"id"`
-	Email          string         `json:"email"`
 	Name           string         `json:"name"`
 	Username       *string        `json:"username"`
 	Image          *string        `json:"image"`
@@ -118,7 +117,6 @@ func UserToPublicResponse(u *model.User) *PublicUserResponse {
 	}
 	return &PublicUserResponse{
 		ID:             u.ID,
-		Email:          u.Email,
 		Name:           name,
 		Username:       u.Username,
 		Image:          u.Image,

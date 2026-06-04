@@ -1,9 +1,14 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"mime/multipart"
+	"net/http"
 
 	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
@@ -44,6 +49,7 @@ type trendingPostsCacheEntry struct {
 }
 
 const maxPostImageSize = 1 * 1024 * 1024
+const imageUploadPrefix = "posts/images"
 
 func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage, valkeyCache *cache.ValkeyCache) PostService {
 	return &postService{postRepo: postRepo, tagService: tagService, s3storage: storageclient, cache: valkeyCache}
@@ -391,11 +397,51 @@ func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.File
 	}
 	defer src.Close()
 
-	return s.s3storage.Save(ctx, file.Filename, src)
+	data, err := io.ReadAll(io.LimitReader(src, maxPostImageSize+1))
+	if err != nil {
+		return err
+	}
+	if int64(len(data)) > maxPostImageSize {
+		return apperrors.ErrFileTooLarge
+	}
+
+	contentType, ext, ok := detectAllowedImage(data)
+	if !ok {
+		return apperrors.ErrInvalidFileType
+	}
+
+	objectKey, err := randomImageObjectKey(ext)
+	if err != nil {
+		return err
+	}
+
+	return s.s3storage.Save(ctx, objectKey, bytes.NewReader(data), contentType)
 }
 
 func (s *postService) findOrCreateTagByName(ctx context.Context, tagName string) (*model.Tag, error) {
 	return s.tagService.FindOrCreateByName(ctx, tagName)
+}
+
+func detectAllowedImage(data []byte) (contentType string, ext string, ok bool) {
+	contentType = http.DetectContentType(data)
+	switch contentType {
+	case "image/jpeg":
+		return contentType, ".jpg", true
+	case "image/png":
+		return contentType, ".png", true
+	case "image/webp":
+		return contentType, ".webp", true
+	default:
+		return "", "", false
+	}
+}
+
+func randomImageObjectKey(ext string) (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s%s", imageUploadPrefix, hex.EncodeToString(b), ext), nil
 }
 
 func (s *postService) GetPostsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapPost, error) {

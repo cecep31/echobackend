@@ -38,6 +38,7 @@ var (
 
 	ErrFileNil            = errors.New("file cannot be nil")
 	ErrFileTooLarge       = errors.New("file size must not exceed 1 MB")
+	ErrInvalidFileType    = errors.New("file must be a JPEG, PNG, or WebP image")
 	ErrStorageUnavailable = errors.New("storage is unavailable")
 
 	ErrHoldingNotFound        = errors.New("holding not found")

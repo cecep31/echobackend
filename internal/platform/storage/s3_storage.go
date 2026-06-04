@@ -45,7 +45,7 @@ func NewS3Storage(cfg *config.Config) *S3Storage {
 	}
 }
 
-func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader) error {
+func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader, contentType string) error {
 	if s == nil || s.client == nil {
 		return fmt.Errorf("storage is not configured")
 	}
@@ -65,7 +65,9 @@ func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader) error
 		return err
 	}
 
-	_, err = s.client.PutObject(ctx, s.bucket, path, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{})
+	_, err = s.client.PutObject(ctx, s.bucket, path, bytes.NewReader(data), int64(len(data)), minio.PutObjectOptions{
+		ContentType: contentType,
+	})
 	return err
 }
 

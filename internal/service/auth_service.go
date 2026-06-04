@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log/slog"
@@ -208,7 +210,7 @@ func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, user
 
 	tokenEntry := &model.PasswordResetToken{
 		UserID:    user.ID,
-		Token:     resetToken,
+		Token:     tokenHash(resetToken),
 		ExpiresAt: expiresAt,
 	}
 
@@ -232,13 +234,13 @@ func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, user
 		return nil
 	}
 
-	s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, map[string]any{"devMode": true, "resetLink": resetLink})
+	s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, map[string]any{"devMode": true})
 
 	return nil
 }
 
 func (s *authService) ResetPassword(ctx context.Context, token, password, ipAddress, userAgent string) error {
-	tokenEntry, err := s.passwordResetTokenRepo.FindByToken(ctx, token)
+	tokenEntry, err := s.passwordResetTokenRepo.FindByToken(ctx, tokenHash(token))
 	if err != nil {
 		return apperrors.ErrInvalidToken
 	}
@@ -282,13 +284,14 @@ func (s *authService) ResetPassword(ctx context.Context, token, password, ipAddr
 }
 
 func (s *authService) RefreshToken(ctx context.Context, refreshToken, ipAddress, userAgent string) (string, string, *model.User, error) {
-	session, err := s.sessionRepo.GetSessionByRefreshToken(ctx, refreshToken)
+	refreshTokenHash := tokenHash(refreshToken)
+	session, err := s.sessionRepo.GetSessionByRefreshToken(ctx, refreshTokenHash)
 	if err != nil {
 		return "", "", nil, apperrors.ErrInvalidToken
 	}
 
 	if session.ExpiresAt != nil && time.Now().After(*session.ExpiresAt) {
-		s.sessionRepo.DeleteSession(ctx, refreshToken)
+		s.sessionRepo.DeleteSession(ctx, refreshTokenHash)
 		return "", "", nil, apperrors.ErrTokenExpired
 	}
 
@@ -302,7 +305,7 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken, ipAddress,
 		return "", "", nil, err
 	}
 
-	_ = s.sessionRepo.DeleteSession(ctx, refreshToken)
+	_ = s.sessionRepo.DeleteSession(ctx, refreshTokenHash)
 
 	s.activityService.LogActivity(ctx, &user.ID, model.ActivityTokenRefresh, model.StatusSuccess, ipAddress, userAgent, nil, nil)
 
@@ -341,7 +344,7 @@ func (s *authService) ChangePassword(ctx context.Context, userID, currentPasswor
 }
 
 func (s *authService) Logout(ctx context.Context, refreshToken string) error {
-	return s.sessionRepo.DeleteSession(ctx, refreshToken)
+	return s.sessionRepo.DeleteSession(ctx, tokenHash(refreshToken))
 }
 
 func (s *authService) GetProfile(ctx context.Context, userID string) (*model.User, error) {
@@ -539,7 +542,7 @@ func (s *authService) createTokenAndSession(ctx context.Context, user *model.Use
 	refreshToken := "pl_" + base64.RawURLEncoding.EncodeToString(refreshBytes)
 
 	sess := &model.Session{
-		RefreshToken: refreshToken,
+		RefreshToken: tokenHash(refreshToken),
 		UserID:       user.ID,
 		ExpiresAt:    ptrTime(time.Now().Add(s.refreshTokenExpiry)),
 	}
@@ -556,6 +559,11 @@ func generateRandomBytes(n int) ([]byte, error) {
 		return nil, err
 	}
 	return b, nil
+}
+
+func tokenHash(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }
 
 func buildPasswordResetLink(baseURL, token string) string {
