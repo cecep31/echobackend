@@ -29,6 +29,7 @@ type Service struct {
 	password string
 	from     string
 	timeout  time.Duration
+	taskTTL  time.Duration
 	useTLS   bool
 	queue    *queue.Service
 }
@@ -47,6 +48,7 @@ func NewService(cfg config.EmailConfig, taskQueue *queue.Service) *Service {
 		password: cfg.SMTPPassword,
 		from:     cfg.From,
 		timeout:  cfg.Timeout,
+		taskTTL:  cfg.TaskTimeout,
 		useTLS:   cfg.UseTLS,
 		queue:    taskQueue,
 	}
@@ -82,7 +84,7 @@ func (s *Service) EnqueuePasswordResetEmail(to, resetLink string) error {
 	}
 
 	payload := passwordResetPayload{To: to, ResetLink: resetLink}
-	return s.queue.EnqueueJSON(taskTypePasswordReset, payload, queue.TaskOptions{Timeout: s.timeout})
+	return s.queue.EnqueueJSON(taskTypePasswordReset, payload, queue.TaskOptions{Timeout: s.taskTTL})
 }
 
 func (s *Service) handlePasswordResetTask(ctx context.Context, payloadBytes []byte) error {
@@ -118,12 +120,12 @@ func (s *Service) send(ctx context.Context, to, subject, textBody, htmlBody stri
 	dialer := net.Dialer{Timeout: s.timeout}
 	conn, err := dialer.DialContext(ctx, "tcp", address)
 	if err != nil {
-		return err
+		return fmt.Errorf("smtp dial %s failed: %w", address, err)
 	}
 	defer conn.Close()
 	if s.timeout > 0 {
 		if err := conn.SetDeadline(time.Now().Add(s.timeout)); err != nil {
-			return err
+			return fmt.Errorf("smtp set deadline failed: %w", err)
 		}
 	}
 
@@ -131,14 +133,14 @@ func (s *Service) send(ctx context.Context, to, subject, textBody, htmlBody stri
 	if s.useTLS {
 		tlsConn := tls.Client(conn, &tls.Config{ServerName: s.host, MinVersion: tls.VersionTLS12})
 		if err := tlsConn.HandshakeContext(ctx); err != nil {
-			return err
+			return fmt.Errorf("smtp tls handshake failed: %w", err)
 		}
 		client, err = smtp.NewClient(tlsConn, s.host)
 	} else {
 		client, err = smtp.NewClient(conn, s.host)
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("smtp client init failed: %w", err)
 	}
 	defer client.Close()
 
@@ -146,7 +148,7 @@ func (s *Service) send(ctx context.Context, to, subject, textBody, htmlBody stri
 		if ok, _ := client.Extension("STARTTLS"); ok {
 			tlsConfig := &tls.Config{ServerName: s.host, MinVersion: tls.VersionTLS12}
 			if err := client.StartTLS(tlsConfig); err != nil {
-				return err
+				return fmt.Errorf("smtp starttls failed: %w", err)
 			}
 		}
 	}
@@ -154,39 +156,43 @@ func (s *Service) send(ctx context.Context, to, subject, textBody, htmlBody stri
 	if s.username != "" || s.password != "" {
 		auth := smtp.PlainAuth("", s.username, s.password, s.host)
 		if err := client.Auth(auth); err != nil {
-			return err
+			return fmt.Errorf("smtp auth failed: %w", err)
 		}
 	}
 
 	fromAddress, err := parseAddress(s.from)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid smtp from address: %w", err)
 	}
 	toAddress, err := parseAddress(to)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid smtp recipient address: %w", err)
 	}
 
 	if err := client.Mail(fromAddress); err != nil {
-		return err
+		return fmt.Errorf("smtp mail from failed: %w", err)
 	}
 	if err := client.Rcpt(toAddress); err != nil {
-		return err
+		return fmt.Errorf("smtp rcpt to failed: %w", err)
 	}
 
 	writer, err := client.Data()
 	if err != nil {
-		return err
+		return fmt.Errorf("smtp data command failed: %w", err)
 	}
 	if _, err := writer.Write(message); err != nil {
 		_ = writer.Close()
-		return err
+		return fmt.Errorf("smtp write message failed: %w", err)
 	}
 	if err := writer.Close(); err != nil {
-		return err
+		return fmt.Errorf("smtp close message failed: %w", err)
 	}
 
-	return client.Quit()
+	if err := client.Quit(); err != nil {
+		return fmt.Errorf("smtp quit failed: %w", err)
+	}
+
+	return nil
 }
 
 func buildMessage(from, to, subject, textBody, htmlBody string) ([]byte, error) {

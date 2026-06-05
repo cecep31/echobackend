@@ -158,6 +158,7 @@ type EmailConfig struct {
 	SMTPPassword string
 	From         string
 	Timeout      time.Duration
+	TaskTimeout  time.Duration
 	UseTLS       bool
 }
 
@@ -239,6 +240,7 @@ func Load() (*Config, error) {
 			SMTPPassword: envString([]string{"SMTP_PASSWORD"}, ""),
 			From:         envString([]string{"SMTP_FROM", "EMAIL_FROM"}, "noreply@pilput.net"),
 			Timeout:      time.Duration(envInt([]string{"SMTP_TIMEOUT_SECONDS"}, 10)) * time.Second,
+			TaskTimeout:  time.Duration(envInt([]string{"SMTP_TASK_TIMEOUT_SECONDS"}, 30)) * time.Second,
 			UseTLS:       envBool([]string{"SMTP_TLS"}, false),
 		},
 	}
@@ -293,6 +295,9 @@ func (c *Config) validate() error {
 	}
 	if c.Email.Timeout <= 0 {
 		return fmt.Errorf("SMTP_TIMEOUT_SECONDS must be > 0")
+	}
+	if c.Email.TaskTimeout <= 0 {
+		return fmt.Errorf("SMTP_TASK_TIMEOUT_SECONDS must be > 0")
 	}
 	return nil
 }
