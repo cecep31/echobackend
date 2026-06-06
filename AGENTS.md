@@ -49,7 +49,7 @@ psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'
 
 ## Testing
 
-- Tests exist mostly in `internal/service/`, `internal/handler/`, `internal/middleware/`, `internal/validator/`, `config/`, and `pkg/`. No repository or DB integration tests.
+- Tests exist mostly in `internal/service/`, `internal/handler/`, `internal/middleware/`, `config/`, and `pkg/`. No repository or DB integration tests.
 - **No external test dependencies** — service tests use hand-written mocks (`internal/service/mocks_test.go`). No mockgen or code-gen.
 - No testcontainers or integration test harness. Running `go test ./...` does not require PostgreSQL.
 - Test file pattern: `*_test.go` in the same package (white-box).
