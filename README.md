@@ -1,6 +1,6 @@
 # Echo Backend API
 
-A modern, robust REST API built with Go 1.25+, Echo v5, GORM, and PostgreSQL. Designed for scalability with manual dependency injection and high performance via Valkey caching.
+A modern, robust REST API built with Go 1.26, Echo v5, GORM, and PostgreSQL. Designed for scalability with manual dependency injection and high performance via Valkey caching.
 
 ## Core Features
 
@@ -17,7 +17,7 @@ A modern, robust REST API built with Go 1.25+, Echo v5, GORM, and PostgreSQL. De
 
 ## Tech Stack
 
-- **Runtime**: Go 1.25+ (Built with 1.26 in Docker)
+- **Runtime**: Go 1.26
 - **Web Framework**: [Echo v5](https://github.com/labstack/echo)
 - **ORM**: [GORM](https://gorm.io/) v2
 - **Database**: PostgreSQL 18+
