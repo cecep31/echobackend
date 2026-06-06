@@ -20,11 +20,9 @@ goose down                  # Rollback one
 goose status                # Check current
 goose create <name> sql     # New migration file
 
-# First-time setup: create custom schema for goose
-psql "$DATABASE_URL" -f scripts/bootstrap-goose-schema.sql
-
-# Or use PowerShell wrapper (Windows)
-scripts/migrate-up.ps1
+# First-time setup: goose stores version history in the `custom` schema.
+# Run this once before the first `goose up` (psql, not goose, creates it).
+psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'
 ```
 
 ## Architecture
@@ -38,16 +36,15 @@ scripts/migrate-up.ps1
 - **`internal/dto/`**: Request/response structs. `internal/apperror/` for shared app error sentinels.
 - **API routes**: All under `/api/*`, defined in `internal/routes/*Routes.go`. Auth-protected routes use `r.authMiddleware.Auth()`.
 - **Health**: `GET /health` — pings DB (200/503). Used by Fly.io and Docker HEALTHCHECK.
-- **Debug routes**: `GET /api/debug/pprof/*` — only registered when `APP_DEBUG=true`.
-- **Pagination**: Use `handler.ParsePaginationParams(c, defaultLimit)` — returns `(limit, offset)`, max cap 100.
-- **Pagination**: Use `handler.ParsePaginationParams(c, defaultLimit)` — returns `(limit, offset)`, max cap 100.
+- **Auth gates**: routes apply `r.authMiddleware.Auth()`, and admin routes chain `r.authMiddleware.AuthAdmin()` after it (e.g. `posts.PUT("/:id", h.UpdatePost, r.authMiddleware.Auth(), r.authMiddleware.AuthAdmin())`).
+- **Pagination**: Use `handler.ParsePaginationParams(c, defaultLimit)` — returns `(limit, offset)`, max cap 100. Build response meta with `response.CalculatePaginationMeta(total, offset, limit)` and pass via `response.SuccessWithMeta`.
 
 ## Config & Env
 
 - Config loaded via `config.Load()` — reads `.env` (godotenv) then environment variables.
 - **Required**: `DATABASE_URL`, `JWT_SECRET`. App panics if missing.
 - Many keys accept **fallback aliases** (legacy names). First-set key wins. See `config/config.go` for full list.
-- `GOOSE_TABLE=custom.goose_migrations` — non-default goose table location; run `psql "$DATABASE_URL" -f scripts/bootstrap-goose-schema.sql` once before the first `goose up`.
+- `GOOSE_TABLE=custom.goose_migrations` — non-default goose table location; create the `custom` schema (`psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'`) once before the first `goose up`.
 - Valkey/Redis caching is **optional** — leave `VALKEY_URL` empty to disable (app runs fail-open).
 
 ## Testing
@@ -74,14 +71,18 @@ response.InternalServerError(c, "msg", err)  // 500 — err logged server-side o
 response.FromValidateError(c, err)            // 422 with structured field errors
 ```
 
-Pagination via `handler.ParsePaginationParams(c, defaultLimit)` — max cap 100.
+Use `response.TooManyRequests(c, "msg")` for 429 (rate limit). `response.Conflict` takes a string reason, not an `error`.
+
+## CI
+
+`.github/workflows/main.yml` only builds the Docker image and `flyctl deploy`. **It does not run `go test`, `go vet`, or `golangci-lint`** — run them locally before pushing to `main`.
 
 ## Migrations
 
 - Goose with **raw SQL** files in `migrations/`. Numbered `001_init_schema.sql` through `010_drop_uuid_ossp.sql`.
 - Uses PostgreSQL features: triggers for count fields, `uuid_generate_v4()` (v7 preferred), `ON DELETE CASCADE`, soft deletes via `deleted_at`.
 - **New migrations**: `goose create <name> sql` (always `sql`, never `go`).
-- **First-time setup**: Run `psql "$DATABASE_URL" -f scripts/bootstrap-goose-schema.sql` to create the `custom` schema before first `goose up`.
+- **First-time setup**: Run `psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'` to create the `custom` schema before first `goose up`.
 
 ## Deployment
 
