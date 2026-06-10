@@ -29,8 +29,6 @@ import (
 type AuthService interface {
 	Register(ctx context.Context, email, username, password string) (*model.User, error)
 	Login(ctx context.Context, identifier, password, ipAddress, userAgent string) (string, string, *model.User, error)
-	CheckUsernameAvailability(ctx context.Context, username string) (bool, error)
-	CheckEmailAvailability(ctx context.Context, email string) (bool, error)
 	ForgotPassword(ctx context.Context, email, ipAddress, userAgent string) error
 	ResetPassword(ctx context.Context, token, password, ipAddress, userAgent string) error
 	RefreshToken(ctx context.Context, refreshToken, ipAddress, userAgent string) (string, string, *model.User, error)
@@ -171,28 +169,6 @@ func (s *authService) Login(ctx context.Context, identifier, password, ipAddress
 	_ = s.userRepo.Update(ctx, user)
 
 	return tokenString, refreshToken, user, nil
-}
-
-func (s *authService) CheckUsernameAvailability(ctx context.Context, username string) (bool, error) {
-	err := s.userRepo.CheckUserByUsername(ctx, username)
-	if err == nil {
-		return true, nil
-	}
-	if err == apperrors.ErrUserExists {
-		return false, nil
-	}
-	return false, err
-}
-
-func (s *authService) CheckEmailAvailability(ctx context.Context, email string) (bool, error) {
-	_, err := s.authRepo.FindUserByEmail(ctx, email)
-	if err == nil {
-		return false, nil
-	}
-	if err == apperrors.ErrUserNotFound {
-		return true, nil
-	}
-	return false, err
 }
 
 func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, userAgent string) error {

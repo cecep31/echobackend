@@ -26,9 +26,8 @@ var (
 )
 
 type mockAuthService struct {
-	loginFn                  func(ctx context.Context, identifier, password, ipAddress, userAgent string) (string, string, *model.User, error)
-	checkEmailAvailabilityFn func(ctx context.Context, email string) (bool, error)
-	getGithubOAuthURLFn      func(state string) string
+	loginFn             func(ctx context.Context, identifier, password, ipAddress, userAgent string) (string, string, *model.User, error)
+	getGithubOAuthURLFn func(state string) string
 }
 
 func (m *mockAuthService) Register(ctx context.Context, email, username, password string) (*model.User, error) {
@@ -40,17 +39,6 @@ func (m *mockAuthService) Login(ctx context.Context, identifier, password, ipAdd
 		return m.loginFn(ctx, identifier, password, ipAddress, userAgent)
 	}
 	return "", "", nil, nil
-}
-
-func (m *mockAuthService) CheckUsernameAvailability(ctx context.Context, username string) (bool, error) {
-	return false, nil
-}
-
-func (m *mockAuthService) CheckEmailAvailability(ctx context.Context, email string) (bool, error) {
-	if m.checkEmailAvailabilityFn != nil {
-		return m.checkEmailAvailabilityFn(ctx, email)
-	}
-	return false, nil
 }
 
 func (m *mockAuthService) ForgotPassword(ctx context.Context, email, ipAddress, userAgent string) error {
@@ -201,32 +189,6 @@ func TestAuthHandlerGetProfileRequiresUser(t *testing.T) {
 
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
-	}
-}
-
-func TestAuthHandlerCheckEmailSuccess(t *testing.T) {
-	h := NewAuthHandler(&mockAuthService{
-		checkEmailAvailabilityFn: func(ctx context.Context, email string) (bool, error) {
-			if email != "cecep@example.com" {
-				t.Fatalf("unexpected email %q", email)
-			}
-			return true, nil
-		},
-	}, &mockAuthActivityService{}, config.FrontendConfig{})
-
-	c, rec := newAuthTestContext(t, http.MethodGet, "/api/auth/check-email/cecep@example.com", "")
-	c.SetPathValues(echo.PathValues{{Name: "email", Value: "cecep@example.com"}})
-
-	if err := h.CheckEmail(c); err != nil {
-		t.Fatalf("CheckEmail returned error: %v", err)
-	}
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
-	}
-	out := decodeAuthResponse(t, rec)
-	if !out.Success || out.Message != "Email availability checked" {
-		t.Fatalf("unexpected response: %+v", out)
 	}
 }
 

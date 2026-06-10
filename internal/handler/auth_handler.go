@@ -98,27 +98,6 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 	})
 }
 
-func (h *AuthHandler) CheckUsername(c *echo.Context) error {
-	var req dto.CheckUsernameRequest
-	if err := c.Bind(&req); err != nil {
-		return response.BadRequest(c, "Invalid request format", err)
-	}
-
-	if err := c.Validate(req); err != nil {
-		return response.FromValidateError(c, err)
-	}
-
-	isAvailable, err := h.authService.CheckUsernameAvailability(c.Request().Context(), req.Username)
-	if err != nil {
-		return response.InternalServerError(c, "Failed to check username availability", err)
-	}
-
-	return response.Success(c, "Username availability checked", map[string]any{
-		"username":  req.Username,
-		"available": isAvailable,
-	})
-}
-
 func (h *AuthHandler) ForgotPassword(c *echo.Context) error {
 	var req dto.ForgotPasswordRequest
 	if err := c.Bind(&req); err != nil {
@@ -548,21 +527,4 @@ func appendQueryParam(rawURL, key, value string) string {
 	q.Set(key, value)
 	u.RawQuery = q.Encode()
 	return u.String()
-}
-
-func (h *AuthHandler) CheckEmail(c *echo.Context) error {
-	email := c.Param("email")
-	if email == "" {
-		return response.BadRequest(c, "Email is required", nil)
-	}
-
-	isAvailable, err := h.authService.CheckEmailAvailability(c.Request().Context(), email)
-	if err != nil {
-		return response.InternalServerError(c, "Failed to check email availability", err)
-	}
-
-	return response.Success(c, "Email availability checked", map[string]any{
-		"email":     email,
-		"available": isAvailable,
-	})
 }

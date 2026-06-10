@@ -14,13 +14,10 @@ func (r *Routes) setupAuthRoutes(api *echo.Group) {
 	forgotPasswordRateLimit := appmiddleware.FixedWindowRateLimiterWithCache(r.cache, "auth:forgot-password", 3, 5*time.Minute)
 	resetPasswordRateLimit := appmiddleware.FixedWindowRateLimiterWithCache(r.cache, "auth:reset-password", 5, 5*time.Minute)
 	refreshRateLimit := appmiddleware.FixedWindowRateLimiterWithCache(r.cache, "auth:refresh", 30, time.Minute)
-	lookupRateLimit := appmiddleware.FixedWindowRateLimiterWithCache(r.cache, "auth:lookup", 30, time.Minute)
 	oauthExchangeRateLimit := appmiddleware.FixedWindowRateLimiterWithCache(r.cache, "auth:oauth-exchange", 10, time.Minute)
 	{
 		auth.POST("/register", r.authHandler.Register, registerRateLimit)
 		auth.POST("/login", r.authHandler.Login, loginRateLimit)
-		auth.POST("/check-username", r.authHandler.CheckUsername, lookupRateLimit)
-		auth.GET("/email/:email", r.authHandler.CheckEmail, lookupRateLimit)
 		auth.POST("/forgot-password", r.authHandler.ForgotPassword, forgotPasswordRateLimit)
 		auth.POST("/reset-password", r.authHandler.ResetPassword, resetPasswordRateLimit)
 		auth.POST("/refresh", r.authHandler.RefreshToken, refreshRateLimit)

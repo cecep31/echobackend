@@ -11,10 +11,6 @@ type RegisterRequest struct {
 	Password string `json:"password" validate:"required,min=8"`
 }
 
-type CheckUsernameRequest struct {
-	Username string `json:"username" validate:"required,min=3,max=30"`
-}
-
 type ForgotPasswordRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }

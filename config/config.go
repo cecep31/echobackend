@@ -199,7 +199,7 @@ func Load() (*Config, error) {
 			AccessKey: envString([]string{"S3_ACCESS_KEY", "MINIO_ACCESS_KEY"}, "minioadmin"),
 			SecretKey: envString([]string{"S3_SECRET_KEY", "MINIO_SECRET_KEY"}, "minioadmin"),
 			Bucket:    envString([]string{"S3_BUCKET", "MINIO_BUCKET"}, "minio-bucket"),
-			UseSSL:    envBool([]string{"S3_USE_SSL", "MINIO_USE_SSL"}, false),
+			UseSSL:    envBool([]string{"S3_USE_SSL", "MINIO_USE_SSL"}, true),
 		},
 		Cache: CacheConfig{
 			ValkeyURL:      envString([]string{"VALKEY_URL"}, ""),
