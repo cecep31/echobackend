@@ -38,7 +38,7 @@ func GetUserIDFromClaims(c *echo.Context) (string, bool) {
 			return "", false
 		}
 		return userIDStr, true
-	case map[string]interface{}:
+	case map[string]any:
 		userID, exists := v["user_id"]
 		if !exists {
 			return "", false

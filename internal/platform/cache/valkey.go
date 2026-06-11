@@ -158,7 +158,7 @@ func (c *ValkeyCache) IncrementFixedWindow(ctx context.Context, key string, wind
 		return 0, 0, err
 	}
 
-	values, ok := result.([]interface{})
+	values, ok := result.([]any)
 	if !ok || len(values) != 2 {
 		err := fmt.Errorf("unexpected redis script result: %T", result)
 		slog.Warn("cache: IncrementFixedWindow invalid result", "key", key, "error", err)

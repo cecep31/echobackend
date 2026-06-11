@@ -14,7 +14,7 @@ type ChatConversationRepository interface {
 	CreateConversation(ctx context.Context, conversation *model.ChatConversation) (*model.ChatConversation, error)
 	GetConversationByID(ctx context.Context, id string) (*model.ChatConversation, error)
 	GetConversationsByUserID(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversation, int64, error)
-	UpdateConversation(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error)
+	UpdateConversation(ctx context.Context, id string, updates map[string]any) (*model.ChatConversation, error)
 	DeleteConversation(ctx context.Context, id string) error
 	GetUserConversations(ctx context.Context, userID string, offset int, limit int) ([]*model.ChatConversation, int64, error)
 	CreateMessage(ctx context.Context, message *model.ChatMessage) (*model.ChatMessage, error)
@@ -85,7 +85,7 @@ func (r *chatConversationRepository) GetUserConversations(ctx context.Context, u
 	return conversations, count, nil
 }
 
-func (r *chatConversationRepository) UpdateConversation(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error) {
+func (r *chatConversationRepository) UpdateConversation(ctx context.Context, id string, updates map[string]any) (*model.ChatConversation, error) {
 	var existingConversation model.ChatConversation
 	err := r.db.WithContext(ctx).First(&existingConversation, "id = ?", id).Error
 	if err != nil {

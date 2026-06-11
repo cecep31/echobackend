@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"strings"
@@ -43,18 +44,13 @@ func (c *YahooClient) GetQuotes(ctx context.Context, symbols []string) (map[stri
 
 	quotes := make(map[string]float64, len(normalized))
 	for start := 0; start < len(normalized); start += maxSymbolsPerRequest {
-		end := start + maxSymbolsPerRequest
-		if end > len(normalized) {
-			end = len(normalized)
-		}
+		end := min(start+maxSymbolsPerRequest, len(normalized))
 
 		batchQuotes, err := c.fetchSpark(ctx, normalized[start:end])
 		if err != nil {
 			return nil, err
 		}
-		for symbol, price := range batchQuotes {
-			quotes[symbol] = price
-		}
+		maps.Copy(quotes, batchQuotes)
 	}
 
 	return quotes, nil

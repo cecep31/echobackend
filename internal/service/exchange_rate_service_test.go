@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,14 +15,14 @@ type fakeExchangeRateCache struct {
 }
 
 func (f *fakeExchangeRateCache) BuildKey(parts ...string) string {
-	key := ""
+	var key strings.Builder
 	for i, part := range parts {
 		if i > 0 {
-			key += ":"
+			key.WriteString(":")
 		}
-		key += part
+		key.WriteString(part)
 	}
-	return key
+	return key.String()
 }
 
 func (f *fakeExchangeRateCache) GetJSON(ctx context.Context, key string, dest any) (bool, error) {

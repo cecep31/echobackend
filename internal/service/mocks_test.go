@@ -136,7 +136,7 @@ func (m *mockPostRepo) GetPostsByCreatedBy(ctx context.Context, createdBy string
 func (m *mockPostRepo) DeletePostByID(ctx context.Context, id string) error {
 	panic("DeletePostByID not stubbed")
 }
-func (m *mockPostRepo) UpdatePost(ctx context.Context, id string, updates map[string]interface{}) (*model.Post, error) {
+func (m *mockPostRepo) UpdatePost(ctx context.Context, id string, updates map[string]any) (*model.Post, error) {
 	panic("UpdatePost not stubbed")
 }
 func (m *mockPostRepo) GetPostsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapPost, error) {

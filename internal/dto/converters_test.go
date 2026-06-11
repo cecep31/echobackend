@@ -9,8 +9,9 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:fix inline
 func ptr[T any](v T) *T {
-	return &v
+	return new(v)
 }
 
 func TestPostQueryFilterSortDefaultsAndValidValues(t *testing.T) {
@@ -54,11 +55,11 @@ func TestUserConverters(t *testing.T) {
 	user := &model.User{
 		ID:             "user-1",
 		Email:          "user@example.com",
-		FirstName:      ptr("Jane"),
-		LastName:       ptr("Doe"),
-		Username:       ptr("jdoe"),
-		Image:          ptr("https://example.com/avatar.png"),
-		IsSuperAdmin:   ptr(true),
+		FirstName:      new("Jane"),
+		LastName:       new("Doe"),
+		Username:       new("jdoe"),
+		Image:          new("https://example.com/avatar.png"),
+		IsSuperAdmin:   new(true),
 		FollowersCount: 7,
 		FollowingCount: 3,
 		CreatedAt:      &now,
@@ -101,21 +102,21 @@ func TestPostToResponse(t *testing.T) {
 	deletedAt := time.Date(2026, 5, 11, 12, 0, 0, 0, time.UTC)
 	post := &model.Post{
 		ID:            "post-1",
-		Title:         ptr("Post title"),
-		Photo_url:     ptr("https://example.com/photo.png"),
-		Body:          ptr("Post body"),
-		Slug:          ptr("post-title"),
+		Title:         new("Post title"),
+		Photo_url:     new("https://example.com/photo.png"),
+		Body:          new("Post body"),
+		Slug:          new("post-title"),
 		ViewCount:     11,
 		LikeCount:     5,
 		BookmarkCount: 2,
-		Published:     ptr(true),
+		Published:     new(true),
 		PublishedAt:   &now,
 		CreatedAt:     &now,
 		UpdatedAt:     &now,
 		DeletedAt:     gorm.DeletedAt{Time: deletedAt, Valid: true},
 		User: &model.User{
 			ID:       "user-1",
-			Username: ptr("author"),
+			Username: new("author"),
 		},
 		Tags: []model.Tag{{ID: 1, Name: "go"}, {ID: 2, Name: "api"}},
 	}
@@ -163,7 +164,7 @@ func TestSimpleModelConverters(t *testing.T) {
 	}
 
 	now := time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
-	user := &model.User{ID: "user-1", Username: ptr("commenter")}
+	user := &model.User{ID: "user-1", Username: new("commenter")}
 	parentID := "parent-1"
 	comment := CommentToResponse(&model.PostComment{
 		ID:              "comment-1",
@@ -185,7 +186,7 @@ func TestSimpleModelConverters(t *testing.T) {
 
 	ip := "127.0.0.1"
 	agent := "test-agent"
-	view := PostViewToResponse(&model.PostView{ID: "view-1", PostID: "post-1", UserID: ptr("user-1"), IPAddress: &ip, UserAgent: &agent, CreatedAt: &now, UpdatedAt: &now})
+	view := PostViewToResponse(&model.PostView{ID: "view-1", PostID: "post-1", UserID: new("user-1"), IPAddress: &ip, UserAgent: &agent, CreatedAt: &now, UpdatedAt: &now})
 	if view.ID != "view-1" || view.UserID == nil || *view.UserID != "user-1" || view.IPAddress != &ip || view.UserAgent != &agent {
 		t.Fatalf("unexpected view response: %+v", view)
 	}

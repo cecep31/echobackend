@@ -137,7 +137,7 @@ func (s *postService) DeletePostByID(ctx context.Context, id string) error {
 }
 
 func (s *postService) UpdatePost(ctx context.Context, id string, req *dto.UpdatePostRequest) (*dto.PostResponse, error) {
-	updates := make(map[string]interface{})
+	updates := make(map[string]any)
 	if req.Title != "" {
 		updates["title"] = req.Title
 	}

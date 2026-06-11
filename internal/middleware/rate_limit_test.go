@@ -16,7 +16,7 @@ func TestFixedWindowRateLimiterDeniesAfterLimit(t *testing.T) {
 		return c.NoContent(http.StatusNoContent)
 	})
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		req := httptest.NewRequest(http.MethodPost, "/login", nil)
 		req.RemoteAddr = "192.0.2.10:1234"
 		rec := httptest.NewRecorder()

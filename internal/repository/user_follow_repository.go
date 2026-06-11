@@ -170,7 +170,7 @@ func (r *userFollowRepository) UpdateFollowCounts(ctx context.Context, userID st
 	}
 
 	return r.db.WithContext(ctx).Model(&model.User{}).Where("id = ?", userID).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"followers_count": stats.FollowersCount,
 			"following_count": stats.FollowingCount,
 		}).Error

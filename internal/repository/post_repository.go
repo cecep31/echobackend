@@ -23,7 +23,7 @@ type PostRepository interface {
 	GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error)
 	GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error)
 	DeletePostByID(ctx context.Context, id string) error
-	UpdatePost(ctx context.Context, id string, updates map[string]interface{}) (*model.Post, error)
+	UpdatePost(ctx context.Context, id string, updates map[string]any) (*model.Post, error)
 	GetPostsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapPost, error)
 	SearchPosts(ctx context.Context, keyword string, limit int, offset int) ([]*model.Post, int64, error)
 	GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.Post, int64, error)
@@ -61,7 +61,7 @@ func (r *postRepository) CreatePostWithTags(ctx context.Context, post *model.Pos
 	return post, nil
 }
 
-func (r *postRepository) UpdatePost(ctx context.Context, id string, updates map[string]interface{}) (*model.Post, error) {
+func (r *postRepository) UpdatePost(ctx context.Context, id string, updates map[string]any) (*model.Post, error) {
 	if len(updates) == 0 {
 		var currentPost model.Post
 		err := r.db.WithContext(ctx).Preload("User", preloadUserBrief).Preload("Tags").First(&currentPost, "id = ?", id).Error

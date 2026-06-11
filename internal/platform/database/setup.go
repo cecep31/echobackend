@@ -50,7 +50,7 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		connMaxIdleTime: 30 * time.Minute,
 	}
 
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	for attempt := range maxRetries {
 		if attempt > 0 {
 			delay := baseDelay * time.Duration(1<<uint(attempt-1))
 			time.Sleep(delay)

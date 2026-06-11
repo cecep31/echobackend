@@ -47,10 +47,7 @@ func FixedWindowRateLimiterWithCache(valkeyCache *cache.ValkeyCache, name string
 
 			allowed, retryAfter := allowFixedWindow(c, valkeyCache, store, name, identifier, maxRequests, window, now)
 			if !allowed {
-				seconds := int(retryAfter.Seconds())
-				if seconds < 1 {
-					seconds = 1
-				}
+				seconds := max(int(retryAfter.Seconds()), 1)
 				c.Response().Header().Set("Retry-After", strconv.Itoa(seconds))
 				return response.TooManyRequests(c, "Terlalu banyak percobaan. Coba lagi nanti.")
 			}

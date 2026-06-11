@@ -12,7 +12,7 @@ import (
 type mockChatConversationRepo struct {
 	getConversationByIDFn            func(ctx context.Context, id string) (*model.ChatConversation, error)
 	createMessageFn                  func(ctx context.Context, message *model.ChatMessage) (*model.ChatMessage, error)
-	updateConversationFn             func(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error)
+	updateConversationFn             func(ctx context.Context, id string, updates map[string]any) (*model.ChatConversation, error)
 	getMessagesByConversationIDAscFn func(ctx context.Context, conversationID, userID string) ([]*model.ChatMessage, error)
 }
 
@@ -31,7 +31,7 @@ func (m *mockChatConversationRepo) GetConversationsByUserID(ctx context.Context,
 	return nil, 0, nil
 }
 
-func (m *mockChatConversationRepo) UpdateConversation(ctx context.Context, id string, updates map[string]interface{}) (*model.ChatConversation, error) {
+func (m *mockChatConversationRepo) UpdateConversation(ctx context.Context, id string, updates map[string]any) (*model.ChatConversation, error) {
 	if m.updateConversationFn != nil {
 		return m.updateConversationFn(ctx, id, updates)
 	}

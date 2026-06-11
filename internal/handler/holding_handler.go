@@ -404,7 +404,7 @@ func prevMonth(month, year int) (int, int) {
 }
 
 func prevNMonths(month, year, n int) (int, int) {
-	for i := 0; i < n; i++ {
+	for range n {
 		if month == 1 {
 			month = 12
 			year--

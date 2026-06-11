@@ -117,7 +117,7 @@ func (s *chatConversationService) UpdateConversation(ctx context.Context, id str
 		return nil, apperrors.ErrConversationNotOwned
 	}
 
-	updates := make(map[string]interface{})
+	updates := make(map[string]any)
 	if conversation.Title != "" {
 		updates["title"] = conversation.Title
 	}
@@ -172,7 +172,7 @@ func (s *chatConversationService) CreateMessage(ctx context.Context, userID, con
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]interface{}{"updated_at": now}); err != nil {
+	if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]any{"updated_at": now}); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +186,7 @@ func (s *chatConversationService) CreateMessage(ctx context.Context, userID, con
 		return nil, err
 	}
 	if conversation.Title == "New conversation" && len(contextMessages) == 1 {
-		if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]interface{}{
+		if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]any{
 			"title":      buildConversationTitle(nil, req.Content),
 			"updated_at": now,
 		}); err != nil {
@@ -215,7 +215,7 @@ func (s *chatConversationService) CreateMessage(ctx context.Context, userID, con
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]interface{}{"updated_at": createdAssistant.UpdatedAt}); err != nil {
+	if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]any{"updated_at": createdAssistant.UpdatedAt}); err != nil {
 		return nil, err
 	}
 	responses = append(responses, dto.ChatMessageToResponse(createdAssistant))
@@ -246,7 +246,7 @@ func (s *chatConversationService) createStreamingMessageInternal(ctx context.Con
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]interface{}{"updated_at": now}); err != nil {
+	if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]any{"updated_at": now}); err != nil {
 		return nil, nil, nil, nil, err
 	}
 
@@ -266,7 +266,7 @@ func (s *chatConversationService) createStreamingMessageInternal(ctx context.Con
 		return nil, nil, nil, nil, err
 	}
 	if conversation.Title == "New conversation" && len(contextMessages) == 1 {
-		if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]interface{}{
+		if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]any{
 			"title":      buildConversationTitle(nil, req.Content),
 			"updated_at": now,
 		}); err != nil {
@@ -337,7 +337,7 @@ func (s *chatConversationService) SaveStreamingMessage(ctx context.Context, conv
 	if err != nil {
 		return nil, err
 	}
-	if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]interface{}{"updated_at": now}); err != nil {
+	if _, err := s.conversationRepo.UpdateConversation(ctx, conversationID, map[string]any{"updated_at": now}); err != nil {
 		return nil, err
 	}
 	return dto.ChatMessageToResponse(created), nil

@@ -13,7 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func ptr[T any](v T) *T { return &v }
+//go:fix inline
+func ptr[T any](v T) *T { return new(v) }
 
 func TestUserService_GetByID_Success(t *testing.T) {
 	first := "Alice"
@@ -52,7 +53,7 @@ func TestUserService_GetByID_NotFound(t *testing.T) {
 func TestUserService_GetMe_Success(t *testing.T) {
 	repo := &mockUserRepo{
 		getByIDFn: func(ctx context.Context, id string, deletedOnly bool) (*model.User, error) {
-			return &model.User{ID: id, Email: "me@example.com", IsSuperAdmin: ptr(true)}, nil
+			return &model.User{ID: id, Email: "me@example.com", IsSuperAdmin: new(true)}, nil
 		},
 	}
 	svc := NewUserService(repo)
@@ -86,9 +87,9 @@ func TestUserService_GetUsers_Success(t *testing.T) {
 	repo := &mockUserRepo{
 		getUsersFn: func(ctx context.Context, offset, limit int, deletedFilter repository.UserDeletedFilter) ([]*model.User, int64, error) {
 			return []*model.User{
-				{ID: "u1", Email: "a@x.com", IsSuperAdmin: ptr(false)},
+				{ID: "u1", Email: "a@x.com", IsSuperAdmin: new(false)},
 				nil, // nil entries should be skipped per service contract
-				{ID: "u2", Email: "b@x.com", IsSuperAdmin: ptr(true)},
+				{ID: "u2", Email: "b@x.com", IsSuperAdmin: new(true)},
 			}, 2, nil
 		},
 	}
@@ -214,7 +215,7 @@ func TestUserService_Restore_Success(t *testing.T) {
 			return nil
 		},
 		getByIDFn: func(ctx context.Context, id string, deletedOnly bool) (*model.User, error) {
-			return &model.User{ID: id, Email: "a@x.com", IsSuperAdmin: ptr(false)}, nil
+			return &model.User{ID: id, Email: "a@x.com", IsSuperAdmin: new(false)}, nil
 		},
 	}
 	svc := NewUserService(repo)

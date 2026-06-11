@@ -79,7 +79,7 @@ func TestGetUserIDFromClaims_JWTToken_BadClaims(t *testing.T) {
 
 func TestGetUserIDFromClaims_PlainMap(t *testing.T) {
 	c := newCtx(t, "")
-	c.Set("user", map[string]interface{}{"user_id": "user-789"})
+	c.Set("user", map[string]any{"user_id": "user-789"})
 	id, ok := GetUserIDFromClaims(c)
 	if !ok || id != "user-789" {
 		t.Fatalf("got (%q,%v)", id, ok)

@@ -136,7 +136,7 @@ func (h *PostLikeHandler) CheckUserLiked(c *echo.Context) error {
 		return response.InternalServerError(c, "Failed to check like status", err)
 	}
 
-	responseData := map[string]interface{}{
+	responseData := map[string]any{
 		"has_liked": hasLiked,
 		"post_id":   postID,
 		"user_id":   userID,

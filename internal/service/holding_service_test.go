@@ -26,8 +26,11 @@ func (s *stubQuoteClient) GetQuotes(ctx context.Context, symbols []string) (map[
 
 // helpers --------------------------------------------------------------------
 
-func intPtr(v int) *int       { return &v }
-func strPtr(v string) *string { return &v }
+//go:fix inline
+func intPtr(v int) *int { return new(v) }
+
+//go:fix inline
+func strPtr(v string) *string { return new(v) }
 
 // CreateHolding --------------------------------------------------------------
 
@@ -191,14 +194,14 @@ func TestHoldingService_SyncPrices_NoHoldings(t *testing.T) {
 
 func TestHoldingService_SyncPrices_UpdatesQuotes(t *testing.T) {
 	holdings := []model.Holding{
-		{ID: 1, UserID: "u1", Symbol: strPtr("BBCA.JK"), Units: strPtr("10")},
-		{ID: 2, UserID: "u1", Symbol: strPtr("AAPL"), Units: strPtr("5")},
+		{ID: 1, UserID: "u1", Symbol: new("BBCA.JK"), Units: new("10")},
+		{ID: 2, UserID: "u1", Symbol: new("AAPL"), Units: new("5")},
 		// Skipped: nil symbol
-		{ID: 3, UserID: "u1", Symbol: nil, Units: strPtr("3")},
+		{ID: 3, UserID: "u1", Symbol: nil, Units: new("3")},
 		// Skipped: nil units
-		{ID: 4, UserID: "u1", Symbol: strPtr("MSFT"), Units: nil},
+		{ID: 4, UserID: "u1", Symbol: new("MSFT"), Units: nil},
 		// Skipped: missing quote
-		{ID: 5, UserID: "u1", Symbol: strPtr("UNKNOWN"), Units: strPtr("1")},
+		{ID: 5, UserID: "u1", Symbol: new("UNKNOWN"), Units: new("1")},
 	}
 
 	updated := map[int64]map[string]any{}
@@ -239,7 +242,7 @@ func TestHoldingService_SyncPrices_QuoteClientError(t *testing.T) {
 	wantErr := errors.New("quote client failure")
 	repo := &mockHoldingRepo{
 		findForSyncFn: func(ctx context.Context, userID string, month, year int) ([]model.Holding, error) {
-			return []model.Holding{{ID: 1, UserID: "u1", Symbol: strPtr("AAPL"), Units: strPtr("1")}}, nil
+			return []model.Holding{{ID: 1, UserID: "u1", Symbol: new("AAPL"), Units: new("1")}}, nil
 		},
 	}
 	svc := NewHoldingService(repo, &stubQuoteClient{err: wantErr})

@@ -520,7 +520,7 @@ func (s *authService) createTokenAndSession(ctx context.Context, user *model.Use
 	sess := &model.Session{
 		RefreshToken: tokenHash(refreshToken),
 		UserID:       user.ID,
-		ExpiresAt:    ptrTime(time.Now().Add(s.refreshTokenExpiry)),
+		ExpiresAt:    new(time.Now().Add(s.refreshTokenExpiry)),
 	}
 	if err := s.sessionRepo.CreateSession(ctx, sess); err != nil {
 		return "", "", err
@@ -558,6 +558,7 @@ func buildPasswordResetLink(baseURL, token string) string {
 	return parsed.String()
 }
 
+//go:fix inline
 func ptrTime(t time.Time) *time.Time {
-	return &t
+	return new(t)
 }
