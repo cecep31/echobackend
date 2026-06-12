@@ -1,5 +1,5 @@
 # --- Builder Stage ---
-FROM golang:1.26 AS builder
+FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
@@ -12,16 +12,14 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o bin/main cmd/main.go
 
 # --- Final Stage ---
-FROM debian:trixie-slim
+FROM alpine:3.22
 
 # Install CA certificates for TLS connections (S3, Valkey, external APIs)
 # and wget for the Docker HEALTHCHECK below.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates wget \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates wget
 
 # Create a non-root user
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+RUN addgroup -S appgroup && adduser -S -G appgroup appuser
 
 WORKDIR /app
 
