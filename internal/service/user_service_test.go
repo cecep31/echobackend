@@ -29,7 +29,7 @@ func TestUserService_GetByID_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if resp.ID != "user-1" || resp.Email != "a@b.com" {
+	if resp.ID != "user-1" || resp.Email != "" {
 		t.Errorf("unexpected response %+v", resp)
 	}
 	if resp.Name != "Alice Smith" {

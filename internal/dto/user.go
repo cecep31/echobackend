@@ -24,7 +24,7 @@ func UserToBrief(u *model.User) *UserBrief {
 
 type UserResponse struct {
 	ID             string         `json:"id"`
-	Email          string         `json:"email"`
+	Email          string         `json:"email,omitempty"`
 	Name           string         `json:"name"`
 	Username       *string        `json:"username"`
 	Image          *string        `json:"image"`
@@ -81,7 +81,6 @@ func UserToResponse(u *model.User) *UserResponse {
 	}
 	return &UserResponse{
 		ID:             u.ID,
-		Email:          u.Email,
 		Name:           name,
 		Username:       u.Username,
 		Image:          u.Image,
@@ -98,6 +97,7 @@ func UserToResponse(u *model.User) *UserResponse {
 func UserToAdminResponse(u *model.User) *UserResponse {
 	resp := UserToResponse(u)
 	if resp != nil {
+		resp.Email = u.Email
 		resp.IsSuperAdmin = u.IsSuperAdmin
 		if u.DeletedAt.Valid {
 			t := u.DeletedAt.Time

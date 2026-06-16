@@ -73,12 +73,12 @@ func TestUserConverters(t *testing.T) {
 	}
 
 	resp := UserToResponse(user)
-	if resp.Name != "Jane Doe" || resp.Email != user.Email || resp.FollowersCount != 7 || resp.DeletedAt != nil {
+	if resp.Name != "Jane Doe" || resp.Email != "" || resp.FollowersCount != 7 || resp.DeletedAt != nil {
 		t.Fatalf("unexpected user response: %+v", resp)
 	}
 
 	admin := UserToAdminResponse(user)
-	if admin.IsSuperAdmin == nil || !*admin.IsSuperAdmin || admin.DeletedAt == nil || !admin.DeletedAt.Equal(deletedAt) {
+	if admin.IsSuperAdmin == nil || !*admin.IsSuperAdmin || admin.DeletedAt == nil || !admin.DeletedAt.Equal(deletedAt) || admin.Email != user.Email {
 		t.Fatalf("unexpected admin response: %+v", admin)
 	}
 
