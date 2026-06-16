@@ -4,10 +4,13 @@ import (
 	"time"
 
 	"echobackend/config"
+	"echobackend/pkg/applog"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 )
+
+var log = applog.Component("http")
 
 func InitMiddleware(e *echo.Echo, config *config.Config) {
 
@@ -32,7 +35,7 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		ReferrerPolicy:        "strict-origin-when-cross-origin",
 	}))
 
-	// Enhanced request logging with structured format (Echo v5 logger is *slog.Logger)
+	// Enhanced request logging with structured format
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,
@@ -40,7 +43,7 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		LogValuesFunc: func(c *echo.Context, values middleware.RequestLoggerValues) error {
 			start := c.Get("start").(time.Time)
 			latency := time.Since(start)
-			e.Logger.Info("handled request",
+			log.Info("handled request",
 				"method", values.Method,
 				"uri", values.URI,
 				"status", values.Status,
@@ -63,7 +66,7 @@ func InitMiddleware(e *echo.Echo, config *config.Config) {
 		e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(storeCfg)))
 	}
 
-	e.Use(middleware.Recover())
+	e.Use(RecoverWithLog())
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: config.HTTP.AllowOrigins}))
 }

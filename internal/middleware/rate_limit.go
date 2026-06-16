@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -74,7 +73,7 @@ func allowFixedWindow(
 	cacheKey := redisCache.BuildKey("rate_limit", name, identifier)
 	count, retryAfter, err := redisCache.IncrementFixedWindow(c.Request().Context(), cacheKey, window)
 	if err != nil {
-		slog.Warn("rate limit: falling back to in-memory store", "name", name, "error", err)
+		log.Warn("falling back to in-memory store", "name", name, "error", err)
 		return store.allow(identifier, maxRequests, window, now)
 	}
 	if count == 0 {

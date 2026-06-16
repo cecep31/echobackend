@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -175,7 +174,7 @@ func (s *openRouterService) callAPI(ctx context.Context, messages []OpenRouterMe
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OpenRouter request: %w", err)
 	}
-	log.Println("Authorization", "Bearer "+s.cfg.APIKey)
+	openRouterLog.Debug("sending chat completion request", "model", finalModel, "stream", stream)
 	req.Header.Set("Authorization", "Bearer "+s.cfg.APIKey)
 	req.Header.Set("Content-Type", "application/json")
 	if s.cfg.HTTPReferer != "" {

@@ -4,13 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"echobackend/config"
+	"echobackend/pkg/applog"
 
 	"github.com/hibiken/asynq"
 )
+
+var log = applog.Component("queue")
 
 // SkipRetry marks a task error as permanent.
 var SkipRetry = asynq.SkipRetry
@@ -44,13 +46,13 @@ func NewService(cfg config.QueueConfig) *Service {
 	}
 
 	if cfg.RedisURL == "" {
-		slog.Warn("queue: QUEUE_REDIS_URL/REDIS_URL is empty, background jobs disabled")
+		log.Warn("QUEUE_REDIS_URL/REDIS_URL is empty, background jobs disabled")
 		return service
 	}
 
 	redisOpt, err := asynq.ParseRedisURI(cfg.RedisURL)
 	if err != nil {
-		slog.Warn("queue: invalid Redis URL, background jobs disabled", "error", err)
+		log.Warn("invalid Redis URL, background jobs disabled", "error", err)
 		return service
 	}
 	redisOpt = withRedisTimeouts(redisOpt, cfg.ConnectTimeout)
@@ -60,12 +62,12 @@ func NewService(cfg config.QueueConfig) *Service {
 	// Verify broker connectivity in the background so startup is not blocked.
 	go func() {
 		if err := service.client.Ping(); err != nil {
-			slog.Warn("queue: failed to connect to Redis, background jobs disabled", "error", err)
+			log.Warn("failed to connect to Redis, background jobs disabled", "error", err)
 			_ = service.client.Close()
 			service.client = nil
 			return
 		}
-		slog.Info("queue: Asynq enabled", "queue", cfg.DefaultQueue, "concurrency", cfg.Concurrency)
+		log.Info("Asynq enabled", "queue", cfg.DefaultQueue, "concurrency", cfg.Concurrency)
 	}()
 
 	service.server = asynq.NewServer(redisOpt, asynq.Config{
@@ -74,11 +76,11 @@ func NewService(cfg config.QueueConfig) *Service {
 			cfg.DefaultQueue: 1,
 		},
 		ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
-			slog.Error("queue: task failed", "error", err, "task_type", task.Type())
+			log.Error("task failed", "error", err, "task_type", task.Type())
 		}),
 	})
 
-	slog.Info("queue: server configured", "queue", cfg.DefaultQueue, "concurrency", cfg.Concurrency)
+	log.Info("server configured", "queue", cfg.DefaultQueue, "concurrency", cfg.Concurrency)
 	return service
 }
 
@@ -107,7 +109,7 @@ func (s *Service) Start() {
 
 	go func() {
 		if err := s.server.Run(s.mux); err != nil {
-			slog.Error("queue: Asynq server stopped", "error", err)
+			log.Error("Asynq server stopped", "error", err)
 		}
 	}()
 }

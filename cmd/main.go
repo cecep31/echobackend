@@ -5,6 +5,7 @@ import (
 	"echobackend/config"
 	"echobackend/internal/di"
 	"echobackend/internal/middleware"
+	"echobackend/pkg/applog"
 	"echobackend/pkg/response"
 	"echobackend/pkg/validator"
 	"log/slog"
@@ -18,25 +19,24 @@ import (
 )
 
 func main() {
-	// load config
+	applog.SetupFromEnv()
+
 	conf, errconf := config.Load()
 	if errconf != nil {
+		slog.Error("failed to load config", "error", errconf)
 		panic(errconf)
 	}
 
-	// Configure the default slog handler so every package that calls slog.Info/Warn/Error
-	// emits a consistent, tidy line (RFC3339 time, level, msg, key=value attrs).
-	// Level follows APP_DEBUG: Debug when on, Info otherwise.
-	setupLogger(conf.App.Debug)
+	applog.Setup(conf.App.Debug)
 
 	// Initialize dependency container
 	container, err := di.NewContainer(conf)
 	if err != nil {
+		slog.Error("failed to initialize container", "error", err)
 		panic(err)
 	}
 
-	// Initialize Echo
-	e := echo.New()
+	e := echo.NewWithConfig(echo.Config{Logger: slog.Default()})
 	if conf.HTTP.TrustProxy {
 		e.IPExtractor = echo.ExtractIPFromXFFHeader()
 	} else {
@@ -76,9 +76,9 @@ func main() {
 	}
 
 	go func() {
-		e.Logger.Info("starting server", "port", conf.HTTP.Port)
+		slog.Info("starting server", "port", conf.HTTP.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			e.Logger.Error("server exited unexpectedly", "error", err)
+			slog.Error("server exited unexpectedly", "error", err)
 		}
 	}()
 
@@ -87,7 +87,7 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	e.Logger.Info("server is shutting down")
+	slog.Info("server is shutting down")
 
 	// Graceful shutdown with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -95,22 +95,22 @@ func main() {
 
 	// Shutdown server
 	if err := server.Shutdown(ctx); err != nil {
-		e.Logger.Error("server forced to shutdown", "error", err)
+		slog.Error("server forced to shutdown", "error", err)
 	}
 
 	// Cleanup resources
 	cleanup, err := di.GetCleanupManager(container)
 	if err != nil {
-		e.Logger.Error("failed to get cleanup manager", "error", err)
+		slog.Error("failed to get cleanup manager", "error", err)
 	} else if cleanup != nil {
 		if err := cleanup.CleanupWithTimeout(5 * time.Second); err != nil {
-			e.Logger.Error("cleanup failed", "error", err)
+			slog.Error("cleanup failed", "error", err)
 		} else {
-			e.Logger.Info("resources cleaned up successfully")
+			slog.Info("resources cleaned up successfully")
 		}
 	}
 
-	e.Logger.Info("server exited")
+	slog.Info("server exited")
 }
 
 func helloWorld(c *echo.Context) error {
@@ -132,28 +132,4 @@ func healthCheck(c *echo.Context, container *di.Container) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"status": "ok",
 	})
-}
-
-// setupLogger installs a text-format slog handler as the default. All packages
-// using slog (cache, database, response, etc.) inherit this format, replacing
-// the noisy log.Default() output with aligned key=value lines.
-func setupLogger(debug bool) {
-	level := slog.LevelInfo
-	if debug {
-		level = slog.LevelDebug
-	}
-
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: level,
-		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
-			// Render time as compact RFC3339 instead of the verbose default.
-			if a.Key == slog.TimeKey {
-				if t, ok := a.Value.Any().(time.Time); ok {
-					a.Value = slog.StringValue(t.Format(time.RFC3339))
-				}
-			}
-			return a
-		},
-	})
-	slog.SetDefault(slog.New(handler))
 }

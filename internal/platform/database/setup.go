@@ -3,8 +3,8 @@ package database
 import (
 	"database/sql"
 	"echobackend/config"
+	"echobackend/pkg/applog"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -14,21 +14,27 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+var log = applog.Component("database")
+
 // NewDatabase creates a new database connection using the provided configuration
 func NewDatabase(config *config.Config) *gorm.DB {
-	var gormLogLevel logger.LogLevel
+	gormLogLevel := logger.Error
 	if config.App.Debug {
 		gormLogLevel = logger.Info
-	} else {
-		gormLogLevel = logger.Error
 	}
 
 	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(gormLogLevel),
+		Logger: logger.NewSlogLogger(applog.Component("gorm").Slog(), logger.Config{
+			LogLevel:                  gormLogLevel,
+			SlowThreshold:             200 * time.Millisecond,
+			IgnoreRecordNotFoundError: true,
+			ParameterizedQueries:      !config.App.Debug,
+		}),
 	}
 
 	pgxConfig, err := pgx.ParseConfig(config.Database.DSN)
 	if err != nil {
+		log.Error("failed to parse database config", "error", err)
 		panic(fmt.Errorf("failed to parse database config: %w", err))
 	}
 	// Use the default extended query protocol for better performance (named statements,
@@ -54,10 +60,11 @@ func NewDatabase(config *config.Config) *gorm.DB {
 	}), gormConfig)
 	if err != nil {
 		_ = sqldb.Close()
+		log.Error("failed to open database", "error", err)
 		panic(fmt.Errorf("failed to open database: %w", err))
 	}
 
-	slog.Info("database: pool ready", "max_open", poolConfig.maxOpenConns, "max_idle", poolConfig.maxIdleConns, "conn_lifetime", poolConfig.connMaxLifetime)
+	log.Info("pool ready", "max_open", poolConfig.maxOpenConns, "max_idle", poolConfig.maxIdleConns, "conn_lifetime", poolConfig.connMaxLifetime)
 	return db
 }
 

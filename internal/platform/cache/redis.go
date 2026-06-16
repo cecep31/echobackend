@@ -4,15 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"echobackend/config"
+	"echobackend/pkg/applog"
 
 	"github.com/redis/go-redis/v9"
 )
+
+var log = applog.Component("cache")
 
 // RedisCache is a small JSON cache wrapper for Redis/Valkey.
 type RedisCache struct {
@@ -55,16 +57,16 @@ func NewRedisCache(cfg *config.Config) *RedisCache {
 	pingCtx, cancel := context.WithTimeout(context.Background(), connectTimeout)
 	defer cancel()
 	if err := client.Ping(pingCtx).Err(); err != nil {
-		slog.Warn("cache: failed to connect to Redis, caching disabled", "error", err)
+		log.Warn("cache: failed to connect to Redis, caching disabled", "error", err)
 		_ = client.Close()
 		return nil
 	}
 
 	if cfg.Cache.TTL <= 0 {
-		slog.Warn("cache: CACHE_TTL_SECONDS is 0 — SetJSON will be skipped, caching effectively disabled")
+		log.Warn("cache: CACHE_TTL_SECONDS is 0 — SetJSON will be skipped, caching effectively disabled")
 	}
 
-	slog.Info("cache: connected", "ttl", cfg.Cache.TTL, "key_prefix", strings.TrimSpace(cfg.Cache.KeyPrefix))
+	log.Info("cache: connected", "ttl", cfg.Cache.TTL, "key_prefix", strings.TrimSpace(cfg.Cache.KeyPrefix))
 
 	return &RedisCache{
 		client:    client,
@@ -99,7 +101,7 @@ func (c *RedisCache) GetJSON(ctx context.Context, key string, dest any) (bool, e
 	}
 
 	if err := json.Unmarshal(value, dest); err != nil {
-		slog.Warn("cache: GetJSON unmarshal error", "key", key, "error", err)
+		log.Warn("cache: GetJSON unmarshal error", "key", key, "error", err)
 		return false, err
 	}
 
@@ -113,7 +115,7 @@ func (c *RedisCache) GetJSONAndDelete(ctx context.Context, key string, dest any)
 	}
 
 	if err := json.Unmarshal(value, dest); err != nil {
-		slog.Warn("cache: GetJSONAndDelete unmarshal error", "key", key, "error", err)
+		log.Warn("cache: GetJSONAndDelete unmarshal error", "key", key, "error", err)
 		return false, err
 	}
 
@@ -135,12 +137,12 @@ func (c *RedisCache) SetJSONWithTTL(ctx context.Context, key string, value any, 
 
 	payload, err := json.Marshal(value)
 	if err != nil {
-		slog.Warn("cache: SetJSON marshal error", "key", key, "error", err)
+		log.Warn("cache: SetJSON marshal error", "key", key, "error", err)
 		return err
 	}
 
 	if err := c.client.Set(ctx, key, payload, ttl).Err(); err != nil {
-		slog.Warn("cache: SetJSON write error", "key", key, "error", err)
+		log.Warn("cache: SetJSON write error", "key", key, "error", err)
 		return err
 	}
 	return nil
@@ -153,26 +155,26 @@ func (c *RedisCache) IncrementFixedWindow(ctx context.Context, key string, windo
 
 	result, err := fixedWindowIncrementScript.Run(ctx, c.client, []string{key}, window.Milliseconds()).Result()
 	if err != nil {
-		slog.Warn("cache: IncrementFixedWindow error", "key", key, "error", err)
+		log.Warn("cache: IncrementFixedWindow error", "key", key, "error", err)
 		return 0, 0, err
 	}
 
 	values, ok := result.([]any)
 	if !ok || len(values) != 2 {
 		err := fmt.Errorf("unexpected redis script result: %T", result)
-		slog.Warn("cache: IncrementFixedWindow invalid result", "key", key, "error", err)
+		log.Warn("cache: IncrementFixedWindow invalid result", "key", key, "error", err)
 		return 0, 0, err
 	}
 
 	count, err := redisValueToInt64(values[0])
 	if err != nil {
-		slog.Warn("cache: IncrementFixedWindow invalid count", "key", key, "error", err)
+		log.Warn("cache: IncrementFixedWindow invalid count", "key", key, "error", err)
 		return 0, 0, err
 	}
 
 	ttlMillis, err := redisValueToInt64(values[1])
 	if err != nil {
-		slog.Warn("cache: IncrementFixedWindow invalid ttl", "key", key, "error", err)
+		log.Warn("cache: IncrementFixedWindow invalid ttl", "key", key, "error", err)
 		return 0, 0, err
 	}
 	if ttlMillis < 0 {
@@ -201,7 +203,7 @@ func (c *RedisCache) getBytes(ctx context.Context, key string, deleteAfterRead b
 		if deleteAfterRead {
 			operation = "GetJSONAndDelete"
 		}
-		slog.Warn("cache: "+operation+" error", "key", key, "error", err)
+		log.Warn("cache: "+operation+" error", "key", key, "error", err)
 		return nil, false, err
 	}
 

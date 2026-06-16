@@ -3,17 +3,19 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"log/slog"
 	"net/http"
 	"strings"
 
 	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
 	"echobackend/internal/service"
+	"echobackend/pkg/applog"
 	"echobackend/pkg/response"
 
 	"github.com/labstack/echo/v5"
 )
+
+var chatLog = applog.Component("chat")
 
 type ChatConversationHandler struct {
 	chatConversationService service.ChatConversationService
@@ -304,7 +306,7 @@ func streamChatEvents(c *echo.Context, initialEvent map[string]any, chunks <-cha
 	}
 
 	if err, ok := <-errCh; ok && err != nil {
-		slog.Error("chat stream failed", "error", err)
+		chatLog.Error("chat stream failed", "error", err)
 		_ = writeSSE(res, map[string]any{
 			"type": "error",
 			"data": streamErrorMessage(err),

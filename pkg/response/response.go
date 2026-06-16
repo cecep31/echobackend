@@ -1,13 +1,15 @@
 package response
 
 import (
-	"log/slog"
 	"net/http"
 
+	"echobackend/pkg/applog"
 	"echobackend/pkg/validator"
 
 	"github.com/labstack/echo/v5"
 )
+
+var log = applog.Component("api")
 
 // APIResponse represents the standard API response format
 type APIResponse struct {
@@ -62,7 +64,7 @@ func BadRequest(c *echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	slog.Warn("bad request",
+	log.Warn("bad request",
 		"message", message,
 		"error", errorMsg,
 	)
@@ -76,7 +78,7 @@ func BadRequest(c *echo.Context, message string, err error) error {
 
 // Unauthorized sends an unauthorized error response
 func Unauthorized(c *echo.Context, message string) error {
-	slog.Warn("unauthorized",
+	log.Warn("unauthorized",
 		"message", message,
 	)
 
@@ -89,7 +91,7 @@ func Unauthorized(c *echo.Context, message string) error {
 
 // Forbidden sends a forbidden error response
 func Forbidden(c *echo.Context, message string) error {
-	slog.Warn("forbidden",
+	log.Warn("forbidden",
 		"message", message,
 	)
 
@@ -102,7 +104,7 @@ func Forbidden(c *echo.Context, message string) error {
 
 // TooManyRequests sends a 429 rate-limit response.
 func TooManyRequests(c *echo.Context, message string) error {
-	slog.Warn("too many requests",
+	log.Warn("too many requests",
 		"message", message,
 	)
 
@@ -120,7 +122,7 @@ func NotFound(c *echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	slog.Warn("not found",
+	log.Warn("not found",
 		"message", message,
 		"error", errorMsg,
 	)
@@ -136,7 +138,7 @@ func NotFound(c *echo.Context, message string, err error) error {
 // The raw error is logged server-side only; the client receives a generic message
 // to avoid leaking internal details (DSN, stack traces, etc.).
 func InternalServerError(c *echo.Context, message string, err error) error {
-	slog.Error("internal server error",
+	log.Error("internal server error",
 		"message", message,
 		"error", err,
 	)
@@ -155,7 +157,7 @@ func ValidationError(c *echo.Context, message string, err error) error {
 		errorMsg = err.Error()
 	}
 
-	slog.Warn("validation error",
+	log.Warn("validation error",
 		"message", message,
 		"error", errorMsg,
 	)
@@ -171,7 +173,7 @@ func ValidationError(c *echo.Context, message string, err error) error {
 // structured field errors use 422 with Errors populated; otherwise ValidationError fallback.
 func FromValidateError(c *echo.Context, err error) error {
 	if errs, ok := err.(validator.ValidationErrors); ok {
-		slog.Warn("validation error",
+		log.Warn("validation error",
 			"error", errs.Error(),
 		)
 		return c.JSON(http.StatusUnprocessableEntity, APIResponse{
@@ -186,7 +188,7 @@ func FromValidateError(c *echo.Context, err error) error {
 
 // Conflict sends a 409 Conflict response (e.g. duplicate resource).
 func Conflict(c *echo.Context, message string, conflictError string) error {
-	slog.Warn("conflict",
+	log.Warn("conflict",
 		"message", message,
 	)
 	return c.JSON(http.StatusConflict, APIResponse{

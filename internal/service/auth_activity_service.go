@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"time"
 
 	"echobackend/internal/model"
@@ -46,7 +45,7 @@ func (s *authActivityService) LogActivity(ctx context.Context, userID *string, a
 	}
 
 	if err := s.repo.Create(ctx, entry); err != nil {
-		slog.Error("failed to log auth activity", "error", err, "activity_type", activityType)
+		authLog.Error("failed to log auth activity", "error", err, "activity_type", activityType)
 	}
 }
 

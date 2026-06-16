@@ -12,10 +12,10 @@ import (
 )
 
 var messages = map[string]string{
-	"required": "%s is required",
-	"email":    "%s must be a valid email address",
-	"min":      "%s must be at least %s characters long",
-	"max":      "%s must not exceed %s characters",
+	"required":   "%s is required",
+	"email":      "%s must be a valid email address",
+	"min":        "%s must be at least %s characters long",
+	"max":        "%s must not exceed %s characters",
 	"oneof":      "%s must be one of [%s]",
 	"free_model": "%s must be a free OpenRouter model (use :free suffix or openrouter/free)",
 	"default":    "%s failed validation for tag %s",

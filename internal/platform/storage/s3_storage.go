@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"context"
 	"echobackend/config"
+	"echobackend/pkg/applog"
 	"fmt"
 	"io"
-	"log/slog"
 	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
+
+var log = applog.Component("storage")
 
 type S3Storage struct {
 	client *minio.Client
@@ -26,7 +28,7 @@ const (
 
 func NewS3Storage(cfg *config.Config) *S3Storage {
 	if cfg == nil || cfg.S3.Endpoint == "" || cfg.S3.Bucket == "" {
-		slog.Warn("storage: S3 configuration missing, storage disabled")
+		log.Warn("S3 configuration missing, storage disabled")
 		return nil
 	}
 
@@ -35,7 +37,7 @@ func NewS3Storage(cfg *config.Config) *S3Storage {
 		Secure: cfg.S3.UseSSL,
 	})
 	if err != nil {
-		slog.Error("failed to create MinIO/S3 client", "error", err)
+		log.Error("failed to create MinIO/S3 client", "error", err)
 		return nil
 	}
 

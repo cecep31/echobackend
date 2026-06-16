@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -203,7 +202,7 @@ func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, user
 		if err := s.emailService.EnqueuePasswordResetEmail(email, resetLink); err != nil {
 			errMsg := "Failed to queue email"
 			s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusFailure, ipAddress, userAgent, &errMsg, nil)
-			slog.Error("failed to queue password reset email", "error", err, "user_id", user.ID)
+			authLog.Error("failed to queue password reset email", "error", err, "user_id", user.ID)
 			return nil
 		}
 		s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordResetReq, model.StatusSuccess, ipAddress, userAgent, nil, map[string]any{"emailQueued": true})
