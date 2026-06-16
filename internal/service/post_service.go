@@ -41,7 +41,7 @@ type postService struct {
 	postRepo   repository.PostRepository
 	tagService TagService
 	s3storage  *storage.S3Storage
-	cache      *cache.ValkeyCache
+	cache      *cache.RedisCache
 }
 
 type trendingPostsCacheEntry struct {
@@ -51,8 +51,8 @@ type trendingPostsCacheEntry struct {
 const maxPostImageSize = 1 * 1024 * 1024
 const imageUploadPrefix = "posts/images"
 
-func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage, valkeyCache *cache.ValkeyCache) PostService {
-	return &postService{postRepo: postRepo, tagService: tagService, s3storage: storageclient, cache: valkeyCache}
+func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage, redisCache *cache.RedisCache) PostService {
+	return &postService{postRepo: postRepo, tagService: tagService, s3storage: storageclient, cache: redisCache}
 }
 
 func (s *postService) IsAuthor(ctx context.Context, id string, userid string) error {

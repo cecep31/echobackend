@@ -64,7 +64,7 @@ type authService struct {
 	frontendConfig         config.FrontendConfig
 	emailService           *emailservice.Service
 	httpClient             *http.Client
-	oauthExchangeCache     *cache.ValkeyCache
+	oauthExchangeCache     *cache.RedisCache
 	oauthExchangeCodes     map[string]oauthExchangeEntry
 	oauthExchangeMu        sync.Mutex
 }
@@ -85,7 +85,7 @@ func NewAuthService(
 	passwordResetTokenRepo repository.PasswordResetTokenRepository,
 	activityService AuthActivityService,
 	config *config.Config,
-	oauthExchangeCache *cache.ValkeyCache,
+	oauthExchangeCache *cache.RedisCache,
 	emailService *emailservice.Service,
 ) AuthService {
 	return &authService{

@@ -14,8 +14,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// ValkeyCache is a small JSON cache wrapper for Valkey/Redis.
-type ValkeyCache struct {
+// RedisCache is a small JSON cache wrapper for Redis/Valkey.
+type RedisCache struct {
 	client    *redis.Client
 	keyPrefix string
 	ttl       time.Duration
@@ -30,33 +30,32 @@ local ttl = redis.call("PTTL", KEYS[1])
 return {current, ttl}
 `)
 
-// NewValkeyCache creates a fail-open Valkey client. If config is missing or invalid,
+// NewRedisCache creates a fail-open Redis client. If config is missing or invalid,
 // it returns nil so the application can continue without caching.
-func NewValkeyCache(cfg *config.Config) *ValkeyCache {
-	if cfg == nil || cfg.Cache.ValkeyURL == "" {
+func NewRedisCache(cfg *config.Config) *RedisCache {
+	if cfg == nil || cfg.Cache.RedisURL == "" {
 		return nil
 	}
 
-	opts, err := redis.ParseURL(cfg.Cache.ValkeyURL)
+	opts, err := redis.ParseURL(cfg.Cache.RedisURL)
 	if err != nil {
 		return nil
 	}
 
-	if cfg.Cache.ConnectTimeout > 0 {
-		opts.DialTimeout = cfg.Cache.ConnectTimeout
+	// Cap connect timeout: use configured value but never more than 2s so startup
+	// fails fast when Redis is unreachable (it's optional/fail-open anyway).
+	connectTimeout := cfg.Cache.ConnectTimeout
+	if connectTimeout <= 0 || connectTimeout > 2*time.Second {
+		connectTimeout = 2 * time.Second
 	}
+	opts.DialTimeout = connectTimeout
 
 	client := redis.NewClient(opts)
 
-	pingCtx := context.Background()
-	if cfg.Cache.ConnectTimeout > 0 {
-		var cancel context.CancelFunc
-		pingCtx, cancel = context.WithTimeout(pingCtx, cfg.Cache.ConnectTimeout)
-		defer cancel()
-	}
-
+	pingCtx, cancel := context.WithTimeout(context.Background(), connectTimeout)
+	defer cancel()
 	if err := client.Ping(pingCtx).Err(); err != nil {
-		slog.Warn("cache: failed to connect to Valkey/Redis, caching disabled", "error", err)
+		slog.Warn("cache: failed to connect to Redis, caching disabled", "error", err)
 		_ = client.Close()
 		return nil
 	}
@@ -67,21 +66,21 @@ func NewValkeyCache(cfg *config.Config) *ValkeyCache {
 
 	slog.Info("cache: connected", "ttl", cfg.Cache.TTL, "key_prefix", strings.TrimSpace(cfg.Cache.KeyPrefix))
 
-	return &ValkeyCache{
+	return &RedisCache{
 		client:    client,
 		keyPrefix: strings.TrimSpace(cfg.Cache.KeyPrefix),
 		ttl:       cfg.Cache.TTL,
 	}
 }
 
-func (c *ValkeyCache) Close() error {
+func (c *RedisCache) Close() error {
 	if c == nil || c.client == nil {
 		return nil
 	}
 	return c.client.Close()
 }
 
-func (c *ValkeyCache) BuildKey(parts ...string) string {
+func (c *RedisCache) BuildKey(parts ...string) string {
 	if c == nil {
 		return ""
 	}
@@ -93,7 +92,7 @@ func (c *ValkeyCache) BuildKey(parts ...string) string {
 	return c.keyPrefix + ":" + strings.Join(parts, ":")
 }
 
-func (c *ValkeyCache) GetJSON(ctx context.Context, key string, dest any) (bool, error) {
+func (c *RedisCache) GetJSON(ctx context.Context, key string, dest any) (bool, error) {
 	value, found, err := c.getBytes(ctx, key, false)
 	if err != nil || !found {
 		return found, err
@@ -107,7 +106,7 @@ func (c *ValkeyCache) GetJSON(ctx context.Context, key string, dest any) (bool, 
 	return true, nil
 }
 
-func (c *ValkeyCache) GetJSONAndDelete(ctx context.Context, key string, dest any) (bool, error) {
+func (c *RedisCache) GetJSONAndDelete(ctx context.Context, key string, dest any) (bool, error) {
 	value, found, err := c.getBytes(ctx, key, true)
 	if err != nil || !found {
 		return found, err
@@ -121,7 +120,7 @@ func (c *ValkeyCache) GetJSONAndDelete(ctx context.Context, key string, dest any
 	return true, nil
 }
 
-func (c *ValkeyCache) SetJSON(ctx context.Context, key string, value any) error {
+func (c *RedisCache) SetJSON(ctx context.Context, key string, value any) error {
 	if c == nil || c.client == nil || key == "" || c.ttl <= 0 {
 		return nil
 	}
@@ -129,7 +128,7 @@ func (c *ValkeyCache) SetJSON(ctx context.Context, key string, value any) error 
 	return c.SetJSONWithTTL(ctx, key, value, c.ttl)
 }
 
-func (c *ValkeyCache) SetJSONWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error {
+func (c *RedisCache) SetJSONWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error {
 	if c == nil || c.client == nil || key == "" || ttl <= 0 {
 		return nil
 	}
@@ -147,7 +146,7 @@ func (c *ValkeyCache) SetJSONWithTTL(ctx context.Context, key string, value any,
 	return nil
 }
 
-func (c *ValkeyCache) IncrementFixedWindow(ctx context.Context, key string, window time.Duration) (int, time.Duration, error) {
+func (c *RedisCache) IncrementFixedWindow(ctx context.Context, key string, window time.Duration) (int, time.Duration, error) {
 	if c == nil || c.client == nil || key == "" || window <= 0 {
 		return 0, 0, nil
 	}
@@ -183,7 +182,7 @@ func (c *ValkeyCache) IncrementFixedWindow(ctx context.Context, key string, wind
 	return int(count), time.Duration(ttlMillis) * time.Millisecond, nil
 }
 
-func (c *ValkeyCache) getBytes(ctx context.Context, key string, deleteAfterRead bool) ([]byte, bool, error) {
+func (c *RedisCache) getBytes(ctx context.Context, key string, deleteAfterRead bool) ([]byte, bool, error) {
 	if c == nil || c.client == nil || key == "" {
 		return nil, false, nil
 	}

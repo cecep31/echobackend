@@ -44,7 +44,7 @@ func NewService(cfg config.QueueConfig) *Service {
 	}
 
 	if cfg.RedisURL == "" {
-		slog.Warn("queue: QUEUE_REDIS_URL/VALKEY_URL is empty, background jobs disabled")
+		slog.Warn("queue: QUEUE_REDIS_URL/REDIS_URL is empty, background jobs disabled")
 		return service
 	}
 
@@ -56,12 +56,17 @@ func NewService(cfg config.QueueConfig) *Service {
 	redisOpt = withRedisTimeouts(redisOpt, cfg.ConnectTimeout)
 
 	service.client = asynq.NewClient(redisOpt)
-	if err := service.client.Ping(); err != nil {
-		slog.Warn("queue: failed to connect to Redis, background jobs disabled", "error", err)
-		_ = service.client.Close()
-		service.client = nil
-		return service
-	}
+
+	// Verify broker connectivity in the background so startup is not blocked.
+	go func() {
+		if err := service.client.Ping(); err != nil {
+			slog.Warn("queue: failed to connect to Redis, background jobs disabled", "error", err)
+			_ = service.client.Close()
+			service.client = nil
+			return
+		}
+		slog.Info("queue: Asynq enabled", "queue", cfg.DefaultQueue, "concurrency", cfg.Concurrency)
+	}()
 
 	service.server = asynq.NewServer(redisOpt, asynq.Config{
 		Concurrency: cfg.Concurrency,
@@ -73,7 +78,7 @@ func NewService(cfg config.QueueConfig) *Service {
 		}),
 	})
 
-	slog.Info("queue: Asynq enabled", "queue", cfg.DefaultQueue, "concurrency", cfg.Concurrency)
+	slog.Info("queue: server configured", "queue", cfg.DefaultQueue, "concurrency", cfg.Concurrency)
 	return service
 }
 

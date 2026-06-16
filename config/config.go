@@ -98,11 +98,11 @@ type S3Config struct {
 	UseSSL bool
 }
 
-// CacheConfig contains Valkey/Redis cache settings.
+// CacheConfig contains Redis/Valkey cache settings.
 type CacheConfig struct {
-	// ValkeyURL is the connection URL for Valkey/Redis (e.g. redis://localhost:6379/0).
+	// RedisURL is the connection URL for Redis/Valkey (e.g. redis://localhost:6379/0).
 	// Empty disables caching (the app runs fail-open).
-	ValkeyURL string
+	RedisURL string
 	// KeyPrefix is prepended to cache keys to avoid collisions across apps/environments.
 	KeyPrefix string
 	// TTL is the default cache lifetime. 0 effectively disables writes.
@@ -202,14 +202,14 @@ func Load() (*Config, error) {
 			UseSSL:    envBool([]string{"S3_USE_SSL", "MINIO_USE_SSL"}, true),
 		},
 		Cache: CacheConfig{
-			ValkeyURL:      envString([]string{"VALKEY_URL"}, ""),
+			RedisURL:       envString([]string{"REDIS_URL", "VALKEY_URL"}, ""),
 			KeyPrefix:      envString([]string{"CACHE_KEY_PREFIX"}, "pilput"),
 			TTL:            time.Duration(envInt([]string{"CACHE_TTL_SECONDS"}, 60)) * time.Second,
-			ConnectTimeout: time.Duration(envInt([]string{"VALKEY_CONNECT_TIMEOUT_MS"}, 5000)) * time.Millisecond,
+			ConnectTimeout: time.Duration(envInt([]string{"REDIS_CONNECT_TIMEOUT_MS", "VALKEY_CONNECT_TIMEOUT_MS"}, 2000)) * time.Millisecond,
 		},
 		Queue: QueueConfig{
-			RedisURL:       envString([]string{"QUEUE_REDIS_URL", "ASYNQ_REDIS_URL", "VALKEY_URL"}, ""),
-			ConnectTimeout: time.Duration(envInt([]string{"QUEUE_REDIS_TIMEOUT_MS", "ASYNQ_REDIS_TIMEOUT_MS", "VALKEY_CONNECT_TIMEOUT_MS"}, 5000)) * time.Millisecond,
+			RedisURL:       envString([]string{"QUEUE_REDIS_URL", "ASYNQ_REDIS_URL", "REDIS_URL", "VALKEY_URL"}, ""),
+			ConnectTimeout: time.Duration(envInt([]string{"QUEUE_REDIS_TIMEOUT_MS", "ASYNQ_REDIS_TIMEOUT_MS", "REDIS_CONNECT_TIMEOUT_MS", "VALKEY_CONNECT_TIMEOUT_MS"}, 2000)) * time.Millisecond,
 			DefaultQueue:   envString([]string{"QUEUE_DEFAULT_NAME"}, "default"),
 			Concurrency:    envInt([]string{"QUEUE_CONCURRENCY"}, 1),
 			MaxRetry:       envInt([]string{"QUEUE_MAX_RETRY"}, 5),
@@ -273,7 +273,7 @@ func (c *Config) validate() error {
 		return fmt.Errorf("CACHE_TTL_SECONDS must be >= 0")
 	}
 	if c.Cache.ConnectTimeout < 0 {
-		return fmt.Errorf("VALKEY_CONNECT_TIMEOUT_MS must be >= 0")
+		return fmt.Errorf("REDIS_CONNECT_TIMEOUT_MS must be >= 0")
 	}
 	if c.Queue.ConnectTimeout <= 0 {
 		return fmt.Errorf("QUEUE_REDIS_TIMEOUT_MS must be > 0")

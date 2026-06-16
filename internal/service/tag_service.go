@@ -18,7 +18,7 @@ const (
 
 type tagService struct {
 	tagRepo repository.TagRepository
-	cache   *cache.ValkeyCache
+	cache   *cache.RedisCache
 }
 
 type TagService interface {
@@ -33,10 +33,10 @@ type TagService interface {
 	DeleteTag(ctx context.Context, id uint) error
 }
 
-func NewTagService(tagRepo repository.TagRepository, valkeyCache ...*cache.ValkeyCache) TagService {
-	var c *cache.ValkeyCache
-	if len(valkeyCache) > 0 {
-		c = valkeyCache[0]
+func NewTagService(tagRepo repository.TagRepository, redisCache ...*cache.RedisCache) TagService {
+	var c *cache.RedisCache
+	if len(redisCache) > 0 {
+		c = redisCache[0]
 	}
 	return &tagService{tagRepo: tagRepo, cache: c}
 }

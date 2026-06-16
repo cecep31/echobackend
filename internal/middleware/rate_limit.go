@@ -28,9 +28,9 @@ func FixedWindowRateLimiter(maxRequests int, window time.Duration) echo.Middlewa
 	return FixedWindowRateLimiterWithCache(nil, "", maxRequests, window)
 }
 
-// FixedWindowRateLimiterWithCache uses Valkey/Redis when available so limits are
+// FixedWindowRateLimiterWithCache uses Redis when available so limits are
 // shared across app instances. If cache is nil or errors, it falls back to memory.
-func FixedWindowRateLimiterWithCache(valkeyCache *cache.ValkeyCache, name string, maxRequests int, window time.Duration) echo.MiddlewareFunc {
+func FixedWindowRateLimiterWithCache(redisCache *cache.RedisCache, name string, maxRequests int, window time.Duration) echo.MiddlewareFunc {
 	store := &fixedWindowStore{visitors: make(map[string]fixedWindowVisitor)}
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -45,7 +45,7 @@ func FixedWindowRateLimiterWithCache(valkeyCache *cache.ValkeyCache, name string
 				identifier = c.Request().RemoteAddr
 			}
 
-			allowed, retryAfter := allowFixedWindow(c, valkeyCache, store, name, identifier, maxRequests, window, now)
+			allowed, retryAfter := allowFixedWindow(c, redisCache, store, name, identifier, maxRequests, window, now)
 			if !allowed {
 				seconds := max(int(retryAfter.Seconds()), 1)
 				c.Response().Header().Set("Retry-After", strconv.Itoa(seconds))
@@ -59,7 +59,7 @@ func FixedWindowRateLimiterWithCache(valkeyCache *cache.ValkeyCache, name string
 
 func allowFixedWindow(
 	c *echo.Context,
-	valkeyCache *cache.ValkeyCache,
+	redisCache *cache.RedisCache,
 	store *fixedWindowStore,
 	name string,
 	identifier string,
@@ -67,12 +67,12 @@ func allowFixedWindow(
 	window time.Duration,
 	now time.Time,
 ) (bool, time.Duration) {
-	if valkeyCache == nil {
+	if redisCache == nil {
 		return store.allow(identifier, maxRequests, window, now)
 	}
 
-	cacheKey := valkeyCache.BuildKey("rate_limit", name, identifier)
-	count, retryAfter, err := valkeyCache.IncrementFixedWindow(c.Request().Context(), cacheKey, window)
+	cacheKey := redisCache.BuildKey("rate_limit", name, identifier)
+	count, retryAfter, err := redisCache.IncrementFixedWindow(c.Request().Context(), cacheKey, window)
 	if err != nil {
 		slog.Warn("rate limit: falling back to in-memory store", "name", name, "error", err)
 		return store.allow(identifier, maxRequests, window, now)

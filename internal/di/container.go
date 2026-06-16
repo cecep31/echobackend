@@ -39,10 +39,10 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return sqlDB.Close()
 	})
 
-	valkeyCache := cache.NewValkeyCache(cfg)
-	if valkeyCache != nil {
+	redisCache := cache.NewRedisCache(cfg)
+	if redisCache != nil {
 		cleanup.Register(func() error {
-			return valkeyCache.Close()
+			return redisCache.Close()
 		})
 	}
 
@@ -77,9 +77,9 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	authActivityService := service.NewAuthActivityService(authActivityLogRepo)
 	openRouterService := service.NewOpenRouterService(cfg.OpenRouter)
 	userService := service.NewUserService(userRepo)
-	tagService := service.NewTagService(tagRepo, valkeyCache)
-	postService := service.NewPostService(postRepo, tagService, s3Storage, valkeyCache)
-	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, passwordResetTokenRepo, authActivityService, cfg, valkeyCache, emailService)
+	tagService := service.NewTagService(tagRepo, redisCache)
+	postService := service.NewPostService(postRepo, tagService, s3Storage, redisCache)
+	authService := service.NewAuthService(authRepo, userRepo, sessionRepo, passwordResetTokenRepo, authActivityService, cfg, redisCache, emailService)
 	notificationService := service.NewNotificationService(notificationRepo)
 	commentService := service.NewCommentService(commentRepo, postRepo, notificationService)
 	postViewService := service.NewPostViewService(postViewRepo, postRepo, postLikeRepo)
@@ -88,7 +88,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	chatConversationService := service.NewChatConversationService(chatConversationRepo, openRouterService, cfg)
 	yahooClient := market.NewYahooClient(nil)
 	holdingService := service.NewHoldingService(holdingRepo, yahooClient)
-	exchangeRateService := service.NewExchangeRateService(yahooClient, valkeyCache)
+	exchangeRateService := service.NewExchangeRateService(yahooClient, redisCache)
 	bookmarkService := service.NewBookmarkService(bookmarkRepo, postRepo)
 	reportService := service.NewReportService(db)
 
@@ -110,7 +110,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	authMiddleware := middleware.NewAuthMiddleware(cfg, userRepo)
 	appRoutes := routes.NewRoutes(
 		cfg,
-		valkeyCache,
+		redisCache,
 		userHandler,
 		postHandler,
 		authHandler,

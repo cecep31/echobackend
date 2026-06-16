@@ -11,7 +11,7 @@ import (
 
 type Routes struct {
 	config                  *config.Config
-	cache                   *cache.ValkeyCache
+	cache                   *cache.RedisCache
 	userHandler             *handler.UserHandler
 	postHandler             *handler.PostHandler
 	authHandler             *handler.AuthHandler
@@ -31,7 +31,7 @@ type Routes struct {
 
 func NewRoutes(
 	config *config.Config,
-	valkeyCache *cache.ValkeyCache,
+	redisCache *cache.RedisCache,
 	userHandler *handler.UserHandler,
 	postHandler *handler.PostHandler,
 	authHandler *handler.AuthHandler,
@@ -50,7 +50,7 @@ func NewRoutes(
 ) *Routes {
 	return &Routes{
 		config:                  config,
-		cache:                   valkeyCache,
+		cache:                   redisCache,
 		userHandler:             userHandler,
 		postHandler:             postHandler,
 		authHandler:             authHandler,

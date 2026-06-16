@@ -1,7 +1,6 @@
 package database
 
 import (
-	"context"
 	"database/sql"
 	"echobackend/config"
 	"fmt"
@@ -37,12 +36,9 @@ func NewDatabase(config *config.Config) *gorm.DB {
 	// PGX_QUERY_EXEC_MODE=simple or switch back to QueryExecModeSimpleProtocol here.
 	pgxConfig.ConnectTimeout = 10 * time.Second
 
-	// Create database connection with retry logic
-	var db *gorm.DB
-
-	// Retry connection with exponential backoff
-	maxRetries := 3
-	baseDelay := 1 * time.Second
+	// Open connection pool — connections are established lazily on first use.
+	// We intentionally skip a blocking Ping here to keep startup fast;
+	// the /health endpoint verifies liveness on demand.
 	poolConfig := connectionPoolConfig{
 		maxOpenConns:    defaultInt(config.Database.MaxOpenConns, 25),
 		maxIdleConns:    defaultInt(config.Database.MaxIdleConns, 5),
@@ -50,54 +46,18 @@ func NewDatabase(config *config.Config) *gorm.DB {
 		connMaxIdleTime: 30 * time.Minute,
 	}
 
-	for attempt := range maxRetries {
-		if attempt > 0 {
-			delay := baseDelay * time.Duration(1<<uint(attempt-1))
-			time.Sleep(delay)
-			slog.Info("retrying database connection", "attempt", attempt+1, "max", maxRetries)
-		}
+	sqldb := stdlib.OpenDB(*pgxConfig)
+	configureConnectionPool(sqldb, poolConfig)
 
-		sqldb := stdlib.OpenDB(*pgxConfig)
-		configureConnectionPool(sqldb, poolConfig)
-
-		// Create GORM DB instance
-		db, err = gorm.Open(postgres.New(postgres.Config{
-			Conn: sqldb,
-		}), gormConfig)
-		if err != nil {
-			slog.Error("failed to connect to database", "attempt", attempt+1, "max", maxRetries, "error", err)
-			if sqldb != nil {
-				sqldb.Close()
-			}
-			continue
-		}
-
-		// Verify connection
-		sqlDB, err := db.DB()
-		if err != nil {
-			slog.Error("failed to get underlying sql.DB", "attempt", attempt+1, "max", maxRetries, "error", err)
-			_ = sqldb.Close()
-			continue
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		err = sqlDB.PingContext(ctx)
-		cancel()
-		if err != nil {
-			slog.Error("failed to ping database", "attempt", attempt+1, "max", maxRetries, "error", err)
-			sqlDB.Close()
-			continue
-		}
-
-		// Connection successful
-		slog.Info("database: connected", "max_open", poolConfig.maxOpenConns, "max_idle", poolConfig.maxIdleConns, "conn_lifetime", poolConfig.connMaxLifetime)
-		break
-	}
-
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		Conn: sqldb,
+	}), gormConfig)
 	if err != nil {
-		panic(fmt.Errorf("failed to connect to database after %d attempts: %w", maxRetries, err))
+		_ = sqldb.Close()
+		panic(fmt.Errorf("failed to open database: %w", err))
 	}
 
+	slog.Info("database: pool ready", "max_open", poolConfig.maxOpenConns, "max_idle", poolConfig.maxIdleConns, "conn_lifetime", poolConfig.connMaxLifetime)
 	return db
 }
 
