@@ -15,9 +15,16 @@ import (
 	"echobackend/pkg/market"
 )
 
+type holdingCache interface {
+	BuildKey(parts ...string) string
+	GetJSON(ctx context.Context, key string, dest any) (bool, error)
+	SetJSONWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error
+}
+
 type holdingService struct {
 	holdingRepo repository.HoldingRepository
 	quoteClient market.QuoteClient
+	cache       holdingCache
 }
 
 type HoldingService interface {
@@ -35,10 +42,15 @@ type HoldingService interface {
 	DuplicateHoldings(ctx context.Context, userID string, req *dto.DuplicateHoldingRequest) ([]dto.DuplicateResultItem, error)
 }
 
-func NewHoldingService(holdingRepo repository.HoldingRepository, quoteClient market.QuoteClient) HoldingService {
+func NewHoldingService(holdingRepo repository.HoldingRepository, quoteClient market.QuoteClient, cache ...holdingCache) HoldingService {
+	var c holdingCache
+	if len(cache) > 0 {
+		c = cache[0]
+	}
 	return &holdingService{
 		holdingRepo: holdingRepo,
 		quoteClient: quoteClient,
+		cache:       c,
 	}
 }
 
@@ -167,7 +179,25 @@ func (s *holdingService) DeleteHolding(ctx context.Context, id int64, userID str
 }
 
 func (s *holdingService) GetHoldingTypes(ctx context.Context) ([]model.HoldingType, error) {
-	return s.holdingRepo.FindHoldingTypes(ctx)
+	if s.cache != nil {
+		var cached []model.HoldingType
+		key := s.cache.BuildKey("holding-types")
+		if ok, err := s.cache.GetJSON(ctx, key, &cached); err == nil && ok {
+			return cached, nil
+		}
+	}
+
+	types, err := s.holdingRepo.FindHoldingTypes(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.cache != nil {
+		key := s.cache.BuildKey("holding-types")
+		_ = s.cache.SetJSONWithTTL(ctx, key, types, 24*time.Hour)
+	}
+
+	return types, nil
 }
 
 func (s *holdingService) GetSummary(ctx context.Context, userID string, q *dto.HoldingSummaryQuery) (*dto.HoldingSummaryResponse, error) {

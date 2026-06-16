@@ -88,7 +88,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	userFollowService := service.NewUserFollowService(userFollowRepo, userRepo, notificationService)
 	chatConversationService := service.NewChatConversationService(chatConversationRepo, openRouterService, cfg)
 	yahooClient := market.NewYahooClient(nil)
-	holdingService := service.NewHoldingService(holdingRepo, yahooClient)
+	holdingService := service.NewHoldingService(holdingRepo, yahooClient, redisCache)
 	exchangeRateService := service.NewExchangeRateService(yahooClient, redisCache)
 	bookmarkService := service.NewBookmarkService(bookmarkRepo, postRepo)
 	reportService := service.NewReportService(reportRepo)

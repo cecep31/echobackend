@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
@@ -509,3 +510,108 @@ func TestHoldingService_GetMonthlyData_EqualRange(t *testing.T) {
 
 // Make sure unused intPtr helper is referenced so the file compiles cleanly.
 var _ = intPtr
+
+type fakeHoldingCache struct {
+	buildKeyCalls []string
+	getJSONCalls  []string
+	setJSONCalls  []string
+
+	keyToReturn string
+	getOK       bool
+	getData     []model.HoldingType
+	getErr      error
+
+	setErr error
+}
+
+func (f *fakeHoldingCache) BuildKey(parts ...string) string {
+	f.buildKeyCalls = append(f.buildKeyCalls, strings.Join(parts, ":"))
+	return f.keyToReturn
+}
+
+func (f *fakeHoldingCache) GetJSON(ctx context.Context, key string, dest any) (bool, error) {
+	f.getJSONCalls = append(f.getJSONCalls, key)
+	if f.getOK && f.getErr == nil {
+		if d, ok := dest.(*[]model.HoldingType); ok {
+			*d = f.getData
+		}
+	}
+	return f.getOK, f.getErr
+}
+
+func (f *fakeHoldingCache) SetJSONWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error {
+	f.setJSONCalls = append(f.setJSONCalls, key)
+	return f.setErr
+}
+
+func TestHoldingService_GetHoldingTypes_CacheHit(t *testing.T) {
+	cache := &fakeHoldingCache{
+		keyToReturn: "holding-types",
+		getOK:       true,
+		getData: []model.HoldingType{
+			{ID: 1, Name: "Stock"},
+			{ID: 2, Name: "Crypto"},
+		},
+	}
+	// Repository should not be called at all
+	repo := &mockHoldingRepo{
+		findHoldingTypesFn: func(ctx context.Context) ([]model.HoldingType, error) {
+			t.Fatal("repository findHoldingTypesFn should not have been called on cache hit")
+			return nil, nil
+		},
+	}
+
+	svc := NewHoldingService(repo, &stubQuoteClient{}, cache)
+	types, err := svc.GetHoldingTypes(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(types) != 2 || types[0].Name != "Stock" || types[1].Name != "Crypto" {
+		t.Fatalf("unexpected types returned: %v", types)
+	}
+
+	if len(cache.getJSONCalls) != 1 || cache.getJSONCalls[0] != "holding-types" {
+		t.Fatalf("unexpected getJSON calls: %v", cache.getJSONCalls)
+	}
+	if len(cache.setJSONCalls) != 0 {
+		t.Fatalf("unexpected setJSON calls on cache hit: %v", cache.setJSONCalls)
+	}
+}
+
+func TestHoldingService_GetHoldingTypes_CacheMiss(t *testing.T) {
+	cache := &fakeHoldingCache{
+		keyToReturn: "holding-types",
+		getOK:       false,
+	}
+	repoCalled := false
+	repo := &mockHoldingRepo{
+		findHoldingTypesFn: func(ctx context.Context) ([]model.HoldingType, error) {
+			repoCalled = true
+			return []model.HoldingType{
+				{ID: 3, Name: "Cash"},
+			}, nil
+		},
+	}
+
+	svc := NewHoldingService(repo, &stubQuoteClient{}, cache)
+	types, err := svc.GetHoldingTypes(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !repoCalled {
+		t.Fatal("expected repository findHoldingTypesFn to be called on cache miss")
+	}
+
+	if len(types) != 1 || types[0].Name != "Cash" {
+		t.Fatalf("unexpected types returned: %v", types)
+	}
+
+	if len(cache.getJSONCalls) != 1 || cache.getJSONCalls[0] != "holding-types" {
+		t.Fatalf("unexpected getJSON calls: %v", cache.getJSONCalls)
+	}
+	if len(cache.setJSONCalls) != 1 || cache.setJSONCalls[0] != "holding-types" {
+		t.Fatalf("expected setJSON call on cache miss: %v", cache.setJSONCalls)
+	}
+}
