@@ -73,6 +73,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	notificationRepo := repository.NewNotificationRepository(db)
 	authActivityLogRepo := repository.NewAuthActivityLogRepository(db)
 	passwordResetTokenRepo := repository.NewPasswordResetTokenRepository(db)
+	reportRepo := repository.NewReportRepository(db)
 
 	authActivityService := service.NewAuthActivityService(authActivityLogRepo)
 	openRouterService := service.NewOpenRouterService(cfg.OpenRouter)
@@ -90,7 +91,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	holdingService := service.NewHoldingService(holdingRepo, yahooClient)
 	exchangeRateService := service.NewExchangeRateService(yahooClient, redisCache)
 	bookmarkService := service.NewBookmarkService(bookmarkRepo, postRepo)
-	reportService := service.NewReportService(db)
+	reportService := service.NewReportService(reportRepo)
 
 	userHandler := handler.NewUserHandler(userService, userFollowService)
 	postHandler := handler.NewPostHandler(postService, postViewService)

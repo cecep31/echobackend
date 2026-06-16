@@ -13,10 +13,18 @@ import (
 	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
 	"echobackend/internal/model"
-	"echobackend/internal/platform/cache"
-	"echobackend/internal/platform/storage"
 	"echobackend/internal/repository"
 )
+
+type FileUploader interface {
+	Save(ctx context.Context, path string, file io.Reader, contentType string) error
+}
+
+type CacheStore interface {
+	BuildKey(parts ...string) string
+	GetJSON(ctx context.Context, key string, dest any) (bool, error)
+	SetJSON(ctx context.Context, key string, value any) error
+}
 
 type PostService interface {
 	GetPosts(ctx context.Context, limit int, offset int) ([]*dto.PostResponse, int64, error)
@@ -40,8 +48,8 @@ type PostService interface {
 type postService struct {
 	postRepo   repository.PostRepository
 	tagService TagService
-	s3storage  *storage.S3Storage
-	cache      *cache.RedisCache
+	s3storage  FileUploader
+	cache      CacheStore
 }
 
 type trendingPostsCacheEntry struct {
@@ -51,7 +59,7 @@ type trendingPostsCacheEntry struct {
 const maxPostImageSize = 1 * 1024 * 1024
 const imageUploadPrefix = "posts/images"
 
-func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient *storage.S3Storage, redisCache *cache.RedisCache) PostService {
+func NewPostService(postRepo repository.PostRepository, tagService TagService, storageclient FileUploader, redisCache CacheStore) PostService {
 	return &postService{postRepo: postRepo, tagService: tagService, s3storage: storageclient, cache: redisCache}
 }
 
