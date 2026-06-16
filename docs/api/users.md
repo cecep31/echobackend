@@ -9,7 +9,7 @@ User profiles, admin user lists, follow/unfollow, and social statistics.
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | string (UUID) | |
-| `email` | string | |
+| `email` | string \| null | Omitted on public/general routes; present only on admin routes or `/me` |
 | `name` | string | Combined first + last name |
 | `username` | string \| null | |
 | `image` | string \| null | Avatar URL |
@@ -29,12 +29,13 @@ User profiles, admin user lists, follow/unfollow, and social statistics.
 Same fields as `UserResponse`, except:
 
 - Always includes `is_super_admin` (not omitted).
+- Always includes `email`.
 - Never includes `deleted_at` or `is_following`.
 - Includes `profile` when loaded.
 
-### `PublicUserResponse` (`GET /username/:username`)
+### `PublicUserResponse` (`GET /username/:username`, follow lists)
 
-Public profile shape. Includes `email`, `name`, `profile`, and follow counts. Omits `is_super_admin` and `deleted_at`. `is_following` is omitted on this route (no auth middleware).
+Public profile shape of `UserResponse`. Omits `email`, `is_super_admin`, and `deleted_at`. `is_following` is omitted on this route if there is no auth context.
 
 ### `Profile`
 
@@ -107,7 +108,7 @@ GET /api/users/<uuid>?deleted=true
 
 ### GET `/api/users/username/:username`
 
-**Success - 200** - `data`: `PublicUserResponse`.
+**Success - 200** - `data`: `UserResponse` (public profile shape).
 
 ### DELETE `/api/users/:id` (admin)
 
