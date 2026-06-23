@@ -45,6 +45,7 @@ Investment portfolio records per user per month/year. **All holdings and holding
 | GET | `/trends` | Multi-year trends |
 | GET | `/compare` | Compare two months |
 | GET | `/monthly` | Monthly series |
+| GET | `/calendar` | Corporate actions calendar (dividend & RUPS) |
 | POST | `` | Create holding |
 | POST | `/duplicate` | Copy one month to another |
 | POST | `/sync` | Sync prices |
@@ -179,6 +180,43 @@ Sync prices for the user's active period.
 ## DELETE `/api/holdings/:id`
 
 **Success - 200** - `data`: `null`.
+
+## GET `/api/holdings/calendar`
+
+Corporate actions calendar (dividend & RUPS events) for all stocks in the IDX exchange.
+
+**Query Parameters**
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `from` | First day of current month | Date in `YYYY-MM-DD` format |
+| `to` | 3 months after `from` | Date in `YYYY-MM-DD` format |
+
+*Note: The range is capped to a maximum of 6 months. If `to` is further than 6 months from `from`, it is automatically clamped to 6 months.*
+
+**Success - 200** - `data` (`CorporateActionCalendarResponse`):
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `from` | string | Normalized from-date (`YYYY-MM-DD`) |
+| `to` | string | Normalized to-date (`YYYY-MM-DD`) |
+| `actions` | array | List of corporate action items (sorted chronologically) |
+| `total` | number | Total count of actions |
+| `cached` | boolean | True if the response was retrieved from cache |
+
+Each item in `actions` has the following fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `symbol` | string | Stock ticker symbol (e.g. `BBCA`) |
+| `name` | string | Company name |
+| `type` | string | Event type: `dividend` or `rups` |
+| `date` | string | Ex-date for dividends or meeting date for RUPS (`YYYY-MM-DD`) |
+| `pay_date` | string \| null | Dividend payment date (null for RUPS) |
+| `amount` | number \| null | Gross dividend amount per share (null for RUPS) |
+| `currency` | string | Currency code (e.g. `IDR`) |
+| `note` | string | Meeting agenda for RUPS or comments |
+| `market` | string | Exchange identifier (`IDX`) |
 
 ---
 

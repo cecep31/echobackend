@@ -93,6 +93,10 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	bookmarkService := service.NewBookmarkService(bookmarkRepo, postRepo)
 	reportService := service.NewReportService(reportRepo)
 
+	// Corporate actions: IDX
+	idxCorporateClient := market.NewRapidAPIIDXClient(cfg.MarketData.RapidAPIIDXKey, nil)
+	corporateActionService := service.NewCorporateActionService(idxCorporateClient, redisCache)
+
 	userHandler := handler.NewUserHandler(userService, userFollowService)
 	postHandler := handler.NewPostHandler(postService, postViewService)
 	authHandler := handler.NewAuthHandler(authService, authActivityService, cfg.Frontend)
@@ -107,6 +111,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	bookmarkHandler := handler.NewBookmarkHandler(bookmarkService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
 	reportHandler := handler.NewReportHandler(reportService)
+	corporateActionHandler := handler.NewCorporateActionHandler(corporateActionService)
 
 	authMiddleware := middleware.NewAuthMiddleware(cfg, userRepo)
 	appRoutes := routes.NewRoutes(
@@ -127,6 +132,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		bookmarkHandler,
 		notificationHandler,
 		reportHandler,
+		corporateActionHandler,
 	)
 
 	return &Container{

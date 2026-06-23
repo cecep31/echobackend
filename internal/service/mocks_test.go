@@ -455,6 +455,7 @@ type mockHoldingRepo struct {
 	getPlatformBreakdownFn func(ctx context.Context, userID string, month, year *int) ([]breakdownRow, error)
 	getTrendsFn            func(ctx context.Context, userID string, years []int) ([]trendRow, error)
 	getMonthlyDataFn       func(ctx context.Context, userID string, sm, sy, em, ey int) ([]monthlyRow, error)
+	findStockSymbolsFn     func(ctx context.Context, userID string) ([]string, error)
 }
 
 func (m *mockHoldingRepo) FindAll(ctx context.Context, userID string, filter *holdingFilter) ([]model.Holding, error) {
@@ -556,6 +557,12 @@ func (m *mockHoldingRepo) GetTrends(ctx context.Context, userID string, years []
 func (m *mockHoldingRepo) GetMonthlyData(ctx context.Context, userID string, sm, sy, em, ey int) ([]monthlyRow, error) {
 	if m.getMonthlyDataFn != nil {
 		return m.getMonthlyDataFn(ctx, userID, sm, sy, em, ey)
+	}
+	return nil, nil
+}
+func (m *mockHoldingRepo) FindStockSymbols(ctx context.Context, userID string) ([]string, error) {
+	if m.findStockSymbolsFn != nil {
+		return m.findStockSymbolsFn(ctx, userID)
 	}
 	return nil, nil
 }

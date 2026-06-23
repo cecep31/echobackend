@@ -27,6 +27,7 @@ type Routes struct {
 	bookmarkHandler         *handler.BookmarkHandler
 	notificationHandler     *handler.NotificationHandler
 	reportHandler           *handler.ReportHandler
+	corporateActionHandler  *handler.CorporateActionHandler
 }
 
 func NewRoutes(
@@ -47,6 +48,7 @@ func NewRoutes(
 	bookmarkHandler *handler.BookmarkHandler,
 	notificationHandler *handler.NotificationHandler,
 	reportHandler *handler.ReportHandler,
+	corporateActionHandler *handler.CorporateActionHandler,
 ) *Routes {
 	return &Routes{
 		config:                  config,
@@ -66,6 +68,7 @@ func NewRoutes(
 		bookmarkHandler:         bookmarkHandler,
 		notificationHandler:     notificationHandler,
 		reportHandler:           reportHandler,
+		corporateActionHandler:  corporateActionHandler,
 	}
 }
 

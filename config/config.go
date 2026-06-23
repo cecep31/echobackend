@@ -37,6 +37,7 @@ type Config struct {
 	GitHub     GitHubConfig
 	Frontend   FrontendConfig
 	Email      EmailConfig
+	MarketData MarketDataConfig
 }
 
 // AppConfig contains application-level toggles.
@@ -162,6 +163,14 @@ type EmailConfig struct {
 	UseTLS       bool
 }
 
+// MarketDataConfig contains API keys for external financial data providers.
+type MarketDataConfig struct {
+	// RapidAPIIDXKey is the X-RapidAPI-Key for the Indonesia Stock Exchange API.
+	// Required to fetch IDX dividend and RUPS calendar data.
+	// Leave empty to disable IDX corporate-action fetching (returns empty results).
+	RapidAPIIDXKey string
+}
+
 // Load reads configuration from environment variables with defaults.
 //
 // It loads a .env file if present, then reads environment variables.
@@ -242,6 +251,9 @@ func Load() (*Config, error) {
 			Timeout:      time.Duration(envInt([]string{"SMTP_TIMEOUT_SECONDS"}, 10)) * time.Second,
 			TaskTimeout:  time.Duration(envInt([]string{"SMTP_TASK_TIMEOUT_SECONDS"}, 30)) * time.Second,
 			UseTLS:       envBool([]string{"SMTP_TLS"}, false),
+		},
+		MarketData: MarketDataConfig{
+			RapidAPIIDXKey: envString([]string{"RAPIDAPI_IDX_KEY"}, ""),
 		},
 	}
 

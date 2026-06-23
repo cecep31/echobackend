@@ -52,6 +52,9 @@ type HoldingRepository interface {
 		CurrentValue float64
 		Count        int64
 	}, error)
+	// FindStockSymbols returns distinct non-empty symbols from holdings whose
+	// holding_type.code = 'stock'. Used by the corporate-actions calendar.
+	FindStockSymbols(ctx context.Context, userID string) ([]string, error)
 }
 
 type holdingRepository struct {
@@ -340,4 +343,18 @@ func (r *holdingRepository) GetMonthlyData(ctx context.Context, userID string, s
 		return nil, fmt.Errorf("failed to get monthly data: %w", err)
 	}
 	return results, nil
+}
+
+func (r *holdingRepository) FindStockSymbols(ctx context.Context, userID string) ([]string, error) {
+	var symbols []string
+	err := r.db.WithContext(ctx).
+		Table("holdings h").
+		Select("DISTINCT h.symbol").
+		Joins("JOIN holding_types ht ON ht.id = h.holding_type_id").
+		Where("h.user_id = ? AND LOWER(ht.code) = 'stock' AND h.symbol IS NOT NULL AND h.symbol != ''", userID).
+		Pluck("h.symbol", &symbols).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to find stock symbols: %w", err)
+	}
+	return symbols, nil
 }
