@@ -94,31 +94,67 @@ func (m *mockPostLikeRepo) GetLikesByMonthByAuthor(ctx context.Context, userID s
 // ---- PostRepository mock ------------------------------------------------------
 
 type mockPostRepo struct {
-	getPostByIDFn         func(ctx context.Context, id string) (*model.Post, error)
-	existsFn              func(ctx context.Context, id string) (bool, error)
-	getAuthorPostStatsFn  func(ctx context.Context, userID string) (*dto.MyPostsAnalyticsSummary, error)
-	getTopPostsByAuthorFn func(ctx context.Context, userID string, limit int) ([]dto.MyPostPerformance, error)
+	getPostByIDFn              func(ctx context.Context, id string) (*model.Post, error)
+	existsFn                   func(ctx context.Context, id string) (bool, error)
+	getAuthorPostStatsFn       func(ctx context.Context, userID string) (*dto.MyPostsAnalyticsSummary, error)
+	getTopPostsByAuthorFn      func(ctx context.Context, userID string, limit int) ([]dto.MyPostPerformance, error)
+	createPostFn               func(ctx context.Context, post *model.Post) error
+	createPostWithTagsFn       func(ctx context.Context, post *model.Post, tags []model.Tag) (*model.Post, error)
+	getPostsFn                 func(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error)
+	getPostsFilteredFn         func(ctx context.Context, filter *dto.PostQueryFilter) ([]*model.Post, int64, error)
+	getPostByUsernameFn        func(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error)
+	getPostsRandomFn           func(ctx context.Context, limit int) ([]*model.Post, error)
+	getPostsTrendingFn         func(ctx context.Context, limit int) ([]*model.Post, error)
+	getPostBySlugAndUsernameFn func(ctx context.Context, slug string, username string) (*model.Post, error)
+	getPostsByCreatedByFn      func(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error)
+	deletePostByIDFn           func(ctx context.Context, id string) error
+	updatePostFn               func(ctx context.Context, id string, updates map[string]any) (*model.Post, error)
+	getPostsForSitemapFn       func(ctx context.Context, limit int) ([]*dto.SitemapPost, error)
+	searchPostsFn              func(ctx context.Context, keyword string, limit int, offset int) ([]*model.Post, int64, error)
+	getPostsByTagFn            func(ctx context.Context, tag string, limit int, offset int) ([]*model.Post, int64, error)
+	getPostsForYouFn           func(ctx context.Context, userID string, offset int, limit int) ([]*model.Post, int64, error)
 }
 
 func (m *mockPostRepo) CreatePost(ctx context.Context, post *model.Post) error {
+	if m.createPostFn != nil {
+		return m.createPostFn(ctx, post)
+	}
 	panic("CreatePost not stubbed")
 }
 func (m *mockPostRepo) CreatePostWithTags(ctx context.Context, post *model.Post, tags []model.Tag) (*model.Post, error) {
+	if m.createPostWithTagsFn != nil {
+		return m.createPostWithTagsFn(ctx, post, tags)
+	}
 	panic("CreatePostWithTags not stubbed")
 }
 func (m *mockPostRepo) GetPosts(ctx context.Context, limit int, offset int) ([]*model.Post, int64, error) {
+	if m.getPostsFn != nil {
+		return m.getPostsFn(ctx, limit, offset)
+	}
 	panic("GetPosts not stubbed")
 }
 func (m *mockPostRepo) GetPostsFiltered(ctx context.Context, filter *dto.PostQueryFilter) ([]*model.Post, int64, error) {
+	if m.getPostsFilteredFn != nil {
+		return m.getPostsFilteredFn(ctx, filter)
+	}
 	panic("GetPostsFiltered not stubbed")
 }
 func (m *mockPostRepo) GetPostByUsername(ctx context.Context, username string, offset int, limit int) ([]*model.Post, int64, error) {
+	if m.getPostByUsernameFn != nil {
+		return m.getPostByUsernameFn(ctx, username, offset, limit)
+	}
 	panic("GetPostByUsername not stubbed")
 }
 func (m *mockPostRepo) GetPostsRandom(ctx context.Context, limit int) ([]*model.Post, error) {
+	if m.getPostsRandomFn != nil {
+		return m.getPostsRandomFn(ctx, limit)
+	}
 	panic("GetPostsRandom not stubbed")
 }
 func (m *mockPostRepo) GetPostsTrending(ctx context.Context, limit int) ([]*model.Post, error) {
+	if m.getPostsTrendingFn != nil {
+		return m.getPostsTrendingFn(ctx, limit)
+	}
 	panic("GetPostsTrending not stubbed")
 }
 func (m *mockPostRepo) GetPostByID(ctx context.Context, id string) (*model.Post, error) {
@@ -128,27 +164,51 @@ func (m *mockPostRepo) GetPostByID(ctx context.Context, id string) (*model.Post,
 	return nil, nil
 }
 func (m *mockPostRepo) GetPostBySlugAndUsername(ctx context.Context, slug string, username string) (*model.Post, error) {
+	if m.getPostBySlugAndUsernameFn != nil {
+		return m.getPostBySlugAndUsernameFn(ctx, slug, username)
+	}
 	panic("GetPostBySlugAndUsername not stubbed")
 }
 func (m *mockPostRepo) GetPostsByCreatedBy(ctx context.Context, createdBy string, offset int, limit int) ([]*model.Post, int64, error) {
+	if m.getPostsByCreatedByFn != nil {
+		return m.getPostsByCreatedByFn(ctx, createdBy, offset, limit)
+	}
 	panic("GetPostsByCreatedBy not stubbed")
 }
 func (m *mockPostRepo) DeletePostByID(ctx context.Context, id string) error {
+	if m.deletePostByIDFn != nil {
+		return m.deletePostByIDFn(ctx, id)
+	}
 	panic("DeletePostByID not stubbed")
 }
 func (m *mockPostRepo) UpdatePost(ctx context.Context, id string, updates map[string]any) (*model.Post, error) {
+	if m.updatePostFn != nil {
+		return m.updatePostFn(ctx, id, updates)
+	}
 	panic("UpdatePost not stubbed")
 }
 func (m *mockPostRepo) GetPostsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapPost, error) {
+	if m.getPostsForSitemapFn != nil {
+		return m.getPostsForSitemapFn(ctx, limit)
+	}
 	panic("GetPostsForSitemap not stubbed")
 }
 func (m *mockPostRepo) SearchPosts(ctx context.Context, keyword string, limit int, offset int) ([]*model.Post, int64, error) {
+	if m.searchPostsFn != nil {
+		return m.searchPostsFn(ctx, keyword, limit, offset)
+	}
 	panic("SearchPosts not stubbed")
 }
 func (m *mockPostRepo) GetPostsByTag(ctx context.Context, tag string, limit int, offset int) ([]*model.Post, int64, error) {
+	if m.getPostsByTagFn != nil {
+		return m.getPostsByTagFn(ctx, tag, limit, offset)
+	}
 	panic("GetPostsByTag not stubbed")
 }
 func (m *mockPostRepo) GetPostsForYou(ctx context.Context, userID string, offset int, limit int) ([]*model.Post, int64, error) {
+	if m.getPostsForYouFn != nil {
+		return m.getPostsForYouFn(ctx, userID, offset, limit)
+	}
 	panic("GetPostsForYou not stubbed")
 }
 func (m *mockPostRepo) ExistsByID(ctx context.Context, id string) (bool, error) {

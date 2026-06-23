@@ -1,6 +1,9 @@
 package routes
 
-import "github.com/labstack/echo/v5"
+import (
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
+)
 
 func (r *Routes) setupPostRoutes(api *echo.Group) {
 	posts := api.Group("/posts")
@@ -15,7 +18,7 @@ func (r *Routes) setupPostRoutes(api *echo.Group) {
 		posts.PUT("/me/:id", r.postHandler.UpdateMyPost, r.authMiddleware.Auth())
 		posts.DELETE("/me/:id", r.postHandler.DeleteMyPost, r.authMiddleware.Auth())
 		posts.GET("/feed/for-you", r.postHandler.GetPostsForYou, r.authMiddleware.Auth())
-		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth())
+		posts.POST("/image", r.postHandler.UploadImagePosts, r.authMiddleware.Auth(), middleware.BodyLimit(1*1024*1024))
 		posts.GET("/sitemap", r.postHandler.GetPostsForSitemap)
 		posts.GET("/username/:username", r.postHandler.GetPostsByUsername)
 		posts.GET("/u/:username/:slug", r.postHandler.GetPostBySlugAndUsername)
