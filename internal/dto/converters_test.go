@@ -9,11 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:fix inline
-func ptr[T any](v T) *T {
-	return new(v)
-}
-
 func TestPostQueryFilterSortDefaultsAndValidValues(t *testing.T) {
 	filter := &PostQueryFilter{}
 	if got := filter.GetSortField(); got != "posts.created_at" {

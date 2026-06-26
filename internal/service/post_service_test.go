@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"io"
 	"mime/multipart"
 	"testing"
 
@@ -31,16 +30,6 @@ func (m *mockTagService) FindOrCreateByName(ctx context.Context, name string) (*
 }
 func (m *mockTagService) UpdateTag(ctx context.Context, tag *model.Tag) error { return nil }
 func (m *mockTagService) DeleteTag(ctx context.Context, id uint) error { return nil }
-
-type mockFileUploader struct {
-	saveFn func(ctx context.Context, path string, file io.Reader, contentType string) error
-}
-func (m *mockFileUploader) Save(ctx context.Context, path string, file io.Reader, contentType string) error {
-	if m.saveFn != nil {
-		return m.saveFn(ctx, path, file, contentType)
-	}
-	return nil
-}
 
 type mockCacheStore struct {
 	buildKeyFn func(parts ...string) string

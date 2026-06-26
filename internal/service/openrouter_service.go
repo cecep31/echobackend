@@ -65,7 +65,7 @@ func (s *openRouterService) GenerateResponse(ctx context.Context, messages []Ope
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var payload OpenRouterResponse
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
@@ -89,7 +89,7 @@ func (s *openRouterService) GenerateStream(ctx context.Context, messages []OpenR
 			errCh <- err
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		scanner := bufio.NewScanner(resp.Body)
 		scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
@@ -189,7 +189,7 @@ func (s *openRouterService) callAPI(ctx context.Context, messages []OpenRouterMe
 		return nil, fmt.Errorf("OpenRouter request failed: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		payload, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return nil, fmt.Errorf("OpenRouter API error: %s %s", resp.Status, strings.TrimSpace(string(payload)))
 	}

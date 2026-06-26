@@ -59,7 +59,7 @@ func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader, conte
 	defer cancel()
 
 	if rc, ok := file.(io.ReadCloser); ok {
-		defer rc.Close()
+		defer func() { _ = rc.Close() }()
 	}
 
 	data, err := io.ReadAll(file)

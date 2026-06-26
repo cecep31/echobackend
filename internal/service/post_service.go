@@ -403,7 +403,7 @@ func (s *postService) UploadImagePosts(ctx context.Context, file *multipart.File
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	data, err := io.ReadAll(io.LimitReader(src, maxPostImageSize+1))
 	if err != nil {

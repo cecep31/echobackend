@@ -30,9 +30,6 @@ func (s *stubQuoteClient) GetQuotes(ctx context.Context, symbols []string) (map[
 //go:fix inline
 func intPtr(v int) *int { return new(v) }
 
-//go:fix inline
-func strPtr(v string) *string { return new(v) }
-
 // CreateHolding --------------------------------------------------------------
 
 func TestHoldingService_CreateHolding_TypeNotFound(t *testing.T) {

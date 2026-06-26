@@ -122,7 +122,7 @@ func (s *Service) send(ctx context.Context, to, subject, textBody, htmlBody stri
 	if err != nil {
 		return fmt.Errorf("smtp dial %s failed: %w", address, err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	if s.timeout > 0 {
 		if err := conn.SetDeadline(time.Now().Add(s.timeout)); err != nil {
 			return fmt.Errorf("smtp set deadline failed: %w", err)
@@ -142,7 +142,7 @@ func (s *Service) send(ctx context.Context, to, subject, textBody, htmlBody stri
 	if err != nil {
 		return fmt.Errorf("smtp client init failed: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if !s.useTLS {
 		if ok, _ := client.Extension("STARTTLS"); ok {

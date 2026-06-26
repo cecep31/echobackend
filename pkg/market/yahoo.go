@@ -72,7 +72,7 @@ func (c *YahooClient) fetchSpark(ctx context.Context, symbols []string) (map[str
 	if err != nil {
 		return nil, fmt.Errorf("request yahoo finance quotes: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

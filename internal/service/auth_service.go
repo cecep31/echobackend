@@ -266,7 +266,7 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken, ipAddress,
 	}
 
 	if session.ExpiresAt != nil && time.Now().After(*session.ExpiresAt) {
-		s.sessionRepo.DeleteSession(ctx, refreshTokenHash)
+		_ = s.sessionRepo.DeleteSession(ctx, refreshTokenHash)
 		return "", "", nil, apperrors.ErrTokenExpired
 	}
 
@@ -355,7 +355,7 @@ func (s *authService) GetGithubToken(code string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to exchange code for token: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -555,9 +555,4 @@ func buildPasswordResetLink(baseURL, token string) string {
 	q.Set("token", token)
 	parsed.RawQuery = q.Encode()
 	return parsed.String()
-}
-
-//go:fix inline
-func ptrTime(t time.Time) *time.Time {
-	return new(t)
 }

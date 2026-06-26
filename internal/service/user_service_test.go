@@ -13,9 +13,6 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:fix inline
-func ptr[T any](v T) *T { return new(v) }
-
 func TestUserService_GetByID_Success(t *testing.T) {
 	first := "Alice"
 	last := "Smith"

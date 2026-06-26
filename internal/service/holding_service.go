@@ -647,10 +647,6 @@ func calcPercentNumber(base, value float64) float64 {
 	return math.Round(pct*100) / 100
 }
 
-func calcPercentInt(base, value int64) string {
-	return formatFloat(calcPercentIntNumber(base, value))
-}
-
 func calcPercentIntNumber(base, value int64) float64 {
 	if base == 0 {
 		return 0
