@@ -80,7 +80,7 @@ Query: `limit` (default varies by endpoint, **maximum 100**), `offset` (default 
 - Auth-specific rate limits use a fixed window per IP. If `VALKEY_URL` is set, counters are stored in Valkey/Redis and work across instances; otherwise they fall back to in-memory per instance:
   `register`, `login`, and `reset-password` **5 / 5 minutes**;
   `forgot-password` **3 / 5 minutes**;
-  `check-username`, `email/:email`, and `refresh` **30 / minute**;
+  `refresh` **30 / minute**;
   `oauth/exchange` **10 / minute**.
 
 ## Health & Root

@@ -10,8 +10,6 @@ Public auth endpoints use a fixed-window rate limit per IP. If `VALKEY_URL` is e
 |--------|------|------|------------|
 | POST | `/register` | No | 5 / 5 minutes |
 | POST | `/login` | No | 5 / 5 minutes |
-| POST | `/check-username` | No | 30 / minute |
-| GET | `/email/:email` | No | 30 / minute |
 | POST | `/forgot-password` | No | 3 / 5 minutes |
 | POST | `/reset-password` | No | 5 / 5 minutes |
 | POST | `/refresh` | No | 30 / minute |
@@ -103,56 +101,6 @@ Login with email **or** username in the `identifier` field.
 | 401 | Wrong credentials |
 | 429 | Rate limited |
 | 500 | Server error |
-
----
-
-## POST `/api/auth/check-username`
-
-Check username availability before registration.
-
-**Body**
-
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| `username` | string | Yes | 3-30 characters |
-
-**Success - 200**
-
-```json
-{
-  "success": true,
-  "message": "Username availability checked",
-  "data": {
-    "username": "johndoe",
-    "available": true
-  }
-}
-```
-
----
-
-## GET `/api/auth/email/:email`
-
-Check email availability before registration.
-
-**Path Parameter**
-
-| Param | Type | Required |
-|-------|------|----------|
-| `email` | string | Yes |
-
-**Success - 200**
-
-```json
-{
-  "success": true,
-  "message": "Email availability checked",
-  "data": {
-    "email": "user@example.com",
-    "available": true
-  }
-}
-```
 
 ---
 
