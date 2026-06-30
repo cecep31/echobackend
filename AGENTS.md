@@ -32,7 +32,9 @@ psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'
 - **DI**: Manual wiring in `internal/di/container.go`. All handler/service/repo instances created there.
 - **Layering**: `handler` → `service` → `repository`. No DI framework.
 - **`internal/platform/`**: App-owned infrastructure adapters (`cache`, `database`, `email`, `queue`, `storage`).
-- **`pkg/`**: Reusable helper packages (`market`, `response`, `validator`).
+- **`pkg/`**: Reusable helper packages (`applog`, `market`, `response`, `validator`).
+- **`internal/model/`**: GORM entities (domain models).
+- **`internal/repository/`**: Data access layer using GORM.
 - **`internal/dto/`**: Request/response structs. `internal/apperror/` for shared app error sentinels.
 - **API routes**: All under `/api/*`, defined in `internal/routes/*Routes.go`. Auth-protected routes use `r.authMiddleware.Auth()`.
 - **Health**: `GET /health` — pings DB (200/503). Used by Fly.io and Docker HEALTHCHECK.
