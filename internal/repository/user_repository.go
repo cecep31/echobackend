@@ -5,36 +5,16 @@ import (
 	"fmt"
 
 	apperrors "echobackend/internal/apperror"
+	"echobackend/internal/dto"
 	"echobackend/internal/model"
 
 	"gorm.io/gorm"
 )
 
-type UserDeletedFilter string
-
-const (
-	UserDeletedFilterActive UserDeletedFilter = ""
-	UserDeletedFilterOnly   UserDeletedFilter = "true"
-	UserDeletedFilterAll    UserDeletedFilter = "all"
-)
-
-func ParseUserDeletedFilter(value string) (UserDeletedFilter, error) {
-	switch value {
-	case "", "false":
-		return UserDeletedFilterActive, nil
-	case string(UserDeletedFilterOnly):
-		return UserDeletedFilterOnly, nil
-	case string(UserDeletedFilterAll):
-		return UserDeletedFilterAll, nil
-	default:
-		return "", fmt.Errorf("deleted must be true, false, or all")
-	}
-}
-
 type UserRepository interface {
 	Create(ctx context.Context, user *model.User) error
 	GetByID(ctx context.Context, id string, deletedOnly bool) (*model.User, error)
-	GetUsers(ctx context.Context, offset int, limit int, deletedFilter UserDeletedFilter) ([]*model.User, int64, error)
+	GetUsers(ctx context.Context, offset int, limit int, deletedFilter dto.UserDeletedFilter) ([]*model.User, int64, error)
 	GetUsersByEmail(ctx context.Context, email string) ([]*model.User, error)
 	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
@@ -113,7 +93,7 @@ func (r *userRepository) GetByID(ctx context.Context, id string, deletedOnly boo
 	return &user, nil
 }
 
-func (r *userRepository) GetUsers(ctx context.Context, offset, limit int, deletedFilter UserDeletedFilter) ([]*model.User, int64, error) {
+func (r *userRepository) GetUsers(ctx context.Context, offset, limit int, deletedFilter dto.UserDeletedFilter) ([]*model.User, int64, error) {
 	var users []*model.User
 	var totalCount int64
 
@@ -126,9 +106,9 @@ func (r *userRepository) GetUsers(ctx context.Context, offset, limit int, delete
 
 	query := r.db.WithContext(ctx).Model((*model.User)(nil))
 	switch deletedFilter {
-	case UserDeletedFilterOnly:
+	case dto.UserDeletedFilterOnly:
 		query = query.Unscoped().Where("deleted_at IS NOT NULL")
-	case UserDeletedFilterAll:
+	case dto.UserDeletedFilterAll:
 		query = query.Unscoped()
 	}
 
@@ -137,7 +117,7 @@ func (r *userRepository) GetUsers(ctx context.Context, offset, limit int, delete
 	}
 
 	findQuery := query.Offset(offset).Limit(limit)
-	if deletedFilter == UserDeletedFilterOnly {
+	if deletedFilter == dto.UserDeletedFilterOnly {
 		findQuery = findQuery.Order("deleted_at DESC")
 	}
 

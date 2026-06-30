@@ -7,8 +7,8 @@ import (
 	"time"
 
 	apperrors "echobackend/internal/apperror"
+	"echobackend/internal/dto"
 	"echobackend/internal/model"
-	"echobackend/internal/repository"
 
 	"gorm.io/gorm"
 )
@@ -82,7 +82,7 @@ func TestUserService_GetByUsername_Success(t *testing.T) {
 
 func TestUserService_GetUsers_Success(t *testing.T) {
 	repo := &mockUserRepo{
-		getUsersFn: func(ctx context.Context, offset, limit int, deletedFilter repository.UserDeletedFilter) ([]*model.User, int64, error) {
+		getUsersFn: func(ctx context.Context, offset, limit int, deletedFilter dto.UserDeletedFilter) ([]*model.User, int64, error) {
 			return []*model.User{
 				{ID: "u1", Email: "a@x.com", IsSuperAdmin: new(false)},
 				nil, // nil entries should be skipped per service contract
@@ -91,7 +91,7 @@ func TestUserService_GetUsers_Success(t *testing.T) {
 		},
 	}
 	svc := NewUserService(repo)
-	resp, total, err := svc.GetUsers(context.Background(), 0, 10, repository.UserDeletedFilterActive)
+	resp, total, err := svc.GetUsers(context.Background(), 0, 10, dto.UserDeletedFilterActive)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -112,12 +112,12 @@ func TestUserService_GetUsers_Success(t *testing.T) {
 func TestUserService_GetUsers_RepoError(t *testing.T) {
 	wantErr := errors.New("db down")
 	repo := &mockUserRepo{
-		getUsersFn: func(ctx context.Context, offset, limit int, deletedFilter repository.UserDeletedFilter) ([]*model.User, int64, error) {
+		getUsersFn: func(ctx context.Context, offset, limit int, deletedFilter dto.UserDeletedFilter) ([]*model.User, int64, error) {
 			return nil, 0, wantErr
 		},
 	}
 	svc := NewUserService(repo)
-	_, _, err := svc.GetUsers(context.Background(), 0, 10, repository.UserDeletedFilterActive)
+	_, _, err := svc.GetUsers(context.Background(), 0, 10, dto.UserDeletedFilterActive)
 	if err == nil || !errors.Is(err, wantErr) {
 		t.Fatalf("expected wrapped repo error, got %v", err)
 	}
@@ -125,9 +125,9 @@ func TestUserService_GetUsers_RepoError(t *testing.T) {
 
 func TestUserService_GetUsers_DeletedFilter(t *testing.T) {
 	deletedAt := time.Now()
-	var gotFilter repository.UserDeletedFilter
+	var gotFilter dto.UserDeletedFilter
 	repo := &mockUserRepo{
-		getUsersFn: func(ctx context.Context, offset, limit int, deletedFilter repository.UserDeletedFilter) ([]*model.User, int64, error) {
+		getUsersFn: func(ctx context.Context, offset, limit int, deletedFilter dto.UserDeletedFilter) ([]*model.User, int64, error) {
 			gotFilter = deletedFilter
 			return []*model.User{
 				{ID: "u1", Email: "a@x.com", DeletedAt: gorm.DeletedAt{Time: deletedAt, Valid: true}},
@@ -135,12 +135,12 @@ func TestUserService_GetUsers_DeletedFilter(t *testing.T) {
 		},
 	}
 	svc := NewUserService(repo)
-	resp, total, err := svc.GetUsers(context.Background(), 0, 10, repository.UserDeletedFilterOnly)
+	resp, total, err := svc.GetUsers(context.Background(), 0, 10, dto.UserDeletedFilterOnly)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gotFilter != repository.UserDeletedFilterOnly {
-		t.Fatalf("filter = %q, want %q", gotFilter, repository.UserDeletedFilterOnly)
+	if gotFilter != dto.UserDeletedFilterOnly {
+		t.Fatalf("filter = %q, want %q", gotFilter, dto.UserDeletedFilterOnly)
 	}
 	if total != 1 || len(resp) != 1 {
 		t.Fatalf("total=%d len=%d, want 1/1", total, len(resp))

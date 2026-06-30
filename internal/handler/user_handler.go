@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	apperrors "echobackend/internal/apperror"
-	"echobackend/internal/repository"
+	"echobackend/internal/dto"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
 
@@ -69,7 +69,7 @@ func (h *UserHandler) GetByUsername(c *echo.Context) error {
 }
 
 func (h *UserHandler) GetUsers(c *echo.Context) error {
-	deletedFilter, err := repository.ParseUserDeletedFilter(c.QueryParam("deleted"))
+	deletedFilter, err := dto.ParseUserDeletedFilter(c.QueryParam("deleted"))
 	if err != nil {
 		return response.BadRequest(c, "Invalid deleted filter", err)
 	}

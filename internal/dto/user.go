@@ -2,6 +2,7 @@ package dto
 
 import (
 	"echobackend/internal/model"
+	"fmt"
 	"time"
 )
 
@@ -152,5 +153,26 @@ func UserToCurrentUserResponse(u *model.User) *CurrentUserResponse {
 		Profile:        u.Profile,
 		CreatedAt:      u.CreatedAt,
 		UpdatedAt:      u.UpdatedAt,
+	}
+}
+
+type UserDeletedFilter string
+
+const (
+	UserDeletedFilterActive UserDeletedFilter = ""
+	UserDeletedFilterOnly   UserDeletedFilter = "true"
+	UserDeletedFilterAll    UserDeletedFilter = "all"
+)
+
+func ParseUserDeletedFilter(value string) (UserDeletedFilter, error) {
+	switch value {
+	case "", "false":
+		return UserDeletedFilterActive, nil
+	case string(UserDeletedFilterOnly):
+		return UserDeletedFilterOnly, nil
+	case string(UserDeletedFilterAll):
+		return UserDeletedFilterAll, nil
+	default:
+		return "", fmt.Errorf("deleted must be true, false, or all")
 	}
 }

@@ -3,25 +3,33 @@ package service
 import (
 	"context"
 	"echobackend/internal/dto"
-	"echobackend/internal/repository"
+	"echobackend/internal/model"
 	"fmt"
 )
+
+type UserRepository interface {
+	GetByID(ctx context.Context, id string, deletedOnly bool) (*model.User, error)
+	GetUsers(ctx context.Context, offset int, limit int, deletedFilter dto.UserDeletedFilter) ([]*model.User, int64, error)
+	GetByUsername(ctx context.Context, username string) (*model.User, error)
+	SoftDeleteByID(ctx context.Context, id string) error
+	RestoreByID(ctx context.Context, id string) error
+}
 
 type UserService interface {
 	GetByID(ctx context.Context, id string) (*dto.UserResponse, error)
 	GetAdminByID(ctx context.Context, id string, deletedOnly bool) (*dto.UserResponse, error)
 	GetMe(ctx context.Context, id string) (*dto.CurrentUserResponse, error)
 	GetByUsername(ctx context.Context, username string) (*dto.UserResponse, error)
-	GetUsers(ctx context.Context, offset int, limit int, deletedFilter repository.UserDeletedFilter) ([]*dto.UserResponse, int64, error)
+	GetUsers(ctx context.Context, offset int, limit int, deletedFilter dto.UserDeletedFilter) ([]*dto.UserResponse, int64, error)
 	Delete(ctx context.Context, id string) error
 	Restore(ctx context.Context, id string) (*dto.UserResponse, error)
 }
 
 type userService struct {
-	userRepo repository.UserRepository
+	userRepo UserRepository
 }
 
-func NewUserService(userRepo repository.UserRepository) UserService {
+func NewUserService(userRepo UserRepository) UserService {
 	return &userService{userRepo: userRepo}
 }
 
@@ -57,7 +65,7 @@ func (s *userService) GetByUsername(ctx context.Context, username string) (*dto.
 	return dto.UserToResponse(user), nil
 }
 
-func (s *userService) GetUsers(ctx context.Context, offset int, limit int, deletedFilter repository.UserDeletedFilter) ([]*dto.UserResponse, int64, error) {
+func (s *userService) GetUsers(ctx context.Context, offset int, limit int, deletedFilter dto.UserDeletedFilter) ([]*dto.UserResponse, int64, error) {
 	users, total, err := s.userRepo.GetUsers(ctx, offset, limit, deletedFilter)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to retrieve users from repository: %w", err)

@@ -113,7 +113,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	reportHandler := handler.NewReportHandler(reportService)
 	corporateActionHandler := handler.NewCorporateActionHandler(corporateActionService)
 
-	authMiddleware := middleware.NewAuthMiddleware(cfg, userRepo)
+	authMiddleware := middleware.NewAuthMiddleware(cfg, userService)
 	appRoutes := routes.NewRoutes(
 		cfg,
 		redisCache,

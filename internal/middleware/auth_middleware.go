@@ -3,7 +3,7 @@ package middleware
 import (
 	"context"
 	"echobackend/config"
-	"echobackend/internal/repository"
+	"echobackend/internal/service"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,15 +14,15 @@ import (
 
 // AuthMiddleware provides authentication middleware for Echo
 type AuthMiddleware struct {
-	conf     *config.Config
-	userRepo repository.UserRepository
+	conf        *config.Config
+	userService service.UserService
 }
 
 // NewAuthMiddleware creates a new instance of AuthMiddleware
-func NewAuthMiddleware(conf *config.Config, userRepo repository.UserRepository) *AuthMiddleware {
+func NewAuthMiddleware(conf *config.Config, userService service.UserService) *AuthMiddleware {
 	return &AuthMiddleware{
-		conf:     conf,
-		userRepo: userRepo,
+		conf:        conf,
+		userService: userService,
 	}
 }
 
@@ -161,7 +161,7 @@ func getUserIDFromClaims(claims jwt.MapClaims) (string, error) {
 }
 
 func (a *AuthMiddleware) isSuperAdminFromDB(ctx context.Context, userID string) (bool, error) {
-	user, err := a.userRepo.GetByID(ctx, userID, false)
+	user, err := a.userService.GetAdminByID(ctx, userID, false)
 	if err != nil {
 		return false, err
 	}

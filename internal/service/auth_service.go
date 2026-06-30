@@ -17,8 +17,6 @@ import (
 	"echobackend/config"
 	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/model"
-	"echobackend/internal/platform/cache"
-	emailservice "echobackend/internal/platform/email"
 	"echobackend/internal/repository"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -50,6 +48,17 @@ type GithubUser struct {
 	HTMLURL   string  `json:"html_url"`
 }
 
+type EmailSender interface {
+	EnqueuePasswordResetEmail(to, resetLink string) error
+	IsConfigured() bool
+}
+
+type AuthCache interface {
+	BuildKey(parts ...string) string
+	GetJSONAndDelete(ctx context.Context, key string, dest any) (bool, error)
+	SetJSONWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error
+}
+
 type authService struct {
 	authRepo               repository.AuthRepository
 	userRepo               repository.UserRepository
@@ -61,9 +70,9 @@ type authService struct {
 	refreshTokenExpiry     time.Duration
 	githubConfig           config.GitHubConfig
 	frontendConfig         config.FrontendConfig
-	emailService           *emailservice.Service
+	emailService           EmailSender
 	httpClient             *http.Client
-	oauthExchangeCache     *cache.RedisCache
+	oauthExchangeCache     AuthCache
 	oauthExchangeCodes     map[string]oauthExchangeEntry
 	oauthExchangeMu        sync.Mutex
 }
@@ -84,8 +93,8 @@ func NewAuthService(
 	passwordResetTokenRepo repository.PasswordResetTokenRepository,
 	activityService AuthActivityService,
 	config *config.Config,
-	oauthExchangeCache *cache.RedisCache,
-	emailService *emailservice.Service,
+	oauthExchangeCache AuthCache,
+	emailService EmailSender,
 ) AuthService {
 	return &authService{
 		authRepo:               authRepo,
