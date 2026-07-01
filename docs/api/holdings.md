@@ -108,8 +108,10 @@ Investment portfolio records per user per month/year. **All holdings and holding
 
 | Param | Default | Description |
 |-------|---------|-------------|
-| `startMonth`, `startYear` | Current month/year | Range start |
-| `endMonth`, `endYear` | 11 months before start | Range end when omitted |
+| `startMonth`, `startYear` | Current month/year | One endpoint of the desired range |
+| `endMonth`, `endYear` | 11 months before start | The other endpoint of the desired range when omitted |
+
+The two endpoints can be passed in either chronological order. The handler normalizes them internally so that `start` becomes the latest month and `end` the oldest month in the returned series. If `end` is omitted, it defaults to 11 months before `start` (returning a 12-month series).
 
 **Success - 200** - `data`: `HoldingMonthlyDataResponse[]`.
 

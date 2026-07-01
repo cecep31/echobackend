@@ -279,43 +279,9 @@ func (h *HoldingHandler) GetMonthlyData(c *echo.Context) error {
 		return response.Unauthorized(c, "User not authenticated")
 	}
 
-	now := time.Now()
-	q := &dto.HoldingMonthlyQuery{
-		StartMonth: int(now.Month()),
-		StartYear:  now.Year(),
-		EndMonth:   int(now.Month()),
-		EndYear:    now.Year(),
-	}
-
-	if sm := c.QueryParam("startMonth"); sm != "" {
-		if v, err := strconv.Atoi(sm); err == nil && v >= 1 && v <= 12 {
-			q.StartMonth = v
-		}
-	}
-	if sy := c.QueryParam("startYear"); sy != "" {
-		if v, err := strconv.Atoi(sy); err == nil {
-			q.StartYear = v
-		}
-	}
-
-	hasEnd := false
-	if em := c.QueryParam("endMonth"); em != "" {
-		if v, err := strconv.Atoi(em); err == nil && v >= 1 && v <= 12 {
-			q.EndMonth = v
-			hasEnd = true
-		}
-	}
-	if ey := c.QueryParam("endYear"); ey != "" {
-		if v, err := strconv.Atoi(ey); err == nil {
-			q.EndYear = v
-			hasEnd = true
-		}
-	}
-
-	if !hasEnd {
-		em, ey := prevNMonths(q.StartMonth, q.StartYear, 11)
-		q.EndMonth = em
-		q.EndYear = ey
+	q, err := parseMonthlyQuery(c)
+	if err != nil {
+		return response.BadRequest(c, "Invalid monthly range", err)
 	}
 
 	result, err := h.holdingService.GetMonthlyData(c.Request().Context(), userID, q)
@@ -324,6 +290,76 @@ func (h *HoldingHandler) GetMonthlyData(c *echo.Context) error {
 	}
 
 	return response.Success(c, "Holdings monthly data fetched successfully", result)
+}
+
+func parseMonthlyQuery(c *echo.Context) (*dto.HoldingMonthlyQuery, error) {
+	now := time.Now()
+	startMonth, startYear := int(now.Month()), now.Year()
+	endMonth, endYear := int(now.Month()), now.Year()
+
+	var hasStartMonth, hasStartYear, hasEndMonth, hasEndYear bool
+
+	if sm := c.QueryParam("startMonth"); sm != "" {
+		if v, err := strconv.Atoi(sm); err == nil && v >= 1 && v <= 12 {
+			startMonth = v
+			hasStartMonth = true
+		}
+	}
+	if sy := c.QueryParam("startYear"); sy != "" {
+		if v, err := strconv.Atoi(sy); err == nil {
+			startYear = v
+			hasStartYear = true
+		}
+	}
+	if em := c.QueryParam("endMonth"); em != "" {
+		if v, err := strconv.Atoi(em); err == nil && v >= 1 && v <= 12 {
+			endMonth = v
+			hasEndMonth = true
+		}
+	}
+	if ey := c.QueryParam("endYear"); ey != "" {
+		if v, err := strconv.Atoi(ey); err == nil {
+			endYear = v
+			hasEndYear = true
+		}
+	}
+
+	// Fill missing start components with current date.
+	if !hasStartMonth {
+		startMonth = int(now.Month())
+	}
+	if !hasStartYear {
+		startYear = now.Year()
+	}
+
+	// If the end is not fully specified, derive it from the start so the range
+	// stays predictable. A completely omitted end means "12 months up to start".
+	if !hasEndMonth && !hasEndYear {
+		endMonth, endYear = prevNMonths(startMonth, startYear, 11)
+	} else {
+		if !hasEndMonth {
+			endMonth = startMonth
+		}
+		if !hasEndYear {
+			endYear = startYear
+		}
+	}
+
+	q := &dto.HoldingMonthlyQuery{
+		StartMonth: startMonth,
+		StartYear:  startYear,
+		EndMonth:   endMonth,
+		EndYear:    endYear,
+	}
+
+	// The service expects Start to be the chronologically latest month and End
+	// the oldest. Normalize the endpoints so callers can pass them in any order.
+	if q.EndYear > q.StartYear || (q.EndYear == q.StartYear && q.EndMonth > q.StartMonth) {
+		q.StartMonth, q.EndMonth = q.EndMonth, q.StartMonth
+		q.StartYear, q.EndYear = q.EndYear, q.StartYear
+	}
+
+	return q, nil
 }
 
 func (h *HoldingHandler) SyncPrices(c *echo.Context) error {
