@@ -78,10 +78,12 @@ func (s *postViewService) RecordView(ctx context.Context, postID, userID string,
 		return fmt.Errorf("failed to create view record: %w", err)
 	}
 
-	if err := s.postViewRepo.IncrementPostViewCount(ctx, postID); err != nil {
-		return fmt.Errorf("failed to increment post view count: %w", err)
-	}
-
+	// view_count is maintained automatically by the database trigger
+	// (trigger_update_view_count_insert on post_views), so no app-level
+	// increment is needed here. The previous r.db.Raw("view_count + 1") call
+	// was a no-op bug: *gorm.DB does not implement clause.Expression, so the
+	// UPDATE errored and RecordView returned a false 500 even though the
+	// trigger had already counted the view.
 	return nil
 }
 

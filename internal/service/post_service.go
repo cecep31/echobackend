@@ -334,7 +334,7 @@ func (s *postService) GetPostsByTag(ctx context.Context, tag string, limit int, 
 }
 
 func (s *postService) GetPostsFiltered(ctx context.Context, filter *dto.PostQueryFilter) ([]*dto.PostResponse, int64, error) {
-	if filter.Limit < 0 {
+	if filter.Limit <= 0 {
 		filter.Limit = 10
 	}
 	if filter.Limit > 100 {

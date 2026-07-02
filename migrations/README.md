@@ -43,6 +43,7 @@ goose create nama_migration sql
 
 | 009 | `009_use_uuidv7_default.sql` | Switch UUID primary key defaults to `uuidv7()` |
 | 010 | `010_drop_uuid_ossp.sql` | Drop unused `uuid-ossp` extension |
+| 011 | `011_recompute_user_follow_counts.sql` | One-time backfill: recompute `followers_count`/`following_count` from `user_follows` (repair double-counted values) |
 
 ## Notes
 

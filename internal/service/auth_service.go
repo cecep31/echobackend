@@ -199,7 +199,9 @@ func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, user
 	}
 
 	if err := s.passwordResetTokenRepo.DeleteByUserID(ctx, user.ID); err != nil {
-		_ = err
+		// Best-effort cleanup of stale reset tokens. A failure here does not
+		// block issuing a new one, but is logged so drift is observable.
+		authLog.Warn("failed to delete previous password reset tokens", "user_id", user.ID, "error", err)
 	}
 
 	if err := s.passwordResetTokenRepo.Create(ctx, tokenEntry); err != nil {
@@ -257,7 +259,10 @@ func (s *authService) ResetPassword(ctx context.Context, token, password, ipAddr
 	}
 
 	if err := s.passwordResetTokenRepo.MarkUsed(ctx, tokenEntry.ID); err != nil {
-		_ = err
+		// The password was already changed; a failure to mark the token used is
+		// logged so a potentially reusable token is observable. Sessions are
+		// still invalidated below.
+		authLog.Warn("failed to mark password reset token as used", "token_id", tokenEntry.ID, "error", err)
 	}
 
 	_ = s.sessionRepo.DeleteByUserID(ctx, user.ID)

@@ -55,8 +55,7 @@ func (c *RapidAPIIDXClient) GetCorporateActions(ctx context.Context, from, to ti
 	// Fetch dividends
 	dividends, err := c.fetchDividends(ctx, fromStr, toStr)
 	if err != nil {
-		// Fail-open: log but don't abort
-		_ = err
+		// Fail-open: skip dividends on error (RUPS may still succeed).
 	} else {
 		for _, d := range dividends {
 			if d.CompanySymbol == "" {
@@ -102,8 +101,7 @@ func (c *RapidAPIIDXClient) GetCorporateActions(ctx context.Context, from, to ti
 	// Fetch RUPS
 	rupsList, err := c.fetchRUPS(ctx, fromStr, toStr)
 	if err != nil {
-		// Fail-open
-		_ = err
+		// Fail-open: skip RUPS on error (dividends may still be returned).
 	} else {
 		for _, r := range rupsList {
 			if r.CompanySymbol == "" {

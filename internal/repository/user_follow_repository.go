@@ -47,23 +47,12 @@ func (r *userFollowRepository) Follow(ctx context.Context, followerID, following
 		FollowingID: followingID,
 	}
 
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(follow).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Model(&model.User{}).Where("id = ?", followerID).
-			Update("following_count", gorm.Expr("following_count + 1")).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Model(&model.User{}).Where("id = ?", followingID).
-			Update("followers_count", gorm.Expr("followers_count + 1")).Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
+	// followers_count / following_count are maintained automatically by the
+	// database triggers (trigger_update_follow_counts_insert/delete on
+	// user_follows), so only the follow row is created here. The previous
+	// app-level gorm.Expr increments ran *in addition* to the triggers and
+	// double-counted every follow.
+	return r.db.WithContext(ctx).Create(follow).Error
 }
 
 func (r *userFollowRepository) Unfollow(ctx context.Context, followerID, followingID string) error {
@@ -75,24 +64,9 @@ func (r *userFollowRepository) Unfollow(ctx context.Context, followerID, followi
 		return apperrors.ErrNotFollowing
 	}
 
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("follower_id = ? AND following_id = ?", followerID, followingID).
-			Delete(&model.UserFollow{}).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Model(&model.User{}).Where("id = ?", followerID).
-			Update("following_count", gorm.Expr("following_count - 1")).Error; err != nil {
-			return err
-		}
-
-		if err := tx.Model(&model.User{}).Where("id = ?", followingID).
-			Update("followers_count", gorm.Expr("followers_count - 1")).Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
+	// Count columns are maintained by DB triggers; only the follow row is deleted.
+	return r.db.WithContext(ctx).Where("follower_id = ? AND following_id = ?", followerID, followingID).
+		Delete(&model.UserFollow{}).Error
 }
 
 func (r *userFollowRepository) IsFollowing(ctx context.Context, followerID, followingID string) (bool, error) {

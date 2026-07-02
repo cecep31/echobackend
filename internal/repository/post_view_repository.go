@@ -14,7 +14,6 @@ type PostViewRepository interface {
 	GetViewStats(ctx context.Context, postID string) (*dto.PostViewStats, error)
 	HasUserViewedPost(ctx context.Context, postID, userID string) (bool, error)
 	GetViewByUserAndPost(ctx context.Context, postID, userID string) (*model.PostView, error)
-	IncrementPostViewCount(ctx context.Context, postID string) error
 	GetViewTrendByAuthor(ctx context.Context, userID, startDate, endDate string) ([]struct {
 		Date  string
 		Count int64
@@ -101,12 +100,6 @@ func (r *postViewRepository) GetViewByUserAndPost(ctx context.Context, postID, u
 		Where("post_id = ? AND user_id = ?", postID, userID).
 		First(&view).Error
 	return &view, err
-}
-
-func (r *postViewRepository) IncrementPostViewCount(ctx context.Context, postID string) error {
-	return r.db.WithContext(ctx).Model(&model.Post{}).
-		Where("id = ?", postID).
-		Update("view_count", r.db.Raw("view_count + 1")).Error
 }
 
 func (r *postViewRepository) GetViewTrendByAuthor(ctx context.Context, userID, startDate, endDate string) ([]struct {

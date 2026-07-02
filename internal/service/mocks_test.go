@@ -255,9 +255,6 @@ func (m *mockPostViewRepo) HasUserViewedPost(ctx context.Context, postID, userID
 func (m *mockPostViewRepo) GetViewByUserAndPost(ctx context.Context, postID, userID string) (*model.PostView, error) {
 	panic("GetViewByUserAndPost not stubbed")
 }
-func (m *mockPostViewRepo) IncrementPostViewCount(ctx context.Context, postID string) error {
-	panic("IncrementPostViewCount not stubbed")
-}
 func (m *mockPostViewRepo) GetViewTrendByAuthor(ctx context.Context, userID, startDate, endDate string) ([]struct {
 	Date  string
 	Count int64
