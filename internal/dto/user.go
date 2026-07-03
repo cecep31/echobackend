@@ -39,6 +39,7 @@ type UserResponse struct {
 	CreatedAt      *time.Time     `json:"created_at"`
 	UpdatedAt      *time.Time     `json:"updated_at"`
 	DeletedAt      *time.Time     `json:"deleted_at,omitempty"`
+	LastLoggedAt   *time.Time     `json:"last_logged_at,omitempty"`
 }
 
 type CurrentUserResponse struct {
@@ -100,6 +101,7 @@ func UserToAdminResponse(u *model.User) *UserResponse {
 	if resp != nil {
 		resp.Email = u.Email
 		resp.IsSuperAdmin = u.IsSuperAdmin
+		resp.LastLoggedAt = u.LastLoggedAt
 		if u.DeletedAt.Valid {
 			t := u.DeletedAt.Time
 			resp.DeletedAt = &t
