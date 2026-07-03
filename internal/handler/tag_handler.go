@@ -1,10 +1,13 @@
 package handler
 
 import (
-	"echobackend/internal/model"
+	"errors"
+	"strconv"
+
+	apperrors "echobackend/internal/apperror"
+	"echobackend/internal/dto"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"strconv"
 
 	"github.com/labstack/echo/v5"
 )
@@ -18,16 +21,23 @@ func NewTagHandler(service service.TagService) *TagHandler {
 }
 
 func (h *TagHandler) CreateTag(c *echo.Context) error {
-	tag := new(model.Tag)
-	if err := c.Bind(tag); err != nil {
+	var req dto.CreateTagRequest
+	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request payload", err)
 	}
+	if err := c.Validate(req); err != nil {
+		return response.FromValidateError(c, err)
+	}
 
-	if err := h.service.CreateTag(c.Request().Context(), tag); err != nil {
+	tag, err := h.service.CreateTag(c.Request().Context(), &req)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrTagNameRequired) {
+			return response.BadRequest(c, err.Error(), nil)
+		}
 		return response.InternalServerError(c, "Failed to create tag", err)
 	}
 
-	return response.Created(c, "Tag created successfully", tag)
+	return response.Created(c, "Tag created successfully", dto.TagToResponse(tag))
 }
 
 func (h *TagHandler) GetTags(c *echo.Context) error {
@@ -36,7 +46,12 @@ func (h *TagHandler) GetTags(c *echo.Context) error {
 		return response.InternalServerError(c, "Failed to get tags", err)
 	}
 
-	return response.Success(c, "Successfully retrieved tags", tags)
+	tagResponses := make([]*dto.TagResponse, 0, len(tags))
+	for i := range tags {
+		tagResponses = append(tagResponses, dto.TagToResponse(&tags[i]))
+	}
+
+	return response.Success(c, "Successfully retrieved tags", tagResponses)
 }
 
 func (h *TagHandler) GetTrendingTags(c *echo.Context) error {
@@ -65,10 +80,13 @@ func (h *TagHandler) GetTagByID(c *echo.Context) error {
 
 	tag, err := h.service.GetTagByID(c.Request().Context(), uint(id))
 	if err != nil {
-		return response.NotFound(c, "Tag not found", err)
+		if errors.Is(err, apperrors.ErrTagNotFound) || errors.Is(err, apperrors.ErrInvalidTagID) {
+			return response.NotFound(c, "Tag not found", err)
+		}
+		return response.InternalServerError(c, "Failed to get tag", err)
 	}
 
-	return response.Success(c, "Successfully retrieved tag", tag)
+	return response.Success(c, "Successfully retrieved tag", dto.TagToResponse(tag))
 }
 
 func (h *TagHandler) UpdateTag(c *echo.Context) error {
@@ -77,17 +95,26 @@ func (h *TagHandler) UpdateTag(c *echo.Context) error {
 		return response.BadRequest(c, "Invalid tag ID", err)
 	}
 
-	tag := new(model.Tag)
-	if err := c.Bind(tag); err != nil {
+	var req dto.UpdateTagRequest
+	if err := c.Bind(&req); err != nil {
 		return response.BadRequest(c, "Invalid request payload", err)
 	}
-	tag.ID = int(id)
+	if err := c.Validate(req); err != nil {
+		return response.FromValidateError(c, err)
+	}
 
-	if err := h.service.UpdateTag(c.Request().Context(), tag); err != nil {
+	tag, err := h.service.UpdateTag(c.Request().Context(), uint(id), &req)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrTagNameRequired) {
+			return response.BadRequest(c, err.Error(), nil)
+		}
+		if errors.Is(err, apperrors.ErrTagNotFound) {
+			return response.NotFound(c, "Tag not found", err)
+		}
 		return response.InternalServerError(c, "Failed to update tag", err)
 	}
 
-	return response.Success(c, "Tag updated successfully", tag)
+	return response.Success(c, "Tag updated successfully", dto.TagToResponse(tag))
 }
 
 func (h *TagHandler) DeleteTag(c *echo.Context) error {
@@ -97,6 +124,9 @@ func (h *TagHandler) DeleteTag(c *echo.Context) error {
 	}
 
 	if err := h.service.DeleteTag(c.Request().Context(), uint(id)); err != nil {
+		if errors.Is(err, apperrors.ErrTagNotFound) {
+			return response.NotFound(c, "Tag not found", err)
+		}
 		return response.InternalServerError(c, "Failed to delete tag", err)
 	}
 

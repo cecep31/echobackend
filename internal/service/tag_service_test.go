@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	apperrors "echobackend/internal/apperror"
+	"echobackend/internal/dto"
 	"echobackend/internal/model"
 )
 
 func TestTagService_CreateTag_Empty(t *testing.T) {
 	svc := NewTagService(&mockTagRepo{})
-	err := svc.CreateTag(context.Background(), &model.Tag{Name: ""})
+	_, err := svc.CreateTag(context.Background(), &dto.CreateTagRequest{Name: ""})
 	if !errors.Is(err, apperrors.ErrTagNameRequired) {
 		t.Fatalf("expected ErrTagNameRequired, got %v", err)
 	}
@@ -26,7 +27,7 @@ func TestTagService_CreateTag_Success(t *testing.T) {
 		},
 	}
 	svc := NewTagService(repo)
-	if err := svc.CreateTag(context.Background(), &model.Tag{Name: "go"}); err != nil {
+	if _, err := svc.CreateTag(context.Background(), &dto.CreateTagRequest{Name: "go"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !created {

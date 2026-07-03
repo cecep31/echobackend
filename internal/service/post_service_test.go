@@ -16,7 +16,9 @@ import (
 type mockTagService struct {
 	findOrCreateByNameFn func(ctx context.Context, name string) (*model.Tag, error)
 }
-func (m *mockTagService) CreateTag(ctx context.Context, tag *model.Tag) error { return nil }
+func (m *mockTagService) CreateTag(ctx context.Context, req *dto.CreateTagRequest) (*model.Tag, error) {
+	return nil, nil
+}
 func (m *mockTagService) GetTags(ctx context.Context) ([]model.Tag, error) { return nil, nil }
 func (m *mockTagService) GetTagByID(ctx context.Context, id uint) (*model.Tag, error) { return nil, nil }
 func (m *mockTagService) GetTagByName(ctx context.Context, name string) (*model.Tag, error) { return nil, nil }
@@ -28,7 +30,9 @@ func (m *mockTagService) FindOrCreateByName(ctx context.Context, name string) (*
 	}
 	return nil, nil
 }
-func (m *mockTagService) UpdateTag(ctx context.Context, tag *model.Tag) error { return nil }
+func (m *mockTagService) UpdateTag(ctx context.Context, id uint, req *dto.UpdateTagRequest) (*model.Tag, error) {
+	return nil, nil
+}
 func (m *mockTagService) DeleteTag(ctx context.Context, id uint) error { return nil }
 
 type mockCacheStore struct {

@@ -7,7 +7,6 @@ import (
 	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
 	"echobackend/internal/model"
-	"echobackend/internal/platform/cache"
 	"echobackend/internal/repository"
 )
 
@@ -16,36 +15,46 @@ const (
 	trendingTagsTTL   = 30 * time.Minute
 )
 
+type tagCache interface {
+	BuildKey(parts ...string) string
+	GetJSON(ctx context.Context, key string, dest any) (bool, error)
+	SetJSONWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error
+}
+
 type tagService struct {
 	tagRepo repository.TagRepository
-	cache   *cache.RedisCache
+	cache   tagCache
 }
 
 type TagService interface {
-	CreateTag(ctx context.Context, tag *model.Tag) error
+	CreateTag(ctx context.Context, req *dto.CreateTagRequest) (*model.Tag, error)
 	GetTags(ctx context.Context) ([]model.Tag, error)
 	GetTagByID(ctx context.Context, id uint) (*model.Tag, error)
 	GetTagByName(ctx context.Context, name string) (*model.Tag, error)
 	GetTrendingTags(ctx context.Context) ([]*dto.TrendingTagResponse, error)
 	GetTagsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapTag, error)
 	FindOrCreateByName(ctx context.Context, name string) (*model.Tag, error)
-	UpdateTag(ctx context.Context, tag *model.Tag) error
+	UpdateTag(ctx context.Context, id uint, req *dto.UpdateTagRequest) (*model.Tag, error)
 	DeleteTag(ctx context.Context, id uint) error
 }
 
-func NewTagService(tagRepo repository.TagRepository, redisCache ...*cache.RedisCache) TagService {
-	var c *cache.RedisCache
-	if len(redisCache) > 0 {
-		c = redisCache[0]
+func NewTagService(tagRepo repository.TagRepository, cache ...tagCache) TagService {
+	var c tagCache
+	if len(cache) > 0 {
+		c = cache[0]
 	}
 	return &tagService{tagRepo: tagRepo, cache: c}
 }
 
-func (s *tagService) CreateTag(ctx context.Context, tag *model.Tag) error {
-	if tag.Name == "" {
-		return apperrors.ErrTagNameRequired
+func (s *tagService) CreateTag(ctx context.Context, req *dto.CreateTagRequest) (*model.Tag, error) {
+	if req.Name == "" {
+		return nil, apperrors.ErrTagNameRequired
 	}
-	return s.tagRepo.Create(ctx, tag)
+	tag := &model.Tag{Name: req.Name}
+	if err := s.tagRepo.Create(ctx, tag); err != nil {
+		return nil, err
+	}
+	return tag, nil
 }
 
 func (s *tagService) GetTags(ctx context.Context) ([]model.Tag, error) {
@@ -56,8 +65,15 @@ func (s *tagService) GetTagByID(ctx context.Context, id uint) (*model.Tag, error
 	return s.tagRepo.FindByID(ctx, id)
 }
 
-func (s *tagService) UpdateTag(ctx context.Context, tag *model.Tag) error {
-	return s.tagRepo.Update(ctx, tag)
+func (s *tagService) UpdateTag(ctx context.Context, id uint, req *dto.UpdateTagRequest) (*model.Tag, error) {
+	if req.Name == "" {
+		return nil, apperrors.ErrTagNameRequired
+	}
+	tag := &model.Tag{ID: int(id), Name: req.Name}
+	if err := s.tagRepo.Update(ctx, tag); err != nil {
+		return nil, err
+	}
+	return tag, nil
 }
 
 func (s *tagService) GetTagByName(ctx context.Context, name string) (*model.Tag, error) {

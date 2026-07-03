@@ -10,6 +10,14 @@ type TagResponse struct {
 	Name string `json:"name"`
 }
 
+type CreateTagRequest struct {
+	Name string `json:"name" validate:"required,min=1,max=30"`
+}
+
+type UpdateTagRequest struct {
+	Name string `json:"name" validate:"required,min=1,max=30"`
+}
+
 type TrendingTagResponse struct {
 	ID            int    `json:"id"`
 	Name          string `json:"name"`
