@@ -41,6 +41,7 @@ func NewRedisCache(cfg *config.Config) *RedisCache {
 
 	opts, err := redis.ParseURL(cfg.Cache.RedisURL)
 	if err != nil {
+		log.Warn("cache: invalid CACHE_REDIS_URL, caching disabled", "error", err)
 		return nil
 	}
 

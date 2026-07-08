@@ -32,16 +32,19 @@ func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 		return func(c *echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
+				log.Warn("auth: missing authorization header", "path", c.Request().URL.Path, "remote_ip", c.RealIP())
 				return echo.NewHTTPError(http.StatusUnauthorized, "missing authorization header")
 			}
 
 			tokenString, err := extractBearerToken(authHeader)
 			if err != nil {
+				log.Warn("auth: malformed authorization header", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "error", err)
 				return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 			}
 
 			claims, err := validateToken(tokenString, a.conf.Auth.JWTSecret)
 			if err != nil {
+				log.Warn("auth: invalid token", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "error", err)
 				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("invalid token: %v", err))
 			}
 
@@ -92,15 +95,18 @@ func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 
 			userID, err := getUserIDFromClaims(claims)
 			if err != nil {
+				log.Warn("auth: admin check failed to resolve user id", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "error", err)
 				return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 			}
 
 			isSuperAdmin, err := a.isSuperAdminFromDB(c.Request().Context(), userID)
 			if err != nil {
+				log.Warn("auth: failed to validate admin privileges", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "user_id", userID, "error", err)
 				return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized: failed to validate user privileges")
 			}
 
 			if !isSuperAdmin {
+				log.Warn("auth: insufficient privileges", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "user_id", userID)
 				return echo.NewHTTPError(http.StatusForbidden, "forbidden: insufficient privileges")
 			}
 

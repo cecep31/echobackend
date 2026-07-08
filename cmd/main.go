@@ -123,6 +123,7 @@ func healthCheck(c *echo.Context, container *di.Container) error {
 	defer cancel()
 
 	if err := container.PingDB(ctx); err != nil {
+		slog.Warn("health check: database unreachable", "error", err)
 		return c.JSON(http.StatusServiceUnavailable, map[string]string{
 			"status": "unhealthy",
 			"reason": "database unreachable",

@@ -174,7 +174,9 @@ func (s *authService) Login(ctx context.Context, identifier, password, ipAddress
 
 	now := time.Now()
 	user.LastLoggedAt = &now
-	_ = s.userRepo.Update(ctx, user)
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		authLog.Warn("failed to update last_logged_at", "user_id", user.ID, "error", err)
+	}
 
 	return tokenString, refreshToken, user, nil
 }
@@ -265,7 +267,9 @@ func (s *authService) ResetPassword(ctx context.Context, token, password, ipAddr
 		authLog.Warn("failed to mark password reset token as used", "token_id", tokenEntry.ID, "error", err)
 	}
 
-	_ = s.sessionRepo.DeleteByUserID(ctx, user.ID)
+	if err := s.sessionRepo.DeleteByUserID(ctx, user.ID); err != nil {
+		authLog.Warn("failed to invalidate sessions after password reset", "user_id", user.ID, "error", err)
+	}
 
 	s.activityService.LogActivity(ctx, &user.ID, model.ActivityPasswordReset, model.StatusSuccess, ipAddress, userAgent, nil, nil)
 
@@ -280,7 +284,9 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken, ipAddress,
 	}
 
 	if session.ExpiresAt != nil && time.Now().After(*session.ExpiresAt) {
-		_ = s.sessionRepo.DeleteSession(ctx, refreshTokenHash)
+		if err := s.sessionRepo.DeleteSession(ctx, refreshTokenHash); err != nil {
+			authLog.Warn("failed to delete expired session", "user_id", session.UserID, "error", err)
+		}
 		return "", "", nil, apperrors.ErrTokenExpired
 	}
 
@@ -294,7 +300,9 @@ func (s *authService) RefreshToken(ctx context.Context, refreshToken, ipAddress,
 		return "", "", nil, err
 	}
 
-	_ = s.sessionRepo.DeleteSession(ctx, refreshTokenHash)
+	if err := s.sessionRepo.DeleteSession(ctx, refreshTokenHash); err != nil {
+		authLog.Warn("failed to delete old session after refresh", "user_id", user.ID, "error", err)
+	}
 
 	s.activityService.LogActivity(ctx, &user.ID, model.ActivityTokenRefresh, model.StatusSuccess, ipAddress, userAgent, nil, nil)
 
@@ -432,7 +440,9 @@ func (s *authService) SignInWithGithub(ctx context.Context, githubUser *GithubUs
 
 	now := time.Now()
 	user.LastLoggedAt = &now
-	_ = s.userRepo.Update(ctx, user)
+	if err := s.userRepo.Update(ctx, user); err != nil {
+		authLog.Warn("failed to update last_logged_at", "user_id", user.ID, "error", err)
+	}
 
 	return tokenString, refreshToken, user, nil
 }
