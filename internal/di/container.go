@@ -74,6 +74,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	authActivityLogRepo := repository.NewAuthActivityLogRepository(db)
 	passwordResetTokenRepo := repository.NewPasswordResetTokenRepository(db)
 	reportRepo := repository.NewReportRepository(db)
+	corporateActionRepo := repository.NewCorporateActionRepository(db)
 
 	authActivityService := service.NewAuthActivityService(authActivityLogRepo)
 	openRouterService := service.NewOpenRouterService(cfg.OpenRouter)
@@ -95,7 +96,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 
 	// Corporate actions: IDX
 	idxCorporateClient := market.NewRapidAPIIDXClient(cfg.MarketData.RapidAPIIDXKey, nil)
-	corporateActionService := service.NewCorporateActionService(idxCorporateClient, redisCache)
+	corporateActionService := service.NewCorporateActionService(idxCorporateClient, corporateActionRepo)
 
 	userHandler := handler.NewUserHandler(userService, userFollowService)
 	postHandler := handler.NewPostHandler(postService, postViewService)

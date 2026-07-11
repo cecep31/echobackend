@@ -119,28 +119,26 @@ The two endpoints can be passed in either chronological order. The handler norma
 
 ## GET `/api/holdings/calendar`
 
-Corporate actions calendar (dividend & RUPS events) for all stocks in the IDX exchange. Requires a Bearer token (the authenticated user's context is used).
+Corporate actions calendar (dividend & RUPS events) for all stocks in the IDX exchange, for a single calendar month. Requires a Bearer token (the authenticated user's context is used).
 
-Results are cached in Valkey/Redis for 24 hours when `VALKEY_URL` is enabled; when cache is disabled, data is fetched from IDX on every request. The `cached` field is `true` only when a response is served from cache.
+Results are persisted in Postgres (`corporate_actions` table). If the requested month already has stored rows, they are served directly from the database. Otherwise the IDX API is queried, the results are upserted into Postgres, and the stored rows are returned. The `cached` field is `true` when the response was served straight from Postgres without calling IDX for this request.
 
 **Query Parameters**
 
 | Param | Default | Description |
 |-------|---------|-------------|
-| `from` | First day of current month | Date in `YYYY-MM-DD` format |
-| `to` | 3 months from today | Date in `YYYY-MM-DD` format |
-
-*Note: The range is capped to a maximum of 6 months. If `to` is further than 6 months from `from`, it is automatically clamped to 6 months.*
+| `month` | Current month | 1-12 |
+| `year` | Current year | |
 
 **Success - 200** - `data` (`CorporateActionCalendarResponse`):
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `from` | string | Normalized from-date (`YYYY-MM-DD`) |
-| `to` | string | Normalized to-date (`YYYY-MM-DD`) |
+| `from` | string | First day of the requested month (`YYYY-MM-DD`) |
+| `to` | string | Last day of the requested month (`YYYY-MM-DD`) |
 | `actions` | array | List of corporate action items (sorted chronologically) |
 | `total` | number | Total count of actions |
-| `cached` | boolean | True if the response was retrieved from cache |
+| `cached` | boolean | True if the response was retrieved from Postgres without a fresh IDX fetch |
 
 Each item in `actions` has the following fields:
 
