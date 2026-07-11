@@ -11,8 +11,8 @@ import (
 
 const (
 	// corporateActionCacheTTL is how long the calendar result is cached in Redis.
-	// Set to 6 hours so that data is reasonably fresh without hammering the API.
-	corporateActionCacheTTL = 6 * time.Hour
+	// Set to 24 hours so that data is reasonably fresh without hammering the API.
+	corporateActionCacheTTL = 24 * time.Hour
 
 	// maxCalendarRangeMonths caps the from–to range accepted by the handler.
 	maxCalendarRangeMonths = 6

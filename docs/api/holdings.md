@@ -121,7 +121,7 @@ The two endpoints can be passed in either chronological order. The handler norma
 
 Corporate actions calendar (dividend & RUPS events) for all stocks in the IDX exchange. Requires a Bearer token (the authenticated user's context is used).
 
-Results are cached in Valkey/Redis for 6 hours when `VALKEY_URL` is enabled; when cache is disabled, data is fetched from IDX on every request. The `cached` field is `true` only when a response is served from cache.
+Results are cached in Valkey/Redis for 24 hours when `VALKEY_URL` is enabled; when cache is disabled, data is fetched from IDX on every request. The `cached` field is `true` only when a response is served from cache.
 
 **Query Parameters**
 
