@@ -13,7 +13,7 @@ A modern, robust REST API built with Go 1.26, Echo v5, GORM, and PostgreSQL. Des
 - **Modern Keys**: UUID primary keys across all models (v7 preferred).
 - **Rate Limiting**: Global and per-route rate limiting to protect critical endpoints.
 - **Graceful Shutdown**: Automatic resource cleanup on server termination.
-- **Health Checks**: Dedicated `/health` endpoint for Docker and Fly.io liveness probes.
+- **Health Checks**: Dedicated `/health` endpoint for Docker HEALTHCHECK and load balancers.
 
 ## Tech Stack
 
@@ -113,11 +113,12 @@ goose create <migration_name> sql
 
 ## Deployment
 
-Deployments are automated via GitHub Actions to Fly.io:
+CI via GitHub Actions:
 
 1. **Test & lint** (`go vet`, `go test`, `golangci-lint`) on every PR and push to `main`
 2. **Docker build & push** (push to `main` only, after tests pass) — tags `latest`, `sha-<12-char-sha>`, and full-commit SHA
-3. **Fly deploy** with the pinned `sha-*` image (not floating `latest`)
+
+Pull a pinned `sha-*` image for reproducible deploys (prefer that over floating `latest`).
 
 ```bash
 # Local Docker build test

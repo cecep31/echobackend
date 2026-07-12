@@ -55,7 +55,7 @@ func main() {
 
 	e.GET("/", helloWorld)
 
-	// Health check endpoint — used by Fly.io, Docker HEALTHCHECK, and load balancers.
+	// Health check endpoint — used by Docker HEALTHCHECK and load balancers.
 	// Returns 200 when the DB is reachable, 503 otherwise.
 	e.GET("/health", func(c *echo.Context) error {
 		return healthCheck(c, container)

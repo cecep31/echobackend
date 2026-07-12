@@ -7,7 +7,7 @@ HTTP API reference for frontend integration. All business routes are under the `
 | Environment | URL |
 |-------------|-----|
 | Local | `http://localhost:<PORT>` (see `PORT` in `.env`) |
-| Production | Fly.io deployment URL / your reverse proxy URL |
+| Production | Your deployment / reverse proxy URL |
 
 Full examples: `GET /api/posts`, `POST /api/auth/login`.
 

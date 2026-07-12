@@ -25,7 +25,7 @@ goose create <name> sql         # Always sql, never go
 First-time migration setup: goose stores version history in the non-default `custom` schema (`GOOSE_TABLE=custom.goose_migrations`). Run once before the first `goose up`:
 `psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'`
 
-**CI** (`.github/workflows/main.yml`): on PRs/pushes run `go vet`, `go test`, and `golangci-lint`. On push to `main` only (after tests pass): build/push Docker image tags `latest` + `sha-*`, then `flyctl deploy --image` with the pinned short SHA tag.
+**CI** (`.github/workflows/main.yml`): on PRs/pushes run `go vet`, `go test`, and `golangci-lint`. On push to `main` only (after tests pass): build/push Docker image tags `latest` + `sha-*`.
 
 ## Architecture
 
@@ -36,7 +36,7 @@ First-time migration setup: goose stores version history in the non-default `cus
 - **`internal/platform/`**: App-owned infrastructure adapters — `cache` (Valkey), `database`, `email`, `logger`, `queue` (asynq), `storage` (MinIO/S3).
 - **`pkg/`**: Reusable helper packages — `applog`, `market`, `response`, `validator`.
 - **Routes**: All under `/api/*`, defined per module in `internal/routes/*Routes.go` and wired in `routes.go`. Protected routes use `r.authMiddleware.Auth()`; admin routes chain `r.authMiddleware.AuthAdmin()` after it.
-- **Health**: `GET /health` pings the DB (200/503). Used by Fly.io and Docker HEALTHCHECK.
+- **Health**: `GET /health` pings the DB (200/503). Used by Docker HEALTHCHECK and load balancers.
 - **Pagination**: Use `handler.ParsePaginationParams(c, defaultLimit)` — returns `(limit, offset)`, capped at 100. Build meta with `response.CalculatePaginationMeta(total, offset, limit)` and return via `response.SuccessWithMeta`.
 
 ## Response Format
@@ -77,7 +77,7 @@ response.InternalServerError(c, "msg", err)  // 500 — err logged server-side o
 
 ## Deployment
 
-- Fly.io via GitHub Actions: push to `main` → test/lint → Docker build → push `cecep31/echobackend:latest` and `:sha-*` → `flyctl deploy --image` with pinned SHA. Primary region `sin`.
+- GitHub Actions: push to `main` → test/lint → Docker build → push `cecep31/echobackend:latest` and `:sha-*` to Docker Hub. Deploy by pulling a pinned `sha-*` tag on your host.
 
 ## API Docs
 

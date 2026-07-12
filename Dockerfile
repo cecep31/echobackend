@@ -30,7 +30,7 @@ EXPOSE 8080
 
 USER appuser
 
-# Healthcheck — Fly.io and Docker will use this for liveness detection.
+# Healthcheck — Docker and orchestrators use this for liveness detection.
 # /health is registered in main.go.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["/bin/sh", "-c", "wget -qO- http://localhost:8080/health || exit 1"]

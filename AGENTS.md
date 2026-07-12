@@ -37,7 +37,7 @@ psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'
 - **`internal/repository/`**: Data access layer using GORM.
 - **`internal/dto/`**: Request/response structs. `internal/apperror/` for shared app error sentinels.
 - **API routes**: All under `/api/*`, defined in `internal/routes/*Routes.go`. Auth-protected routes use `r.authMiddleware.Auth()`.
-- **Health**: `GET /health` — pings DB (200/503). Used by Fly.io and Docker HEALTHCHECK.
+- **Health**: `GET /health` — pings DB (200/503). Used by Docker HEALTHCHECK and load balancers.
 - **Auth gates**: routes apply `r.authMiddleware.Auth()`, and admin routes chain `r.authMiddleware.AuthAdmin()` after it (e.g. `posts.PUT("/:id", h.UpdatePost, r.authMiddleware.Auth(), r.authMiddleware.AuthAdmin())`).
 - **Pagination**: Use `handler.ParsePaginationParams(c, defaultLimit)` — returns `(limit, offset)`, max cap 100. Build response meta with `response.CalculatePaginationMeta(total, offset, limit)` and pass via `response.SuccessWithMeta`.
 
@@ -81,7 +81,6 @@ Use `response.TooManyRequests(c, "msg")` for 429 (rate limit). `response.Conflic
 
 1. **test** — `go vet ./...`, `go test ./...`, `golangci-lint`
 2. **docker** (push to `main` only, after test) — build & push `cecep31/echobackend:latest`, `:sha-<12-char>`, and `:sha-<full>`
-3. **deploy** (push to `main` only, after docker) — `flyctl deploy --image cecep31/echobackend:sha-<12-char>`
 
 Still useful locally before pushing: `go test ./...`, `go vet ./...`, `golangci-lint run`.
 
@@ -94,6 +93,5 @@ Still useful locally before pushing: `go test ./...`, `go vet ./...`, `golangci-
 
 ## Deployment
 
-- **Fly.io** via GitHub Actions (push to `main` → Docker build → push to Docker Hub → `flyctl deploy`).
-- Docker image: `cecep31/echobackend` tagged as `latest` and `sha-<git-sha>` on each main deploy. Built with Go 1.26 in Docker, runs as non-root user. Fly deploys the pinned `sha-*` tag.
-- Primary region: `sin` (Singapore).
+- GitHub Actions on push to `main`: test/lint → Docker build → push to Docker Hub (`cecep31/echobackend:latest` and `:sha-*`).
+- Docker image is built with Go 1.26, multi-stage, runs as non-root user. Pull a specific `sha-*` tag for reproducible deploys.
