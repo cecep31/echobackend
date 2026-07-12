@@ -25,7 +25,7 @@ goose create <name> sql         # Always sql, never go
 First-time migration setup: goose stores version history in the non-default `custom` schema (`GOOSE_TABLE=custom.goose_migrations`). Run once before the first `goose up`:
 `psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'`
 
-**CI does not run tests or lint** — `.github/workflows/main.yml` only builds the Docker image and deploys to Fly.io. Run `go test ./...`, `go vet ./...`, and `golangci-lint run` locally before pushing to `main`.
+**CI** (`.github/workflows/main.yml`): on PRs/pushes run `go vet`, `go test`, and `golangci-lint`. On push to `main` only (after tests pass): build/push Docker image tags `latest` + `sha-*`, then `flyctl deploy --image` with the pinned short SHA tag.
 
 ## Architecture
 
@@ -77,7 +77,7 @@ response.InternalServerError(c, "msg", err)  // 500 — err logged server-side o
 
 ## Deployment
 
-- Fly.io via GitHub Actions: push to `main` → Docker build → push to Docker Hub (`cecep31/echobackend:latest`) → `flyctl deploy`. Primary region `sin`.
+- Fly.io via GitHub Actions: push to `main` → test/lint → Docker build → push `cecep31/echobackend:latest` and `:sha-*` → `flyctl deploy --image` with pinned SHA. Primary region `sin`.
 
 ## API Docs
 

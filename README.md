@@ -113,7 +113,11 @@ goose create <migration_name> sql
 
 ## Deployment
 
-Deployments are automated via GitHub Actions to Fly.io using the provided `Dockerfile`.
+Deployments are automated via GitHub Actions to Fly.io:
+
+1. **Test & lint** (`go vet`, `go test`, `golangci-lint`) on every PR and push to `main`
+2. **Docker build & push** (push to `main` only, after tests pass) — tags `latest`, `sha-<12-char-sha>`, and full-commit SHA
+3. **Fly deploy** with the pinned `sha-*` image (not floating `latest`)
 
 ```bash
 # Local Docker build test

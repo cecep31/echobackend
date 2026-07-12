@@ -77,7 +77,13 @@ Use `response.TooManyRequests(c, "msg")` for 429 (rate limit). `response.Conflic
 
 ## CI
 
-`.github/workflows/main.yml` only builds the Docker image and `flyctl deploy`. **It does not run `go test`, `go vet`, or `golangci-lint`** — run them locally before pushing to `main`.
+`.github/workflows/main.yml` runs on PRs and pushes to `main`:
+
+1. **test** — `go vet ./...`, `go test ./...`, `golangci-lint`
+2. **docker** (push to `main` only, after test) — build & push `cecep31/echobackend:latest`, `:sha-<12-char>`, and `:sha-<full>`
+3. **deploy** (push to `main` only, after docker) — `flyctl deploy --image cecep31/echobackend:sha-<12-char>`
+
+Still useful locally before pushing: `go test ./...`, `go vet ./...`, `golangci-lint run`.
 
 ## Migrations
 
@@ -89,5 +95,5 @@ Use `response.TooManyRequests(c, "msg")` for 429 (rate limit). `response.Conflic
 ## Deployment
 
 - **Fly.io** via GitHub Actions (push to `main` → Docker build → push to Docker Hub → `flyctl deploy`).
-- Docker image: `cecep31/echobackend:latest`. Built with Go 1.26 in Docker (go.mod specifies 1.25+), runs as non-root user.
+- Docker image: `cecep31/echobackend` tagged as `latest` and `sha-<git-sha>` on each main deploy. Built with Go 1.26 in Docker, runs as non-root user. Fly deploys the pinned `sha-*` tag.
 - Primary region: `sin` (Singapore).

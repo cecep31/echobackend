@@ -46,6 +46,10 @@ func main() {
 	// Set custom validator
 	e.Validator = validator.NewValidator()
 
+	// Global middleware must be registered before routes so CORS, body limit,
+	// secure headers, rate limiting, and recover apply to all endpoints.
+	middleware.InitMiddleware(e, conf)
+
 	// Initialize routes with manually wired dependencies
 	container.Routes.Setup(e)
 
@@ -56,9 +60,6 @@ func main() {
 	e.GET("/health", func(c *echo.Context) error {
 		return healthCheck(c, container)
 	})
-
-	// Setup middleware
-	middleware.InitMiddleware(e, conf)
 
 	// Start server in a goroutine.
 	// ReadTimeout covers the full request body read. For most endpoints 10 s is fine,

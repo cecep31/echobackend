@@ -4,8 +4,8 @@ import (
 	"context"
 	"echobackend/config"
 	"echobackend/internal/service"
+	"echobackend/pkg/response"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -33,19 +33,20 @@ func (a *AuthMiddleware) Auth() echo.MiddlewareFunc {
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
 				log.Warn("auth: missing authorization header", "path", c.Request().URL.Path, "remote_ip", c.RealIP())
-				return echo.NewHTTPError(http.StatusUnauthorized, "missing authorization header")
+				return response.Unauthorized(c, "Missing authorization header")
 			}
 
 			tokenString, err := extractBearerToken(authHeader)
 			if err != nil {
 				log.Warn("auth: malformed authorization header", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "error", err)
-				return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+				return response.Unauthorized(c, "Invalid authorization header")
 			}
 
 			claims, err := validateToken(tokenString, a.conf.Auth.JWTSecret)
 			if err != nil {
+				// Log the real parse/validation error server-side only; never expose it to clients.
 				log.Warn("auth: invalid token", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "error", err)
-				return echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("invalid token: %v", err))
+				return response.Unauthorized(c, "Invalid or expired token")
 			}
 
 			c.Set("user", claims)
@@ -85,29 +86,29 @@ func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 		return func(c *echo.Context) error {
 			userClaims := c.Get("user")
 			if userClaims == nil {
-				return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized: missing user context")
+				return response.Unauthorized(c, "Authentication required")
 			}
 
 			claims, ok := userClaims.(jwt.MapClaims)
 			if !ok {
-				return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized: invalid user context")
+				return response.Unauthorized(c, "Authentication required")
 			}
 
 			userID, err := getUserIDFromClaims(claims)
 			if err != nil {
 				log.Warn("auth: admin check failed to resolve user id", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "error", err)
-				return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+				return response.Unauthorized(c, "Authentication required")
 			}
 
 			isSuperAdmin, err := a.isSuperAdminFromDB(c.Request().Context(), userID)
 			if err != nil {
 				log.Warn("auth: failed to validate admin privileges", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "user_id", userID, "error", err)
-				return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized: failed to validate user privileges")
+				return response.Unauthorized(c, "Failed to validate privileges")
 			}
 
 			if !isSuperAdmin {
 				log.Warn("auth: insufficient privileges", "path", c.Request().URL.Path, "remote_ip", c.RealIP(), "user_id", userID)
-				return echo.NewHTTPError(http.StatusForbidden, "forbidden: insufficient privileges")
+				return response.Forbidden(c, "Insufficient privileges")
 			}
 
 			return next(c)
