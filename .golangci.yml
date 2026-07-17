@@ -1,0 +1,25 @@
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.26"
+  modules-download-mode: readonly
+
+linters:
+  default: standard
+  enable:
+    - copyloopvar
+    - misspell
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -39,7 +40,7 @@ func (r *notificationRepository) GetByID(ctx context.Context, id, userID string)
 	var notification model.Notification
 	err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&notification).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrNotificationNotFound
 		}
 		return nil, fmt.Errorf("failed to get notification: %w", err)

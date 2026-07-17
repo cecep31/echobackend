@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apperrors "echobackend/internal/apperror"
@@ -41,7 +42,7 @@ func (r *bookmarkRepository) FindBookmarkByUserAndPost(ctx context.Context, user
 		Where("user_id = ? AND post_id = ?", userID, postID).
 		First(&bookmark).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrBookmarkNotFound
 		}
 		return nil, fmt.Errorf("failed to find bookmark by user and post: %w", err)
@@ -58,7 +59,7 @@ func (r *bookmarkRepository) FindBookmarkByID(ctx context.Context, id, userID st
 		Where("id = ? AND user_id = ?", id, userID).
 		First(&bookmark).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrBookmarkNotFound
 		}
 		return nil, fmt.Errorf("failed to find bookmark: %w", err)
@@ -134,7 +135,7 @@ func (r *bookmarkRepository) FindFolderByID(ctx context.Context, id, userID stri
 		Where("id = ? AND user_id = ?", id, userID).
 		First(&folder).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrBookmarkFolderNotFound
 		}
 		return nil, fmt.Errorf("failed to find bookmark folder: %w", err)

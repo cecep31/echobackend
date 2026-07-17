@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apperrors "echobackend/internal/apperror"
@@ -57,7 +58,7 @@ func (r *tagRepository) FindByID(ctx context.Context, id uint) (*model.Tag, erro
 	var tag model.Tag
 	err := r.db.WithContext(ctx).First(&tag, id).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrTagNotFound
 		}
 		return nil, fmt.Errorf("failed to find tag by ID %d: %w", id, err)
@@ -72,7 +73,7 @@ func (r *tagRepository) FindByName(ctx context.Context, name string) (*model.Tag
 	var tag model.Tag
 	err := r.db.WithContext(ctx).Where("name = ?", name).First(&tag).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrTagNotFound
 		}
 		return nil, fmt.Errorf("failed to find tag by name %s: %w", name, err)

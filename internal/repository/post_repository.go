@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apperrors "echobackend/internal/apperror"
@@ -66,7 +67,7 @@ func (r *postRepository) UpdatePost(ctx context.Context, id string, updates map[
 		var currentPost model.Post
 		err := r.db.WithContext(ctx).Preload("User", preloadUserBrief).Preload("Tags").First(&currentPost, "id = ?", id).Error
 		if err != nil {
-			if err == gorm.ErrRecordNotFound {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, apperrors.ErrPostNotFound
 			}
 			return nil, fmt.Errorf("failed to fetch post (no updates provided): %w", err)
@@ -168,7 +169,7 @@ func (r *postRepository) GetPostBySlugAndUsername(ctx context.Context, slug stri
 		First(&post).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrPostNotFound
 		}
 		return nil, fmt.Errorf("failed to get post by slug '%s' and username '%s': %w", slug, username, err)
@@ -185,7 +186,7 @@ func (r *postRepository) GetPostByID(ctx context.Context, id string) (*model.Pos
 		First(&post).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrPostNotFound
 		}
 		return nil, fmt.Errorf("failed to get post by ID: %w", err)

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"echobackend/internal/model"
@@ -31,7 +32,7 @@ func (r *passwordResetTokenRepository) Create(ctx context.Context, token *model.
 func (r *passwordResetTokenRepository) FindByToken(ctx context.Context, token string) (*model.PasswordResetToken, error) {
 	var prt model.PasswordResetToken
 	if err := r.db.WithContext(ctx).Where("token = ?", token).First(&prt).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err

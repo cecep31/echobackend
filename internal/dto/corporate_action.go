@@ -5,8 +5,8 @@ package dto
 type CorporateActionResponse struct {
 	Symbol   string   `json:"symbol"`
 	Name     string   `json:"name,omitempty"`
-	Type     string   `json:"type"`             // "dividend" | "rups"
-	Date     string   `json:"date"`             // ISO 8601: "2025-07-15"
+	Type     string   `json:"type"` // "dividend" | "rups"
+	Date     string   `json:"date"` // ISO 8601: "2025-07-15"
 	PayDate  *string  `json:"pay_date,omitempty"`
 	Amount   *float64 `json:"amount,omitempty"` // dividend per share
 	Currency string   `json:"currency,omitempty"`

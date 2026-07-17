@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apperrors "echobackend/internal/apperror"
@@ -85,7 +86,7 @@ func (r *userRepository) GetByID(ctx context.Context, id string, deletedOnly boo
 	}
 	err := query.First(&user).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -155,7 +156,7 @@ func (r *userRepository) RestoreByID(ctx context.Context, id string) error {
 		Where("id = ? AND deleted_at IS NOT NULL", id).
 		First(&user).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperrors.ErrUserNotFound
 		}
 		return fmt.Errorf("failed to get deleted user: %w", err)
@@ -216,7 +217,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*model.U
 	var user model.User
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
@@ -228,7 +229,7 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*m
 	var user model.User
 	err := r.db.WithContext(ctx).Preload("Profile").Where("username = ?", username).First(&user).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user by username: %w", err)

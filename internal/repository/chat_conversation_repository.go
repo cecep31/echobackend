@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apperrors "echobackend/internal/apperror"
@@ -49,7 +50,7 @@ func (r *chatConversationRepository) GetConversationByID(ctx context.Context, id
 		First(&conversation, "id = ?", id).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrChatConversationNotFound
 		}
 		return nil, fmt.Errorf("failed to get chat conversation: %w", err)
@@ -89,7 +90,7 @@ func (r *chatConversationRepository) UpdateConversation(ctx context.Context, id 
 	var existingConversation model.ChatConversation
 	err := r.db.WithContext(ctx).First(&existingConversation, "id = ?", id).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrChatConversationNotFound
 		}
 		return nil, fmt.Errorf("error checking conversation existence: %w", err)
@@ -164,7 +165,7 @@ func (r *chatConversationRepository) GetMessageByID(ctx context.Context, id, use
 	var message model.ChatMessage
 	err := r.db.WithContext(ctx).Where("id = ? AND user_id = ?", id, userID).First(&message).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrChatMessageNotFound
 		}
 		return nil, fmt.Errorf("failed to get chat message: %w", err)

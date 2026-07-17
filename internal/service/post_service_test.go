@@ -6,8 +6,8 @@ import (
 	"mime/multipart"
 	"testing"
 
-	"echobackend/internal/dto"
 	apperrors "echobackend/internal/apperror"
+	"echobackend/internal/dto"
 	"echobackend/internal/model"
 )
 
@@ -16,14 +16,23 @@ import (
 type mockTagService struct {
 	findOrCreateByNameFn func(ctx context.Context, name string) (*model.Tag, error)
 }
+
 func (m *mockTagService) CreateTag(ctx context.Context, req *dto.CreateTagRequest) (*model.Tag, error) {
 	return nil, nil
 }
 func (m *mockTagService) GetTags(ctx context.Context) ([]model.Tag, error) { return nil, nil }
-func (m *mockTagService) GetTagByID(ctx context.Context, id uint) (*model.Tag, error) { return nil, nil }
-func (m *mockTagService) GetTagByName(ctx context.Context, name string) (*model.Tag, error) { return nil, nil }
-func (m *mockTagService) GetTrendingTags(ctx context.Context) ([]*dto.TrendingTagResponse, error) { return nil, nil }
-func (m *mockTagService) GetTagsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapTag, error) { return nil, nil }
+func (m *mockTagService) GetTagByID(ctx context.Context, id uint) (*model.Tag, error) {
+	return nil, nil
+}
+func (m *mockTagService) GetTagByName(ctx context.Context, name string) (*model.Tag, error) {
+	return nil, nil
+}
+func (m *mockTagService) GetTrendingTags(ctx context.Context) ([]*dto.TrendingTagResponse, error) {
+	return nil, nil
+}
+func (m *mockTagService) GetTagsForSitemap(ctx context.Context, limit int) ([]*dto.SitemapTag, error) {
+	return nil, nil
+}
 func (m *mockTagService) FindOrCreateByName(ctx context.Context, name string) (*model.Tag, error) {
 	if m.findOrCreateByNameFn != nil {
 		return m.findOrCreateByNameFn(ctx, name)
@@ -40,6 +49,7 @@ type mockCacheStore struct {
 	getJSONFn  func(ctx context.Context, key string, dest any) (bool, error)
 	setJSONFn  func(ctx context.Context, key string, value any) error
 }
+
 func (m *mockCacheStore) BuildKey(parts ...string) string {
 	if m.buildKeyFn != nil {
 		return m.buildKeyFn(parts...)

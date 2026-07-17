@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	apperrors "echobackend/internal/apperror"
@@ -112,7 +113,7 @@ func (r *holdingRepository) FindByID(ctx context.Context, id int64, userID strin
 	var holding model.Holding
 	err := r.db.WithContext(ctx).Preload("HoldingType").Where("id = ? AND user_id = ?", id, userID).First(&holding).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrHoldingNotFound
 		}
 		return nil, fmt.Errorf("failed to find holding: %w", err)
@@ -161,7 +162,7 @@ func (r *holdingRepository) FindHoldingTypeByID(ctx context.Context, id int) (*m
 	var ht model.HoldingType
 	err := r.db.WithContext(ctx).First(&ht, id).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrHoldingTypeNotFound
 		}
 		return nil, fmt.Errorf("failed to find holding type: %w", err)

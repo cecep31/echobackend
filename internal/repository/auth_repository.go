@@ -31,7 +31,7 @@ func (r *authRepository) FindUserByEmail(ctx context.Context, email string) (*mo
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrUserNotFound
 		}
 		return nil, err
@@ -43,7 +43,7 @@ func (r *authRepository) FindUserByIdentifier(ctx context.Context, identifier st
 	var user model.User
 	err := r.db.WithContext(ctx).Where("email = ? OR username = ?", identifier, identifier).First(&user).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrUserNotFound
 		}
 		return nil, err
@@ -67,7 +67,7 @@ func (r *authRepository) FindUserByGithubID(ctx context.Context, githubID int64)
 	var user model.User
 	err := r.db.WithContext(ctx).Where("github_id = ?", githubID).First(&user).Error
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.ErrUserNotFound
 		}
 		return nil, err
