@@ -1,0 +1,91 @@
+name: echobackend
+
+# Local development services only — the app itself runs on the host
+# (`go run cmd/main.go` or `air`) so hot reload keeps working.
+#
+#   docker compose up -d --wait   # start everything (waits for healthchecks)
+#   docker compose down           # stop
+#   docker compose down -v        # stop and DELETE all data
+#
+# After first start, set in .env:
+#   REDIS_URL=redis://localhost:6379
+#   S3_USE_SSL=false              # local MinIO speaks plain HTTP
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: echobackend-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Creates the `custom` schema required by goose (GOOSE_TABLE=custom.goose_migrations).
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: echobackend-valkey
+    # Ephemeral cache: no RDB snapshot, no AOF.
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: echobackend-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console (http://localhost:9001)
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc alias set healthcheck http://127.0.0.1:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} >/dev/null 2>&1 && mc ready healthcheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # One-shot job: creates the default bucket after MinIO is healthy.
+  createbuckets:
+    image: minio/mc:latest
+    container_name: echobackend-createbuckets
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${S3_BUCKET:-minio-bucket}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} >/dev/null;
+      echo 'Creating bucket (if missing):' $${MINIO_BUCKET};
+      mc mb --ignore-existing local/$${MINIO_BUCKET};
+      "
+
+volumes:
+  postgres-data:
+  valkey-data:
+  minio-data:
