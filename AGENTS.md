@@ -3,6 +3,11 @@
 ## Commands
 
 ```bash
+# Local dev services (Postgres 18 + Valkey + MinIO via docker-compose.yml)
+docker compose up -d --wait # Start services (or: make up). Creates the `custom` schema automatically.
+docker compose down         # Stop (or: make down; make down-clean also wipes data)
+make help                   # All shortcuts: up, dev, test, lint, check, migrate-*, ...
+
 go run cmd/main.go          # Run server (requires .env with DATABASE_URL + JWT_SECRET)
 air                         # Hot reload (reads .env automatically)
 go test ./...               # All tests (service + pkg layers only; no DB integration tests)
@@ -21,7 +26,8 @@ goose status                # Check current
 goose create <name> sql     # New migration file
 
 # First-time setup: goose stores version history in the `custom` schema.
-# Run this once before the first `goose up` (psql, not goose, creates it).
+# `docker compose up` already creates it via scripts/init-db.sql.
+# For an external Postgres, run this once before the first `goose up`:
 psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'
 ```
 
@@ -89,7 +95,7 @@ Still useful locally before pushing: `go test ./...`, `go vet ./...`, `golangci-
 - Goose with **raw SQL** files in `migrations/`. Numbered `001_init_schema.sql` through `010_drop_uuid_ossp.sql`.
 - Uses PostgreSQL features: triggers for count fields, `uuid_generate_v4()` (v7 preferred), `ON DELETE CASCADE`, soft deletes via `deleted_at`.
 - **New migrations**: `goose create <name> sql` (always `sql`, never `go`).
-- **First-time setup**: Run `psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'` to create the `custom` schema before first `goose up`.
+- **First-time setup**: The local Postgres from `docker compose up` auto-creates the `custom` schema (`scripts/init-db.sql`). For an external Postgres, run `psql "$DATABASE_URL" -c 'CREATE SCHEMA IF NOT EXISTS custom;'` once before the first `goose up`.
 
 ## Deployment
 

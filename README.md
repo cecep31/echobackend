@@ -32,15 +32,23 @@ A modern, robust REST API built with Go 1.26, Echo v5, GORM, and PostgreSQL. Des
 cp .env.example .env
 
 # 2. Edit .env with your local configuration
+#    (set JWT_SECRET; for local services below also set REDIS_URL=redis://localhost:6379
+#     and S3_USE_SSL=false)
 
-# 3. Run with hot reload (requires air)
+# 3. Start local services (Postgres 18, Valkey, MinIO)
+docker compose up -d --wait
+
+# 4. Apply database migrations
+goose up
+
+# 5. Run with hot reload (requires air)
 air
 
-# 4. Or run normally
+# 6. Or run normally
 go run cmd/main.go
 ```
 
-The server starts at `http://localhost:8080`.
+The server starts at `http://localhost:8080`. A `Makefile` wraps common tasks (`make help`); on Windows use Git Bash/WSL or run the underlying commands directly.
 
 ## Commands Reference
 
@@ -56,6 +64,8 @@ The server starts at `http://localhost:8080`.
 | **Format Code** | `go fmt ./...` |
 | **Linting** | `golangci-lint run` |
 | **Security Scan** | `gosec ./...` |
+| **Start Local Services** | `docker compose up -d --wait` (or `make up`) |
+| **CI-equivalent Check** | `make check` (vet + test + lint) |
 
 ## Environment Variables
 
