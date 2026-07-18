@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -161,8 +162,8 @@ func TestCustomValidator_Validate(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		ve, ok := err.(ValidationErrors)
-		if !ok {
+		var ve ValidationErrors
+		if !errors.As(err, &ve) {
 			t.Fatalf("expected ValidationErrors, got %T", err)
 		}
 		if len(ve.Errors) == 0 {

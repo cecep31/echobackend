@@ -3,11 +3,12 @@ package storage
 import (
 	"bytes"
 	"context"
-	"echobackend/config"
-	"echobackend/pkg/applog"
-	"fmt"
+	"errors"
 	"io"
 	"time"
+
+	"echobackend/config"
+	"echobackend/pkg/applog"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -49,10 +50,10 @@ func NewS3Storage(cfg *config.Config) *S3Storage {
 
 func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader, contentType string) error {
 	if s == nil || s.client == nil {
-		return fmt.Errorf("storage is not configured")
+		return errors.New("storage is not configured")
 	}
 	if file == nil {
-		return fmt.Errorf("file cannot be nil")
+		return errors.New("file cannot be nil")
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, s3SaveTimeout)
@@ -75,7 +76,7 @@ func (s *S3Storage) Save(ctx context.Context, path string, file io.Reader, conte
 
 func (s *S3Storage) Get(ctx context.Context, path string) (io.ReadCloser, error) {
 	if s == nil || s.client == nil {
-		return nil, fmt.Errorf("storage is not configured")
+		return nil, errors.New("storage is not configured")
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, s3GetTimeout)
@@ -91,7 +92,7 @@ func (s *S3Storage) Get(ctx context.Context, path string) (io.ReadCloser, error)
 
 func (s *S3Storage) Delete(ctx context.Context, path string) error {
 	if s == nil || s.client == nil {
-		return fmt.Errorf("storage is not configured")
+		return errors.New("storage is not configured")
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, s3DeleteTimeout)

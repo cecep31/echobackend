@@ -86,7 +86,7 @@ func TestAuth_MissingHeader(t *testing.T) {
 		return nil
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/protected", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
@@ -117,7 +117,7 @@ func TestAuth_MalformedHeader(t *testing.T) {
 		return nil
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/protected", nil)
 	req.Header.Set("Authorization", "Token abc")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -147,7 +147,7 @@ func TestAuth_InvalidTokenDoesNotLeakDetails(t *testing.T) {
 		return nil
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/protected", nil)
 	req.Header.Set("Authorization", "Bearer not-a-valid-jwt")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -187,7 +187,7 @@ func TestAuth_ValidToken(t *testing.T) {
 	})
 
 	token := signTestToken(t, secret, jwt.MapClaims{"user_id": "user-1"})
-	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/protected", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -219,7 +219,7 @@ func TestAuthAdmin_ForbiddenUsesStandardResponse(t *testing.T) {
 		return nil
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/admin", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/admin", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.Set("user", jwt.MapClaims{"user_id": "user-1"})
@@ -256,7 +256,7 @@ func TestAuthAdmin_AllowsSuperAdmin(t *testing.T) {
 		return c.NoContent(http.StatusNoContent)
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/admin", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/admin", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.Set("user", jwt.MapClaims{"user_id": "admin-1"})

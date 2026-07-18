@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 	"time"
 
@@ -195,7 +195,12 @@ func (s *chatConversationService) CreateMessage(ctx context.Context, userID, con
 	}
 
 	reply, err := s.openRouter.GenerateResponse(ctx, toOpenRouterMessages(contextMessages), req.Model, normalizedTemperature(req.Temperature))
-	if err != nil || len(reply.Choices) == 0 {
+	if err != nil {
+		// Fail-open: AI provider errors are non-fatal; the stored user message is still returned.
+		openRouterLog.Warn("generate response failed; returning user message only", "error", err)
+		return responses, nil //nolint:nilerr // intentional fail-open when the AI provider errors
+	}
+	if len(reply.Choices) == 0 {
 		return responses, nil
 	}
 
@@ -305,7 +310,7 @@ func (s *chatConversationService) createStreamingMessageInternal(ctx context.Con
 			usage = u
 		}
 		if content.Len() == 0 {
-			errCh <- fmt.Errorf("OpenRouter returned an empty response")
+			errCh <- errors.New("OpenRouter returned an empty response")
 			return
 		}
 		saved, err := s.SaveStreamingMessage(ctx, conversationID, userID, content.String(), req.Model, usage)

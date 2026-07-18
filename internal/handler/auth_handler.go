@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,7 +50,7 @@ func (h *AuthHandler) Register(c *echo.Context) error {
 	}
 
 	user, err := h.authService.Register(c.Request().Context(), req.Email, req.Username, req.Password)
-	if err == apperrors.ErrUserExists {
+	if errors.Is(err, apperrors.ErrUserExists) {
 		return response.Conflict(c, "Registration failed", "Email or username already exists")
 	}
 	if err != nil {
@@ -80,7 +82,7 @@ func (h *AuthHandler) Login(c *echo.Context) error {
 	userAgent := c.Request().UserAgent()
 
 	token, refreshToken, user, err := h.authService.Login(c.Request().Context(), loginReq.Identifier, loginReq.Password, ipAddress, userAgent)
-	if err == apperrors.ErrInvalidCredentials {
+	if errors.Is(err, apperrors.ErrInvalidCredentials) {
 		return response.Unauthorized(c, "Invalid identifier or password")
 	}
 	if err != nil {
@@ -133,13 +135,13 @@ func (h *AuthHandler) ResetPassword(c *echo.Context) error {
 	userAgent := c.Request().UserAgent()
 
 	err := h.authService.ResetPassword(c.Request().Context(), req.Token, req.Password, ipAddress, userAgent)
-	if err == apperrors.ErrInvalidToken {
+	if errors.Is(err, apperrors.ErrInvalidToken) {
 		return response.BadRequest(c, "Invalid or expired reset token", err)
 	}
-	if err == apperrors.ErrPasswordResetTokenUsed {
+	if errors.Is(err, apperrors.ErrPasswordResetTokenUsed) {
 		return response.BadRequest(c, "Reset token has already been used", err)
 	}
-	if err == apperrors.ErrPasswordResetTokenExpired {
+	if errors.Is(err, apperrors.ErrPasswordResetTokenExpired) {
 		return response.BadRequest(c, "Reset token has expired", err)
 	}
 	if err != nil {
@@ -163,10 +165,10 @@ func (h *AuthHandler) RefreshToken(c *echo.Context) error {
 	userAgent := c.Request().UserAgent()
 
 	token, refreshToken, user, err := h.authService.RefreshToken(c.Request().Context(), req.RefreshToken, ipAddress, userAgent)
-	if err == apperrors.ErrInvalidToken {
+	if errors.Is(err, apperrors.ErrInvalidToken) {
 		return response.Unauthorized(c, "Invalid or expired refresh token")
 	}
-	if err == apperrors.ErrTokenExpired {
+	if errors.Is(err, apperrors.ErrTokenExpired) {
 		return response.Unauthorized(c, "Refresh token has expired")
 	}
 	if err != nil {
@@ -203,7 +205,7 @@ func (h *AuthHandler) ChangePassword(c *echo.Context) error {
 	userAgent := c.Request().UserAgent()
 
 	err := h.authService.ChangePassword(c.Request().Context(), userID, req.CurrentPassword, req.NewPassword, ipAddress, userAgent)
-	if err == apperrors.ErrInvalidCredentials {
+	if errors.Is(err, apperrors.ErrInvalidCredentials) {
 		return response.Unauthorized(c, "Current password is incorrect")
 	}
 	if err != nil {
@@ -362,20 +364,20 @@ func (h *AuthHandler) GithubOAuthCallback(c *echo.Context) error {
 	ipAddress := c.RealIP()
 	userAgent := c.Request().UserAgent()
 
-	githubToken, err := h.authService.GetGithubToken(code)
+	githubToken, err := h.authService.GetGithubToken(c.Request().Context(), code)
 	if err != nil {
 		h.activityService.LogActivity(c.Request().Context(), nil, model.ActivityOAuthLoginFailed, model.StatusFailure, ipAddress, userAgent, nil, map[string]any{"provider": "github", "error": err.Error()})
 		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=github_token_failed")
 	}
 
-	githubUser, err := fetchGithubUser(githubToken)
+	githubUser, err := fetchGithubUser(c.Request().Context(), githubToken)
 	if err != nil {
 		h.activityService.LogActivity(c.Request().Context(), nil, model.ActivityOAuthLoginFailed, model.StatusFailure, ipAddress, userAgent, nil, map[string]any{"provider": "github", "error": err.Error()})
 		return c.Redirect(http.StatusTemporaryRedirect, callbackURL+"?error=github_user_failed")
 	}
 
 	if githubUser.Email == nil || *githubUser.Email == "" {
-		email, err := fetchGithubUserEmail(githubToken)
+		email, err := fetchGithubUserEmail(c.Request().Context(), githubToken)
 		if err == nil && email != "" {
 			githubUser.Email = &email
 		}
@@ -406,7 +408,7 @@ func (h *AuthHandler) ExchangeOAuthCode(c *echo.Context) error {
 	}
 
 	accessToken, refreshToken, user, err := h.authService.ExchangeOAuthCode(c.Request().Context(), req.Code)
-	if err == apperrors.ErrInvalidToken {
+	if errors.Is(err, apperrors.ErrInvalidToken) {
 		return response.Unauthorized(c, "Invalid or expired OAuth code")
 	}
 	if err != nil {
@@ -424,8 +426,8 @@ func (h *AuthHandler) ExchangeOAuthCode(c *echo.Context) error {
 	})
 }
 
-func fetchGithubUser(token string) (*service.GithubUser, error) {
-	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
+func fetchGithubUser(ctx context.Context, token string) (*service.GithubUser, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/user", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -456,8 +458,8 @@ func fetchGithubUser(token string) (*service.GithubUser, error) {
 	return &user, nil
 }
 
-func fetchGithubUserEmail(token string) (string, error) {
-	req, err := http.NewRequest("GET", "https://api.github.com/user/emails", nil)
+func fetchGithubUserEmail(ctx context.Context, token string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/user/emails", nil)
 	if err != nil {
 		return "", err
 	}

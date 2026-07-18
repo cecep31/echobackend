@@ -1,9 +1,10 @@
 package dto
 
 import (
-	"echobackend/internal/model"
-	"fmt"
+	"errors"
 	"time"
+
+	"echobackend/internal/model"
 )
 
 type UserBrief struct {
@@ -175,6 +176,6 @@ func ParseUserDeletedFilter(value string) (UserDeletedFilter, error) {
 	case string(UserDeletedFilterAll):
 		return UserDeletedFilterAll, nil
 	default:
-		return "", fmt.Errorf("deleted must be true, false, or all")
+		return "", errors.New("deleted must be true, false, or all")
 	}
 }

@@ -79,7 +79,7 @@ func newHoldingTestContext(t *testing.T, method, target string) (*echo.Context, 
 	e := echo.New()
 	e.Validator = validator.NewValidator()
 
-	req := httptest.NewRequest(method, target, nil)
+	req := httptest.NewRequestWithContext(context.Background(), method, target, nil)
 	rec := httptest.NewRecorder()
 	c := echo.NewContext(req, rec, e)
 	c.Set("user", jwt.MapClaims{"user_id": "user-1"})
@@ -144,7 +144,7 @@ func TestHoldingHandler_GetMonthlyData_RequiresAuth(t *testing.T) {
 	h := NewHoldingHandler(&mockHoldingService{})
 
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/holdings/monthly", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/holdings/monthly", nil)
 	rec := httptest.NewRecorder()
 	c := echo.NewContext(req, rec, e)
 
@@ -158,7 +158,7 @@ func TestHoldingHandler_GetMonthlyData_RequiresAuth(t *testing.T) {
 
 func runParseMonthlyQuery(target string) (*dto.HoldingMonthlyQuery, error) {
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, target, nil)
 	rec := httptest.NewRecorder()
 	c := echo.NewContext(req, rec, e)
 	return parseMonthlyQuery(c)

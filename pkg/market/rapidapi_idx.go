@@ -52,11 +52,9 @@ func (c *RapidAPIIDXClient) GetCorporateActions(ctx context.Context, from, to ti
 
 	var actions []CorporateAction
 
-	// Fetch dividends
+	// Fetch dividends. Fail-open: skip dividends on error (RUPS may still succeed).
 	dividends, err := c.fetchDividends(ctx, fromStr, toStr)
-	if err != nil {
-		// Fail-open: skip dividends on error (RUPS may still succeed).
-	} else {
+	if err == nil {
 		for _, d := range dividends {
 			if d.CompanySymbol == "" {
 				continue
@@ -98,11 +96,9 @@ func (c *RapidAPIIDXClient) GetCorporateActions(ctx context.Context, from, to ti
 		}
 	}
 
-	// Fetch RUPS
-	rupsList, err := c.fetchRUPS(ctx, fromStr, toStr)
-	if err != nil {
-		// Fail-open: skip RUPS on error (dividends may still be returned).
-	} else {
+	// Fetch RUPS. Fail-open: skip RUPS on error (dividends may still be returned).
+	rupsList, rupsErr := c.fetchRUPS(ctx, fromStr, toStr)
+	if rupsErr == nil {
 		for _, r := range rupsList {
 			if r.CompanySymbol == "" {
 				continue
@@ -129,7 +125,7 @@ func (c *RapidAPIIDXClient) GetCorporateActions(ctx context.Context, from, to ti
 				if r.TimeStr != "" {
 					note = fmt.Sprintf("Waktu: %s, Tempat: %s", r.TimeStr, r.VenueStr)
 				} else {
-					note = fmt.Sprintf("Tempat: %s", r.VenueStr)
+					note = "Tempat: " + r.VenueStr
 				}
 			}
 

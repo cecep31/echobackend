@@ -255,13 +255,14 @@ func (h *HoldingHandler) CompareMonths(c *echo.Context) error {
 		}
 	}
 
-	if q.FromMonth == nil && q.FromYear == nil {
+	switch {
+	case q.FromMonth == nil && q.FromYear == nil:
 		fromM, fromY := prevMonth(q.ToMonth, q.ToYear)
 		q.FromMonth = &fromM
 		q.FromYear = &fromY
-	} else if q.FromMonth == nil {
+	case q.FromMonth == nil:
 		q.FromMonth = &q.ToMonth
-	} else if q.FromYear == nil {
+	case q.FromYear == nil:
 		q.FromYear = &q.ToYear
 	}
 

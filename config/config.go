@@ -17,7 +17,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 	"time"
 
@@ -267,49 +267,49 @@ func Load() (*Config, error) {
 // validate checks cross-section invariants and required fields.
 func (c *Config) validate() error {
 	if c.Auth.JWTSecret == "" {
-		return fmt.Errorf("JWT_SECRET is required")
+		return errors.New("JWT_SECRET is required")
 	}
 	if len(c.Auth.JWTSecret) < 32 {
-		return fmt.Errorf("JWT_SECRET must be at least 32 characters long")
+		return errors.New("JWT_SECRET must be at least 32 characters long")
 	}
 	if c.Auth.JWTExpiry <= 0 {
-		return fmt.Errorf("JWT_EXPIRY_HOURS must be > 0")
+		return errors.New("JWT_EXPIRY_HOURS must be > 0")
 	}
 	if c.Auth.RefreshTokenExpiry <= 0 {
-		return fmt.Errorf("REFRESH_TOKEN_EXPIRY_DAYS must be > 0")
+		return errors.New("REFRESH_TOKEN_EXPIRY_DAYS must be > 0")
 	}
 	if c.Database.DSN == "" {
-		return fmt.Errorf("DATABASE_URL is required")
+		return errors.New("DATABASE_URL is required")
 	}
 	if c.Cache.TTL < 0 {
-		return fmt.Errorf("CACHE_TTL_SECONDS must be >= 0")
+		return errors.New("CACHE_TTL_SECONDS must be >= 0")
 	}
 	if c.Cache.ConnectTimeout < 0 {
-		return fmt.Errorf("REDIS_CONNECT_TIMEOUT_MS must be >= 0")
+		return errors.New("REDIS_CONNECT_TIMEOUT_MS must be >= 0")
 	}
 	if c.Queue.ConnectTimeout <= 0 {
-		return fmt.Errorf("QUEUE_REDIS_TIMEOUT_MS must be > 0")
+		return errors.New("QUEUE_REDIS_TIMEOUT_MS must be > 0")
 	}
 	if c.Queue.DefaultQueue == "" {
-		return fmt.Errorf("QUEUE_DEFAULT_NAME is required")
+		return errors.New("QUEUE_DEFAULT_NAME is required")
 	}
 	if c.Queue.Concurrency <= 0 {
-		return fmt.Errorf("QUEUE_CONCURRENCY must be > 0")
+		return errors.New("QUEUE_CONCURRENCY must be > 0")
 	}
 	if c.Queue.MaxRetry < 0 {
-		return fmt.Errorf("QUEUE_MAX_RETRY must be >= 0")
+		return errors.New("QUEUE_MAX_RETRY must be >= 0")
 	}
 	if c.HTTP.RateLimitRPS < 0 {
-		return fmt.Errorf("HTTP_RATE_LIMIT_RPS must be >= 0")
+		return errors.New("HTTP_RATE_LIMIT_RPS must be >= 0")
 	}
 	if c.Email.SMTPPort <= 0 || c.Email.SMTPPort > 65535 {
-		return fmt.Errorf("SMTP_PORT must be between 1 and 65535")
+		return errors.New("SMTP_PORT must be between 1 and 65535")
 	}
 	if c.Email.Timeout <= 0 {
-		return fmt.Errorf("SMTP_TIMEOUT_SECONDS must be > 0")
+		return errors.New("SMTP_TIMEOUT_SECONDS must be > 0")
 	}
 	if c.Email.TaskTimeout <= 0 {
-		return fmt.Errorf("SMTP_TASK_TIMEOUT_SECONDS must be > 0")
+		return errors.New("SMTP_TASK_TIMEOUT_SECONDS must be > 0")
 	}
 	return nil
 }

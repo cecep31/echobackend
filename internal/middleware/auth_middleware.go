@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"strings"
+
 	"echobackend/config"
 	"echobackend/internal/service"
 	"echobackend/pkg/response"
-	"fmt"
-	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
@@ -120,7 +122,7 @@ func (a *AuthMiddleware) AuthAdmin() echo.MiddlewareFunc {
 func extractBearerToken(authHeader string) (string, error) {
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || parts[0] != "Bearer" {
-		return "", fmt.Errorf("invalid token format, expected 'Bearer <token>'")
+		return "", errors.New("invalid token format, expected 'Bearer <token>'")
 	}
 	return parts[1], nil
 }
@@ -139,12 +141,12 @@ func validateToken(tokenString, jwtSecret string) (jwt.MapClaims, error) {
 	}
 
 	if !token.Valid {
-		return nil, fmt.Errorf("invalid token")
+		return nil, errors.New("invalid token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("invalid token claims")
+		return nil, errors.New("invalid token claims")
 	}
 
 	return claims, nil
@@ -153,17 +155,17 @@ func validateToken(tokenString, jwtSecret string) (jwt.MapClaims, error) {
 func getUserIDFromClaims(claims jwt.MapClaims) (string, error) {
 	userID, exists := claims["user_id"]
 	if !exists {
-		return "", fmt.Errorf("unauthorized: user ID not found in token")
+		return "", errors.New("unauthorized: user ID not found in token")
 	}
 
 	switch v := userID.(type) {
 	case string:
 		if v == "" {
-			return "", fmt.Errorf("unauthorized: invalid user ID in token")
+			return "", errors.New("unauthorized: invalid user ID in token")
 		}
 		return v, nil
 	default:
-		return "", fmt.Errorf("unauthorized: invalid user ID format in token")
+		return "", errors.New("unauthorized: invalid user ID format in token")
 	}
 }
 

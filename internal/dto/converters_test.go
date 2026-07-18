@@ -98,7 +98,7 @@ func TestPostToResponse(t *testing.T) {
 	post := &model.Post{
 		ID:            "post-1",
 		Title:         new("Post title"),
-		Photo_url:     new("https://example.com/photo.png"),
+		PhotoURL:      new("https://example.com/photo.png"),
 		Body:          new("Post body"),
 		Slug:          new("post-title"),
 		ViewCount:     11,

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,7 +18,7 @@ func TestFixedWindowRateLimiterDeniesAfterLimit(t *testing.T) {
 	})
 
 	for i := range 2 {
-		req := httptest.NewRequest(http.MethodPost, "/login", nil)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/login", nil)
 		req.RemoteAddr = "192.0.2.10:1234"
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -30,7 +31,7 @@ func TestFixedWindowRateLimiterDeniesAfterLimit(t *testing.T) {
 		}
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/login", nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/login", nil)
 	req.RemoteAddr = "192.0.2.10:1234"
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)

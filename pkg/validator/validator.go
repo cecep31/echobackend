@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"html"
 	"regexp"
@@ -79,19 +80,20 @@ func IsFreeOpenRouterModel(model string) bool {
 
 func (cv *CustomValidator) Validate(i any) error {
 	if err := cv.validator.Struct(i); err != nil {
-		if validationErrors, ok := err.(validator.ValidationErrors); ok {
-			errors := ValidationErrors{
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			result := ValidationErrors{
 				Errors: make([]ValidationError, len(validationErrors)),
 			}
 			for i, e := range validationErrors {
-				errors.Errors[i] = ValidationError{
+				result.Errors[i] = ValidationError{
 					Field:   e.Field(),
 					Message: getErrorMessage(e),
 					Value:   e.Value(),
 					Tag:     e.Tag(),
 				}
 			}
-			return errors
+			return result
 		}
 		return err
 	}
@@ -147,13 +149,13 @@ func IsValidUUID(uuid string) bool {
 // ValidatePagination validates pagination parameters
 func ValidatePagination(limit, offset int) error {
 	if limit <= 0 {
-		return fmt.Errorf("limit must be greater than 0")
+		return errors.New("limit must be greater than 0")
 	}
 	if limit > 100 {
-		return fmt.Errorf("limit must not exceed 100")
+		return errors.New("limit must not exceed 100")
 	}
 	if offset < 0 {
-		return fmt.Errorf("offset must be non-negative")
+		return errors.New("offset must be non-negative")
 	}
 	return nil
 }
@@ -161,10 +163,10 @@ func ValidatePagination(limit, offset int) error {
 // ValidatePostLikeInput validates input for post like operations
 func ValidatePostLikeInput(postID, userID string) error {
 	if !IsValidUUID(postID) {
-		return fmt.Errorf("invalid post ID format")
+		return errors.New("invalid post ID format")
 	}
 	if !IsValidUUID(userID) {
-		return fmt.Errorf("invalid user ID format")
+		return errors.New("invalid user ID format")
 	}
 	return nil
 }

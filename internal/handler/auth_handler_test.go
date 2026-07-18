@@ -72,7 +72,7 @@ func (m *mockAuthService) GetGithubOAuthURL(state string) string {
 	return "https://github.com/login/oauth/authorize?state=" + state
 }
 
-func (m *mockAuthService) GetGithubToken(code string) (string, error) {
+func (m *mockAuthService) GetGithubToken(_ context.Context, code string) (string, error) {
 	return "", nil
 }
 
@@ -111,7 +111,7 @@ func newAuthTestContext(t *testing.T, method, target, body string) (*echo.Contex
 	e := echo.New()
 	e.Validator = validator.NewValidator()
 
-	req := httptest.NewRequest(method, target, bytes.NewBufferString(body))
+	req := httptest.NewRequestWithContext(context.Background(), method, target, bytes.NewBufferString(body))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	return echo.NewContext(req, rec, e), rec

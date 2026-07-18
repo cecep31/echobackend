@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 
 	apperrors "echobackend/internal/apperror"
 	"echobackend/internal/dto"
@@ -119,7 +120,7 @@ func (s *postService) CreatePost(ctx context.Context, req *dto.CreatePostRequest
 		Slug:      &req.Slug,
 		Body:      &req.Body,
 		CreatedBy: &creatorID,
-		Photo_url: &req.PhotoURL,
+		PhotoURL:  &req.PhotoURL,
 		Published: &req.Published,
 	}
 
@@ -215,7 +216,7 @@ func (s *postService) GetPostsRandom(ctx context.Context, limit int) ([]*dto.Pos
 
 	cacheKey := ""
 	if s.cache != nil {
-		cacheKey = s.cache.BuildKey("posts", "random", fmt.Sprintf("%d", limit))
+		cacheKey = s.cache.BuildKey("posts", "random", strconv.Itoa(limit))
 		var cachedPosts []*dto.PostResponse
 		found, err := s.cache.GetJSON(ctx, cacheKey, &cachedPosts)
 		if err == nil && found {
@@ -257,7 +258,7 @@ func (s *postService) GetPostsTrending(ctx context.Context, limit int) ([]*dto.P
 		cacheKey = s.cache.BuildKey(
 			"posts",
 			"trending",
-			fmt.Sprintf("%d", limit),
+			strconv.Itoa(limit),
 		)
 		var cachedTrending trendingPostsCacheEntry
 		found, err := s.cache.GetJSON(ctx, cacheKey, &cachedTrending)

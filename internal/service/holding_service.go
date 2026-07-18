@@ -477,7 +477,7 @@ func (s *holdingService) DuplicateHoldings(ctx context.Context, userID string, r
 			return nil, err
 		}
 		results = append(results, dto.DuplicateResultItem{
-			ID:    fmt.Sprintf("%d", newHolding.ID),
+			ID:    strconv.FormatInt(newHolding.ID, 10),
 			Name:  newHolding.Name,
 			Month: newHolding.Month,
 			Year:  newHolding.Year,

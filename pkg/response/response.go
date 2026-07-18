@@ -1,6 +1,7 @@
 package response
 
 import (
+	"errors"
 	"net/http"
 
 	"echobackend/pkg/applog"
@@ -172,7 +173,8 @@ func ValidationError(c *echo.Context, message string, err error) error {
 // FromValidateError maps Echo validation errors to a unified response:
 // structured field errors use 422 with Errors populated; otherwise ValidationError fallback.
 func FromValidateError(c *echo.Context, err error) error {
-	if errs, ok := err.(validator.ValidationErrors); ok {
+	var errs validator.ValidationErrors
+	if errors.As(err, &errs) {
 		log.Warn("validation error",
 			"error", errs.Error(),
 		)

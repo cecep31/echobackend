@@ -6,16 +6,38 @@ run:
   modules-download-mode: readonly
 
 linters:
-  default: standard
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
   enable:
+    - bodyclose # HTTP response bodies must be closed
     - copyloopvar
+    - errorlint # proper errors.Is/As usage and %w wrapping
+    - gocritic # opinionated bug/perf/style checks
     - misspell
+    - nilerr # returning nil after checking err != nil
+    - noctx # HTTP requests without context
+    - perfsprint # faster alternatives to fmt.Sprintf
+    - revive # style/lint rules (golint successor)
+    - rowserrcheck # *sql.Rows.Err must be checked
+    - sqlclosecheck # sql.Rows/Stmt must be closed
+    - usestdlibvars # stdlib constants instead of magic strings
   exclusions:
     generated: lax
     presets:
       - common-false-positives
       - legacy
       - std-error-handling
+    rules:
+      # Hand-written test mocks intentionally keep unused params simple.
+      - path: _test\.go
+        linters:
+          - revive
+      # Comment-on-every-export rules are too noisy for an internal app codebase.
+      - linters:
+          - revive
+        text: "should have comment"
+      - linters:
+          - revive
+        text: "should have a package comment"
 
 formatters:
   enable:

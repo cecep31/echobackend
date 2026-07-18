@@ -99,10 +99,10 @@ func (r *userRepository) GetUsers(ctx context.Context, offset, limit int, delete
 	var totalCount int64
 
 	if offset < 0 {
-		return nil, 0, fmt.Errorf("offset cannot be negative")
+		return nil, 0, errors.New("offset cannot be negative")
 	}
 	if limit <= 0 || limit > 100 {
-		return nil, 0, fmt.Errorf("limit must be between 1 and 100")
+		return nil, 0, errors.New("limit must be between 1 and 100")
 	}
 
 	query := r.db.WithContext(ctx).Model((*model.User)(nil))

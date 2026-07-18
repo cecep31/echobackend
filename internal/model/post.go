@@ -15,7 +15,7 @@ type Post struct {
 	CreatedBy     *string        `json:"created_by" gorm:"type:uuid;not null;uniqueIndex:creator_and_slug_unique"`
 	Body          *string        `json:"body"`
 	Slug          *string        `json:"slug" gorm:"type:varchar(255);not null;uniqueIndex:creator_and_slug_unique"`
-	Photo_url     *string        `json:"photo_url"`
+	PhotoURL      *string        `json:"photo_url"`
 	Published     *bool          `json:"published" gorm:"default:true"`
 	PublishedAt   *time.Time     `json:"published_at"`
 	ViewCount     int64          `json:"view_count" gorm:"type:bigint;default:0"`

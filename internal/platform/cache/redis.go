@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -197,7 +198,7 @@ func (c *RedisCache) getBytes(ctx context.Context, key string, deleteAfterRead b
 
 	value, err := cmd.Bytes()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			return nil, false, nil
 		}
 		operation := "GetJSON"

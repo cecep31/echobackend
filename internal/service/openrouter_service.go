@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -133,7 +134,7 @@ func (s *openRouterService) GenerateStream(ctx context.Context, messages []OpenR
 			}
 		}
 
-		if err := scanner.Err(); err != nil && err != io.EOF {
+		if err := scanner.Err(); err != nil && !errors.Is(err, io.EOF) {
 			errCh <- fmt.Errorf("failed to read OpenRouter stream: %w", err)
 			return
 		}
@@ -145,7 +146,7 @@ func (s *openRouterService) GenerateStream(ctx context.Context, messages []OpenR
 
 func (s *openRouterService) callAPI(ctx context.Context, messages []OpenRouterMessage, model *string, stream bool, temperature float64) (*http.Response, error) {
 	if s.cfg.APIKey == "" {
-		return nil, fmt.Errorf("OPENROUTER_API_KEY is not configured")
+		return nil, errors.New("OPENROUTER_API_KEY is not configured")
 	}
 
 	finalModel := strings.TrimSpace(s.cfg.DefaultModel)
@@ -153,7 +154,7 @@ func (s *openRouterService) callAPI(ctx context.Context, messages []OpenRouterMe
 		finalModel = strings.TrimSpace(*model)
 	}
 	if finalModel == "" {
-		return nil, fmt.Errorf("OPENROUTER_DEFAULT_MODEL is not configured")
+		return nil, errors.New("OPENROUTER_DEFAULT_MODEL is not configured")
 	}
 	if temperature < 0 || temperature > 2 {
 		temperature = 0.7

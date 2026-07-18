@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"mime/multipart"
@@ -80,7 +81,7 @@ func (s *Service) Close() error {
 // EnqueuePasswordResetEmail queues a password reset email for Asynq delivery.
 func (s *Service) EnqueuePasswordResetEmail(to, resetLink string) error {
 	if !s.IsConfigured() {
-		return fmt.Errorf("email service not configured")
+		return errors.New("email service not configured")
 	}
 
 	payload := passwordResetPayload{To: to, ResetLink: resetLink}
@@ -103,7 +104,7 @@ func (s *Service) handlePasswordResetTask(ctx context.Context, payloadBytes []by
 // SendPasswordResetEmail sends the password reset link email.
 func (s *Service) SendPasswordResetEmail(ctx context.Context, to, resetLink string) error {
 	if !s.hasSMTPConfig() {
-		return fmt.Errorf("email service not configured")
+		return errors.New("email service not configured")
 	}
 
 	text, htmlBody := passwordResetTemplate(resetLink, "1 hour")

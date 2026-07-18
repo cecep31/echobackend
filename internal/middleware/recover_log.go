@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -14,7 +15,7 @@ func RecoverWithLog() echo.MiddlewareFunc {
 		return func(c *echo.Context) (err error) {
 			defer func() {
 				if r := recover(); r != nil {
-					if r == http.ErrAbortHandler {
+					if rErr, ok := r.(error); ok && errors.Is(rErr, http.ErrAbortHandler) {
 						panic(r)
 					}
 

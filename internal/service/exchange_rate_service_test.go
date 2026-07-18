@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -106,7 +107,7 @@ func TestExchangeRateService_GetRate_CacheHit(t *testing.T) {
 
 func TestExchangeRateService_GetRate_InvalidCurrency(t *testing.T) {
 	svc := NewExchangeRateService(&stubQuoteClient{}, nil)
-	if _, err := svc.GetRate(context.Background(), "USDT", "IDR"); err != ErrInvalidCurrencyPair {
+	if _, err := svc.GetRate(context.Background(), "USDT", "IDR"); !errors.Is(err, ErrInvalidCurrencyPair) {
 		t.Fatalf("expected ErrInvalidCurrencyPair, got %v", err)
 	}
 }

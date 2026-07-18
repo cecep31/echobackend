@@ -42,7 +42,7 @@ func NewCorporateActionService(
 // queried, the results are upserted, and the freshly stored rows are
 // returned. Individual API errors are swallowed (fail-open) so that a
 // partial result is always returned.
-func (s *corporateActionService) GetCalendar(ctx context.Context, userID string, year, month int) (*dto.CorporateActionCalendarResponse, error) {
+func (s *corporateActionService) GetCalendar(ctx context.Context, _ string, year, month int) (*dto.CorporateActionCalendarResponse, error) {
 	if month < 1 || month > 12 {
 		month = int(time.Now().Month())
 	}

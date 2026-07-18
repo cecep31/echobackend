@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,7 +34,7 @@ type AuthService interface {
 	Logout(ctx context.Context, refreshToken string) error
 	GetProfile(ctx context.Context, userID string) (*model.User, error)
 	GetGithubOAuthURL(state string) string
-	GetGithubToken(code string) (string, error)
+	GetGithubToken(ctx context.Context, code string) (string, error)
 	SignInWithGithub(ctx context.Context, githubUser *GithubUser, ipAddress, userAgent string) (string, string, *model.User, error)
 	CreateOAuthExchangeCode(ctx context.Context, accessToken, refreshToken string, user *model.User) (string, error)
 	ExchangeOAuthCode(ctx context.Context, code string) (string, string, *model.User, error)
@@ -119,7 +120,7 @@ func (s *authService) Register(ctx context.Context, email, username, password st
 	if err == nil {
 		return nil, apperrors.ErrUserExists
 	}
-	if err != nil && err != apperrors.ErrUserNotFound {
+	if err != nil && !errors.Is(err, apperrors.ErrUserNotFound) {
 		return nil, err
 	}
 
@@ -184,7 +185,9 @@ func (s *authService) Login(ctx context.Context, identifier, password, ipAddress
 func (s *authService) ForgotPassword(ctx context.Context, email, ipAddress, userAgent string) error {
 	user, err := s.authRepo.FindUserByEmail(ctx, email)
 	if err != nil {
-		return nil
+		// Intentionally swallow the error (including not-found) so the response
+		// never reveals whether an account exists for the given email.
+		return nil //nolint:nilerr // user-enumeration protection
 	}
 
 	resetBytes, err := generateRandomBytes(32)
@@ -359,14 +362,14 @@ func (s *authService) GetGithubOAuthURL(state string) string {
 	return authURL.String()
 }
 
-func (s *authService) GetGithubToken(code string) (string, error) {
+func (s *authService) GetGithubToken(ctx context.Context, code string) (string, error) {
 	data := url.Values{}
 	data.Set("client_id", s.githubConfig.ClientID)
 	data.Set("client_secret", s.githubConfig.ClientSecret)
 	data.Set("code", code)
 	data.Set("redirect_uri", s.githubConfig.RedirectURI)
 
-	req, err := http.NewRequest(http.MethodPost, "https://github.com/login/oauth/access_token", strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://github.com/login/oauth/access_token", strings.NewReader(data.Encode()))
 	if err != nil {
 		return "", fmt.Errorf("failed to build token request: %w", err)
 	}
@@ -391,7 +394,7 @@ func (s *authService) GetGithubToken(code string) (string, error) {
 
 	accessToken := values.Get("access_token")
 	if accessToken == "" {
-		return "", fmt.Errorf("no access_token in GitHub response")
+		return "", errors.New("no access_token in GitHub response")
 	}
 
 	return accessToken, nil
@@ -402,12 +405,12 @@ func (s *authService) SignInWithGithub(ctx context.Context, githubUser *GithubUs
 
 	githubID := githubUser.ID
 	user, err := s.authRepo.FindUserByGithubID(ctx, githubID)
-	if err != nil && err != apperrors.ErrUserNotFound {
+	if err != nil && !errors.Is(err, apperrors.ErrUserNotFound) {
 		s.activityService.LogActivity(ctx, nil, model.ActivityOAuthLoginFailed, model.StatusFailure, ipAddress, userAgent, nil, map[string]any{"provider": "github"})
 		return "", "", nil, err
 	}
 
-	if user == nil || err == apperrors.ErrUserNotFound {
+	if user == nil || errors.Is(err, apperrors.ErrUserNotFound) {
 		email := ""
 		if githubUser.Email != nil {
 			email = *githubUser.Email
@@ -449,7 +452,7 @@ func (s *authService) SignInWithGithub(ctx context.Context, githubUser *GithubUs
 
 func (s *authService) CreateOAuthExchangeCode(ctx context.Context, accessToken, refreshToken string, user *model.User) (string, error) {
 	if user == nil {
-		return "", fmt.Errorf("oauth exchange user is nil")
+		return "", errors.New("oauth exchange user is nil")
 	}
 
 	codeBytes, err := generateRandomBytes(32)

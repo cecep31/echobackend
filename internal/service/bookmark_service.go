@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	apperrors "echobackend/internal/apperror"
@@ -49,7 +50,7 @@ func (s *bookmarkService) ToggleBookmark(ctx context.Context, postID, userID str
 		}
 		return &dto.ToggleBookmarkResponse{Action: "removed"}, nil
 	}
-	if err != apperrors.ErrBookmarkNotFound {
+	if !errors.Is(err, apperrors.ErrBookmarkNotFound) {
 		return nil, err
 	}
 

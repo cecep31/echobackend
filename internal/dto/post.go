@@ -107,7 +107,7 @@ func PostToResponse(p *model.Post) *PostResponse {
 	return &PostResponse{
 		ID:            p.ID,
 		Title:         p.Title,
-		PhotoURL:      p.Photo_url,
+		PhotoURL:      p.PhotoURL,
 		Body:          p.Body,
 		Slug:          p.Slug,
 		ViewCount:     p.ViewCount,
@@ -123,7 +123,7 @@ func PostToResponse(p *model.Post) *PostResponse {
 	}
 }
 
-// TruncateBody returns a copy of posts with Body truncated to maxRunes runes.
+// TruncatePostBodies truncates the Body of each post to maxRunes runes.
 // Safe for multi-byte UTF-8 characters.
 func TruncatePostBodies(posts []*PostResponse, maxRunes int) {
 	for _, post := range posts {

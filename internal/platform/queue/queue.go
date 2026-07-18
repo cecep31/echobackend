@@ -3,7 +3,7 @@ package queue
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"time"
 
 	"echobackend/config"
@@ -75,7 +75,7 @@ func NewService(cfg config.QueueConfig) *Service {
 		Queues: map[string]int{
 			cfg.DefaultQueue: 1,
 		},
-		ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
+		ErrorHandler: asynq.ErrorHandlerFunc(func(_ context.Context, task *asynq.Task, err error) {
 			log.Error("task failed", "error", err, "task_type", task.Type())
 		}),
 	})
@@ -134,7 +134,7 @@ func (s *Service) Close() error {
 // EnqueueJSON marshals payload as JSON and enqueues it as a background task.
 func (s *Service) EnqueueJSON(taskType string, payload any, opts TaskOptions) error {
 	if !s.IsConfigured() {
-		return fmt.Errorf("queue service not configured")
+		return errors.New("queue service not configured")
 	}
 
 	body, err := json.Marshal(payload)

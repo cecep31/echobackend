@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,7 +18,7 @@ func newCtx(t *testing.T, rawQuery string) *echo.Context {
 	if rawQuery == "" {
 		target = "/"
 	}
-	req := httptest.NewRequest(http.MethodGet, target, nil)
+	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, target, nil)
 	if rawQuery != "" {
 		// httptest.NewRequest already parses the query, but ensure normalized form
 		req.URL.RawQuery = url.Values(req.URL.Query()).Encode()
