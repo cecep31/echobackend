@@ -259,13 +259,15 @@ Delete a post by ID. **Super admin auth required.**
 | `created_at` | string \| null |
 | `updated_at` | string \| null |
 
-### POST body
+### POST / PUT body
+
+POST and PUT accept the same body:
 
 | Field | Required | Validation |
 |-------|----------|------------|
 | `text` | Yes | 1-1000 characters |
 
-**Success - 201** - `data`: `CommentResponse`.
+**Success - 201 (POST) / 200 (PUT)** - `data`: `CommentResponse`.
 
 ---
 

@@ -119,7 +119,7 @@ The two endpoints can be passed in either chronological order. The handler norma
 
 ## GET `/api/holdings/calendar`
 
-Corporate actions calendar (dividend & RUPS events) for all stocks in the IDX exchange, for a single calendar month. Requires a Bearer token (the authenticated user's context is used).
+Corporate actions calendar (dividend & RUPS events) for all stocks in the IDX exchange, for a single calendar month. Requires a Bearer token. The data is market-wide (not personalized); every authenticated user receives the same calendar.
 
 Results are persisted in Postgres (`corporate_actions` table). If the requested month already has stored rows, they are served directly from the database. Otherwise the IDX API is queried, the results are upserted into Postgres, and the stored rows are returned. The `cached` field is `true` when the response was served straight from Postgres without calling IDX for this request.
 

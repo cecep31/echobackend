@@ -23,6 +23,7 @@ User profiles, admin user lists, follow/unfollow, and social statistics.
 | `created_at` | string (ISO) \| null | |
 | `updated_at` | string (ISO) \| null | |
 | `deleted_at` | string (ISO) \| null | Admin routes only; set when the user has been soft-deleted |
+| `last_logged_at` | string (ISO) \| null | Admin routes only (`GET /`, `GET /:id`); last recorded login timestamp, omitted when never set |
 
 ### `CurrentUserResponse` (`GET /me`)
 
@@ -30,12 +31,12 @@ Same fields as `UserResponse`, except:
 
 - Always includes `is_super_admin` (not omitted).
 - Always includes `email`.
-- Never includes `deleted_at` or `is_following`.
+- Never includes `deleted_at`, `is_following`, or `last_logged_at`.
 - Includes `profile` when loaded.
 
 ### `PublicUserResponse` (`GET /username/:username`, follow lists)
 
-Public profile shape of `UserResponse`. Omits `email`, `is_super_admin`, and `deleted_at`. `is_following` is omitted on this route if there is no auth context.
+Public profile shape of `UserResponse`. Omits `email`, `is_super_admin`, `deleted_at`, and `last_logged_at`. `is_following` is always omitted on `GET /username/:username` because the route has no auth middleware.
 
 ### `Profile`
 

@@ -21,12 +21,12 @@ Authorization: Bearer <access_token>
 
 Tokens are returned by `POST /api/auth/login`, `POST /api/auth/refresh`, or `POST /api/auth/oauth/exchange` after GitHub OAuth. JWT claims include `user_id` (UUID).
 
-Failed auth middleware responses (missing token, invalid token, or non-super-admin user on admin routes) return Echo JSON `{"message":"..."}`, not the standard `success` envelope below.
+Failed auth middleware responses (missing token, invalid token, or non-super-admin user on admin routes) use the standard `success` envelope below, with `success: false` and a generic `error` string:
 
-| Situation | HTTP |
-|-----------|------|
-| Missing / invalid token | 401 |
-| Not a super admin on an admin route | 403 |
+| Situation | HTTP | Body |
+|-----------|------|------|
+| Missing / invalid token | 401 | `{"success":false,"message":"...","error":"Unauthorized access"}` |
+| Not a super admin on an admin route | 403 | `{"success":false,"message":"...","error":"Access forbidden"}` |
 
 ## Standard Response Format
 
@@ -38,10 +38,12 @@ Most handlers use the `pkg/response` envelope:
   "message": "Human-readable message",
   "data": {},
   "meta": {},
-  "error": "",
+  "error": "...",
   "errors": []
 }
 ```
+
+`data`, `meta`, `error`, and `errors` use `omitempty` — they are omitted from the JSON when empty (for example, success responses have no `error`/`errors` keys, and error responses usually have no `data`/`meta` keys).
 
 | Helper | HTTP | Notes |
 |--------|------|-------|
@@ -70,7 +72,7 @@ Paginated lists use `SuccessWithMeta`:
 }
 ```
 
-Query: `limit` (default varies by endpoint, **maximum 100**), `offset` (default `0`).
+Query: `limit` (default varies by endpoint, **maximum 100** on most endpoints — `GET /api/posts` is an exception and currently accepts larger values), `offset` (default `0`).
 
 ## Global Limits
 

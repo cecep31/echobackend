@@ -14,19 +14,13 @@ Tag management for posts. Create requires login; update/delete requires **super 
 
 ## Data Types
 
-### `TagResponse` (list / nested in posts)
+### `TagResponse` (all tag endpoints: list, create, get by id, update, nested in posts)
 
 ```json
 { "id": 1, "name": "golang" }
 ```
 
-### Tag model (create / get by id / update)
-
-| Field | Type |
-|-------|------|
-| `id` | number |
-| `name` | string |
-| `created_at` | string (optional in response) |
+Create, get-by-id, and update all return this shape. The tag model's `created_at` timestamp is not exposed by these endpoints.
 
 ### `TrendingTagResponse`
 
@@ -52,9 +46,21 @@ Tag management for posts. Create requires login; update/delete requires **super 
 
 ## POST `/api/tags`
 
-**Body:** tag JSON - primary field is `name` (string). The handler does not have struct-tag validation; business errors return 500.
+**Body (`CreateTagRequest`)**
 
-**Success - 201** - `data`: tag object.
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `name` | string | Yes | 1-30 characters |
+
+**Success - 201** - `data`: `TagResponse` (`{ "id", "name" }`).
+
+**Errors**
+
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid JSON body |
+| 422 | Validation failed (`name` missing or not 1-30 characters) |
+| 500 | Server error |
 
 ---
 
@@ -112,10 +118,29 @@ Example response:
 
 ## PUT `/api/tags/:id`
 
-**Body:** tag object (for example, a new `name`). Super admin only.
+**Body (`UpdateTagRequest`)**
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `name` | string | Yes | 1-30 characters |
+
+Super admin only.
+
+**Success - 200** - `data`: `TagResponse`.
+
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid ID |
+| 404 | Tag not found |
+| 422 | Validation failed |
 
 ---
 
 ## DELETE `/api/tags/:id`
 
 **Success - 200** - `data`: `null`.
+
+| HTTP | Condition |
+|------|-----------|
+| 400 | Invalid ID |
+| 404 | Tag not found |
